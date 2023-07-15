@@ -107,6 +107,7 @@
 (require 'acm-backend-codeium)
 (require 'acm-backend-copilot)
 (require 'acm-quick-access)
+(require 'acm-backend-ekg)
 
 ;;; Code:
 
@@ -480,7 +481,8 @@ Only calculate template candidate when type last character."
                                ctags-candidates
                                citre-candidates
                                (acm-backend-search-file-words-candidates keyword)
-                               (acm-backend-telega-candidates keyword)))
+                               (acm-backend-telega-candidates keyword)
+                               (acm-backend-ekg-candidates keyword)))
 
         (when (and (or
                     ;; Show snippet candidates if lsp-candidates length is zero.
