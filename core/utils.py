@@ -59,6 +59,13 @@ epc_client: Optional[EPCClient] = None
 test_interceptor = None
 
 # initialize logging, default to STDERR and INFO level
+# The directory of the repository: this module lives in ``core/``, so its parent
+# holds ``langserver/``, ``multiserver/`` and ``resources/``.  Code that used to
+# sit at the root must go through this instead of its own ``__file__``: moving a
+# module one level down silently changes the directory it reads from, which is
+# how ``get_lang_server_path`` started looking for ``core/multiserver/*.json``.
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
+
 logger = logging.getLogger("lsp-bridge")
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())

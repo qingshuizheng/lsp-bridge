@@ -379,7 +379,7 @@ def get_lang_server_path(server_name, is_multi_server=False):
     lang_server_dir = "multiserver" if is_multi_server else "langserver"
     lang_server_dir_var = "lsp-bridge-user-multiserver-dir" if is_multi_server else "lsp-bridge-user-langserver-dir"
 
-    server_dir = Path(__file__).resolve().parent / lang_server_dir
+    server_dir = REPO_ROOT / lang_server_dir
     server_path_current = server_dir / "{}_{}.json".format(server_name, get_os_name())
     server_path_default = server_dir / "{}.json".format(server_name)
 

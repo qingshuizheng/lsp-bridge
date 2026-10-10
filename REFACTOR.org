@@ -257,6 +257,24 @@ ruff check core lsp_bridge.py          # S2 起接入
 断言 **EPC 对外方法集合与 HEAD 完全一致**（52 = 19 类内 + 33 继承）、 mixin 不重叠、
 模块级 helper 仍可从 =lsp_bridge= 导入；docstring 1591/1591 = 100%。
 
+**首次部署踩到的两个真 bug**（都只在 Nix 构建里暴露，都是拆文件的副作用 ✗）：
+
+1. =get_lang_server_path= 用 =Path(__file__).parent= 定位配置目录 ✓ —— 这个函数原本在仓库根的
+   =lsp_bridge.py= 里 ✓，搬进 =core/bridge_server.py= 之后基准变成 =core/= ✗，于是所有
+   language server 查找都去看 =core/langserver/…= 与 =core/multiserver/…= ✗。服务器因此起不来 ✓，
+   补全/跳转测试全挂 ✓（日志里只有一句 FileNotFoundError 提到
+   =multiserver/basedpyright_ruff.json= ✓）。修法：=core/utils.py= 定义一次 =REPO_ROOT= ✓。
+2. =lsp-bridge-enable-mode-line= 是 =lsp-bridge.el= 的 defcustom ✓，而用它的 =when= 随 UI 代码
+   搬进了 =lsp-bridge-ui.el= 并在**加载时**执行 ✓ —— 编译 =lsp-bridge.el= 时编译器会为
+   =(require 'lsp-bridge-ui)= 去加载该文件 ✓，此时那个 defcustom 还没求值 ✗ → 编译报
+   =Symbol's value as variable is void= ✓（=test_byte_compile= 就是因此失败 ✓）。修法：选项随用途
+   搬进 ui ✓。
+
+**验证机制上补的两个洞**（这次真正的教训 ✓）：sort 后的批量编译会**掩盖顺序相关错误** ✗
+（ui 排在 lsp-bridge.el 前 ✓，编译器顺手把变量声明求值了 ✓，而 Nix 用 glob 顺序 ✗）→
+=check-elisp.sh= 现在**逐文件独立编译** ✓；另外 =check-test.sh --all= 里那几个 language-server
+驱动的测试此前被条件跳过 ✗ → 以后宣布完成前要跑 =--all= ✓。
+
 **S7 后续 3：acm 的两个行为选项**（都由配置里的 advice/钩子下沉而来，**默认关闭**）：
 
 - =acm-menu-cycle=：=acm-select-next= 在末候选、=acm-select-prev= 在首候选时环绕 ✓

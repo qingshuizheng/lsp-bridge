@@ -22,7 +22,15 @@
 (defvar acm-backend-lsp-show-progress)
 (defvar lsp-bridge--work-done-progress)
 (defvar lsp-bridge--work-done-progress-timer)
-(defvar lsp-bridge-enable-mode-line)
+;; This option is defined here rather than in lsp-bridge.el because the mode
+;; line is installed below at load time: byte-compiling lsp-bridge.el loads
+;; this file through `require', and a defcustom in lsp-bridge.el has not
+;; been evaluated yet at that point, which made the compile fail with a
+;; void variable.
+(defcustom lsp-bridge-enable-mode-line t
+  "Whether display LSP-bridge's server info in mode-line ."
+  :type 'boolean
+  :group 'lsp-bridge)
 (defvar lsp-bridge-mode)
 (defvar lsp-bridge-server)
 

@@ -51,6 +51,22 @@ echo "== byte-compile $COUNT file(s) -> $ELC_DIR"
 # shellcheck disable=SC2086
 $EMACS -Q --batch -L . -L acm --eval "$redir" -f batch-byte-compile $FILES
 
+# A file can compile cleanly in the batch above and still fail on its own.  The
+# batch is sorted, so lsp-bridge-ui.el is compiled before lsp-bridge.el and the
+# compiler has already evaluated a variable that lsp-bridge.el only defines
+# later; the Nix build compiles in glob order, where lsp-bridge.el comes first
+# and the same file dies with "Symbol's value as variable is void".  Compiling
+# every file with only its requires on the load path is what catches that.
+echo "== byte-compile each file on its own"
+for f in $FILES; do
+    if ! out=$($EMACS -Q --batch -L . -L acm --eval "$redir" -f batch-byte-compile "$f" 2>&1); then
+        echo "FAILED: $f does not compile on its own"
+        printf '%s\n' "$out" | grep -E 'Error:|Cannot open load file|Symbol' || printf '%s\n' "$out" | tail -5
+        exit 1
+    fi
+done
+echo "   every file compiles on its own"
+
 if [ "${CHECKDOC:-0}" = 1 ]; then
     echo "== checkdoc"
     $EMACS -Q --batch -L . -L acm --eval "$redir" --eval \

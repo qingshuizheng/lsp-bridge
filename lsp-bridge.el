@@ -276,10 +276,6 @@ Setting this to nil or 0 will turn off the heartbeat mechanism."
   :type 'number
   :group 'lsp-bridge)
 
-(defcustom lsp-bridge-enable-mode-line t
-  "Whether display LSP-bridge's server info in mode-line ."
-  :type 'boolean
-  :group 'lsp-bridge)
 
 (defcustom lsp-bridge-completion-stop-commands
   '("undo-tree-undo" "undo-tree-redo"

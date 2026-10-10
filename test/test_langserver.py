@@ -46,3 +46,35 @@ class LangServerJson(unittest.TestCase):
                 replace_template("$LSP_BRIDGE_TEST_DIR/server"),
                 "/tmp/lsp-bridge/server",
             )
+
+
+class RepositoryLayout(unittest.TestCase):
+    """The directories the server reads are found relative to the repository.
+
+    `get_lang_server_path' resolved its directory from its own `__file__', which
+    was correct while it lived in lsp_bridge.py at the root and silently wrong
+    once it moved into core/: every server lookup then looked inside
+    core/langserver and core/multiserver.  Nothing caught it, because the tests
+    that need a language server are the only ones that look up a configuration.
+    """
+
+    def test_the_configuration_directories_are_under_the_repository_root(self):
+        from core.utils import REPO_ROOT
+
+        for name in ("langserver", "multiserver", "resources"):
+            with self.subTest(directory=name):
+                self.assertTrue((REPO_ROOT / name).is_dir(), f"{name}/ is missing under {REPO_ROOT}")
+
+    def test_the_repository_root_is_not_a_package_directory(self):
+        from core.utils import REPO_ROOT
+
+        # the failure above put every lookup one level too deep
+        self.assertNotEqual(REPO_ROOT.name, "core")
+        self.assertEqual(REPO_ROOT, Path(BASE_DIR))
+
+    def test_the_multiserver_configuration_the_tests_use_is_found(self):
+        # this is the file the first failing build could not find, because the
+        # lookup was resolved from core/ instead of the repository root
+        from core.utils import REPO_ROOT
+
+        self.assertTrue((REPO_ROOT / "multiserver" / "basedpyright_ruff.json").is_file())
