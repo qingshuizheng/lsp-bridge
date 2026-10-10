@@ -723,6 +723,8 @@ The following is the directory structure of the lsp-bridge project:
 | acm/                                  | Async completion menu frontend and completion UI used by lsp-bridge                                                 |
 | acm/acm-backend.el                    | Backend registry and candidate protocol: which backends exist and what each one can do                              |
 | acm/acm-session.el                    | The popup state of one parent frame: the menu, documentation and call hierarchy child frames, their buffers and caches |
+| lsp-bridge.el                         | Main Elisp entry: options, mode integration, transport, jump and workspace commands                                |
+| lsp-bridge-ui.el                      | What lsp-bridge shows outside the menu: which-func, request progress and the mode line state                        |
 | core/fileaction.py                    | Per-file state machine that routes requests, handles responses, and coordinates editor state                        |
 | core/lspserver.py                     | LSP transport layer for each server process, including request/response ordering                                    |
 | core/handler/                         | Concrete handlers for LSP methods and editor actions                                                                |

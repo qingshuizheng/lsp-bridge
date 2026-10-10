@@ -718,6 +718,8 @@ lsp-bridge 每种语言的服务器配置存储在 [lsp-bridge/langserver](https
 | python-lsp-bridge                   | 通过 `uv` 启动 Python 后端的 shell 启动脚本                                                                          |
 | acm/acm-backend.el                  | 后端注册表与候选协议： 有哪些后端、 每个后端能做什么                                                                 |
 | acm/acm-session.el                  | 一个父 frame 的 popup 状态： 菜单/文档/调用层级的子 frame、 它们的 buffer 与缓存                                    |
+| lsp-bridge.el                       | Elisp 主入口： 选项、 模式集成、 传输、 跳转与工作区命令                                                            |
+| lsp-bridge-ui.el                    | 菜单之外 lsp-bridge 显示的东西： which-func、 请求进度、 mode-line 状态                                              |
 | acm/                                | lsp-bridge 使用的异步补全菜单前端和补全界面                                                                          |
 | core/fileaction.py                  | 每个文件的状态机， 负责路由请求、处理响应以及协调编辑器状态                                                         |
 | core/lspserver.py                   | 每个语言服务器进程的 LSP 传输层， 负责请求和响应顺序控制                                                             |

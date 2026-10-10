@@ -212,6 +212,22 @@ ruff check core lsp_bridge.py          # S2 起接入
 
 ** S4 剩余：=lsp-bridge.el= 拆分（已测量，可直接执行）
 
+**进度**：第 1 步（=ui= 层）已完成 —— =lsp-bridge-ui.el= 收走 which-func 三件、
+进度报告两件、mode-line 四件（defface ×2 + 变量 + 组成函数 + =mode-line-misc-info= 挂载），
+=lsp-bridge.el= 4115 → 4024 行；新文件用 =declare-function=／=defvar= 声明它从主文件需要的
+7 个符号（=get-match-buffer-by-filepath=、=process-live-p=、=enable-mode-line=、=mode=、
+=server=、=--work-done-progress= 及其 timer、=acm-backend-lsp-show-progress=），
+主文件在末尾 =(require 'lsp-bridge-ui)= 并在顶部加了一条 =declare-function=
+（=lsp-bridge-symbols--current-defun= 被更早的 =lsp-bridge-mode= 一带引用）。
+**验收规则的细化**：搬家会改变警告所在的*文件*，所以比较时按**警告文本**归一化；
+一步只允许**减少**它自己修掉的警告，不允许新增。本步净减少 1 条：修掉了
+=lsp-bridge--mode-line-format= 里的 `mode-face` 自由变量（原来用 =setq-local= 把
+一个通用名写成缓冲区局部变量 ✗，现改为 =let= 绑定）。
+顺带把两个门禁的盲区补上：=check-elisp.sh= 现在也编译**未跟踪**的新 .el 文件
+（原来用 =git ls-files=，新文件在本步被漏编译）；=docstring-report.py= 把
+"无值 =(defvar X)=" 视为**声明**而不是定义（它没法挂 docstring——挂上就会给变量赋那个值），
+带值的 =defvar= 仍要求 docstring。
+
 现状（2026-10-11 测量）：=lsp-bridge.el= **4115 行、330 个顶层定义**（183 defun/defmacro、
 146 defcustom/defvar/defface/defgroup），只有两处分区注释（=which-func= 与 =mode-line=），
 其余是"按历史顺序堆叠"的。
