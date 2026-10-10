@@ -15,6 +15,10 @@
   :group 'acm-backend-tempel)
 
 (defun acm-backend-tempel-candidates (keyword)
+  "Return tempel snippet candidates matching KEYWORD.
+Return nil unless `acm-enable-tempel' is non-nil and tempel is loaded.
+When `tempel-trigger-prefix' is non-nil, KEYWORD must start with that
+prefix and is matched without it."
   (when (and acm-enable-tempel
              (featurep 'tempel)
              (or (not tempel-trigger-prefix) (string-prefix-p tempel-trigger-prefix keyword)))
@@ -37,10 +41,14 @@
         (cl-subseq match-snippets 0 (min (length match-snippets) acm-backend-tempel-candidates-number)))))))
 
 (defun acm-backend-tempel-candidate-expand (candidate-info bound-start)
+  "Expand the tempel snippet held in CANDIDATE-INFO.
+Delete the text between BOUND-START and point, then insert the
+template named by the candidate label."
   (delete-region bound-start (point))
   (tempel-insert (intern-soft (plist-get candidate-info :label))))
 
 (defun acm-backend-tempel-candidate-doc (candidate)
+  "Return the printed template body of tempel CANDIDATE."
   (let ((snippet
          (alist-get (intern-soft (plist-get candidate :label))
                     (tempel--templates))))

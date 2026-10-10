@@ -158,8 +158,15 @@ Default is nil."
   :group 'acm-backend-lsp)
 
 
-(defvar acm-backend-lsp-fetch-completion-item-func nil)
-(defvar-local acm-backend-lsp-fetch-completion-item-ticker nil)
+(defvar acm-backend-lsp-fetch-completion-item-func nil
+  "Function used to fetch extra information for a completion candidate.
+lsp-bridge sets it to `lsp-bridge-fetch-completion-item-info', which
+sends a `completionItem/resolve' request for the candidate.")
+
+(defvar-local acm-backend-lsp-fetch-completion-item-ticker nil
+  "File, key and kind of the last candidate info fetched in this buffer.
+It is compared with each new candidate so the same completion item is
+not resolved twice in a row.")
 
 (defvar-local acm-backend-lsp-block-kind-list nil
   "You can customize this option to filter certain types of completion candidates.
@@ -176,6 +183,10 @@ Below is available types:
 ")
 
 (defun acm-backend-lsp-init ()
+  "Reset the buffer-local LSP completion state.
+Clear the cached candidates, the completion position, the trigger
+characters and the server names, then create an empty hash table in
+`acm-backend-lsp-items' to receive the candidates of each server."
   (setq-local acm-backend-lsp-server-command-exist t)
   (setq-local acm-backend-lsp-cache-candidates nil)
   (setq-local acm-backend-lsp-completion-position nil)
@@ -185,6 +196,12 @@ Below is available types:
   (setq-local acm-backend-lsp-items (make-hash-table :test 'equal)))
 
 (defun acm-backend-lsp-candidates (keyword)
+  "Return LSP completion candidates matching KEYWORD.
+Candidates come from `acm-backend-lsp-items', which the Python side
+fills per server.  The result is memoized in
+`acm-backend-lsp-cache-candidates'; candidates are only filtered here
+when `acm-backend-lsp-frontend-filter-p' is non-nil, because Python
+has already filtered and sorted them."
   (let ((match-candidates
          (acm-with-cache-candidates
           acm-backend-lsp-cache-candidates
@@ -220,6 +237,13 @@ Below is available types:
       match-candidates))))
 
 (defun acm-backend-lsp-candidate-expand (candidate-info bound-start &optional preview)
+  "Insert CANDIDATE-INFO at point, deleting from BOUND-START.
+The inserted text and the deleted region are derived from the
+candidate's `insertText' or `textEdit'; snippets are expanded and the
+`additionalTextEdits' are applied when
+`acm-backend-lsp-enable-auto-import' is non-nil.
+PREVIEW, when non-nil, only shows the text in an overlay and leaves
+the buffer unchanged."
   (let* ((label (plist-get candidate-info :label))
          (insert-text (plist-get candidate-info :insertText))
          (insert-text-format (plist-get candidate-info :insertTextFormat))
@@ -285,6 +309,10 @@ Below is available types:
         (acm-backend-lsp-apply-text-edits additional-text-edits)))))
 
 (defun acm-backend-lsp-candidate-doc (candidate)
+  "Return the documentation of LSP CANDIDATE.
+The documentation is read from `acm-backend-lsp-items'.  When it is
+missing, call `acm-backend-lsp-fetch-completion-item-func' to request
+it from the server, then return what is currently known."
   ;; NOTE:
   ;; We only use `key' of candidate, then fetch documentation from `acm-backend-lsp-items',
   ;; otherwise, we can't fetch documentation even `lsp-bridge-completion-item--update' update `acm-backend-lsp-items'
@@ -343,12 +371,17 @@ If optional MARKER, return a marker instead"
       (if marker (copy-marker (point-marker)) (point)))))
 
 (defun acm-backend-lsp-apply-text-edits (edits)
+  "Apply the LSP text EDITS to the current buffer.
+EDITS are applied from the last position to the first so that earlier
+edits do not shift the positions of later ones."
   (dolist (edit (acm-backend-lsp-make-sure-descending edits))
     (let* ((range (plist-get edit :range)))
       (acm-backend-lsp-insert-new-text (plist-get range :start) (plist-get range :end) (plist-get edit :newText)))))
 
 (defun acm-backend-lsp-make-sure-descending (edits)
-  "If `edits' is increasing, reverse `edits', otherwise the row inserted before will affect the position of the row inserted later."
+  "Return EDITS ordered from the last position to the first one.
+Reverse EDITS when they are in increasing order, because a row inserted
+before another would otherwise shift the position of the later row."
   (if (<= (length edits) 1)
       ;; Return origin value of `edits' if length 0 or 1.
       edits
@@ -370,6 +403,9 @@ Doubles as an indicator of snippet support."
        'yas-expand-snippet))
 
 (defun acm-backend-lsp-insert-new-text (start-pos end-pos new-text)
+  "Replace the buffer text between START-POS and END-POS with NEW-TEXT.
+START-POS and END-POS are LSP positions, converted with
+`acm-backend-lsp-position-to-point'; point is restored afterwards."
   (let* ((start-point (acm-backend-lsp-position-to-point start-pos))
          (end-point (acm-backend-lsp-position-to-point end-pos)))
     (save-excursion
@@ -378,6 +414,7 @@ Doubles as an indicator of snippet support."
       (insert new-text))))
 
 (defun acm-backend-lsp-clean ()
+  "Clear the LSP candidates and the candidate cache in this buffer."
   (setq-local acm-backend-lsp-items (make-hash-table :test 'equal))
   (setq-local acm-backend-lsp-cache-candidates nil))
 

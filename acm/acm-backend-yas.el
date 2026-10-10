@@ -127,13 +127,19 @@ Default matching use snippet filename."
 
 ;;; Variables
 
-(defvar acm-backend-yas--cache nil)
-(defvar acm-backend-yas--cache-modes nil)
-(defvar acm-backend-yas--cache-expire-p nil)
+(defvar acm-backend-yas--cache nil
+  "Cached list of yasnippet templates for `acm-backend-yas--cache-modes'.")
+(defvar acm-backend-yas--cache-modes nil
+  "Modes that `acm-backend-yas--cache' was computed for.")
+(defvar acm-backend-yas--cache-expire-p nil
+  "Non-nil when the yasnippet template cache must be rebuilt.")
 
 ;;; Functions
 
 (defun acm-backend-yas--cache-expire (&rest _)
+  "Mark the yasnippet template cache as stale.
+It is attached with `:after' advice to the functions that load
+snippets, so the next candidate request rebuilds the cache."
   (when acm-enable-yas
     (setq acm-backend-yas--cache-expire-p t)))
 
@@ -141,6 +147,11 @@ Default matching use snippet filename."
 (advice-add #'yas-load-snippet-buffer :after #'acm-backend-yas--cache-expire)
 
 (defun acm-backend-yas--template-cons (template)
+  "Return the labelling cons of yasnippet TEMPLATE.
+The car is the snippet name, or its trigger when both
+`acm-backend-yas-show-trigger-keyword' and
+`acm-backend-yas-match-by-trigger-keyword' are non-nil; the cdr holds
+the other of the two."
   (let ((name (yas--template-name template))
         (trigger (yas--template-key template)))
     (if (and acm-backend-yas-show-trigger-keyword
@@ -149,6 +160,10 @@ Default matching use snippet filename."
       (cons name trigger))))
 
 (defun acm-backend-yas--template-sort (keyword templates)
+  "Sort TEMPLATES for display when completing KEYWORD.
+Templates whose label starts with KEYWORD come first, then the
+shorter labels; TEMPLATES may be reordered in place, and is returned
+unchanged when KEYWORD is nil."
   (when templates
     (if keyword
         (cl-sort templates
@@ -169,6 +184,10 @@ Default matching use snippet filename."
       templates)))
 
 (defun acm-backend-yas-candidates (keyword)
+  "Return yasnippet candidates matching KEYWORD.
+Return nil unless yasnippet is enabled and KEYWORD is non-empty.
+The snippet tables are cached in `acm-backend-yas--cache' and
+refreshed when they expire or the active modes change."
   (when (and acm-enable-yas
              yas-minor-mode
              (>= (length keyword) acm-backend-yas-candidate-min-length)
@@ -210,13 +229,21 @@ Default matching use snippet filename."
        (cl-subseq match-templates 0 limit)))))
 
 (defun acm-backend-yas-candidate-expand (candidate bound-start)
+  "Expand yasnippet CANDIDATE after deleting up to BOUND-START.
+Delete the text between BOUND-START and point, then expand the
+snippet body stored in CANDIDATE."
   (delete-region bound-start (point))
   (yas-expand-snippet (plist-get candidate :content)))
 
 (defun acm-backend-yas-candidate-doc (candidate)
+  "Return the snippet body of CANDIDATE, or nil when it has none."
   (ignore-errors (plist-get candidate :content)))
 
 (defun yas-expand-snippet-acm-advice (orig-fun &rest args)
+  "Call ORIG-FUN with ARGS, rewriting jdtls snippet placeholders.
+When the buffer is served by jdtls, $TM_SELECTED_TEXT in the first
+argument is replaced with `yas-selected-text' so that the selected
+text is inserted; otherwise ARGS are passed through unchanged."
   ;; Use yas-selected-text to implement $TM_SELECTED_TEXT return by jdtls
   (if (and (boundp 'acm-backend-lsp-server-names)
            (equal acm-backend-lsp-server-names '("jdtls")))

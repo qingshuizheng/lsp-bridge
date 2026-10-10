@@ -41,10 +41,17 @@ Annotations include kind, type, etc.")
      (xref-make-file-location path line 0))))
 
 (defun acm-backend-ctags-xref-callback (tags)
+  "Display the ctags TAGS in an xref buffer.
+TAGS is the list of tag plists returned by the ctags backend; each
+one is turned into an xref object by
+`acm-backend-ctags-xref--make-object'."
   (let ((fetcher (lambda () (mapcar #'acm-backend-ctags-xref--make-object tags))))
     (xref-show-xrefs fetcher nil)))
 
 (defun acm-backend-ctags-find-def-at-point ()
+  "Find the definition of the symbol at point with ctags.
+Send a `ctags_find_def' request to the Python side, or to the remote
+server when the buffer visits a remote file."
   (interactive)
   (if (lsp-bridge-is-remote-file)
       (lsp-bridge-remote-send-func-request "ctags_find_def"
@@ -53,9 +60,14 @@ Annotations include kind, type, etc.")
                                             (file-local-name (buffer-file-name))))
     (lsp-bridge-call-async "ctags_find_def" (symbol-at-point) (buffer-file-name))))
 
-(defvar-local acm-backend-ctags-items nil)
+(defvar-local acm-backend-ctags-items nil
+  "List of ctags candidates recorded for this buffer.")
 
 (defun acm-backend-ctags-candidates (keyword)
+  "Return ctags candidates matching KEYWORD.
+Return nil unless `acm-enable-ctags' is non-nil and KEYWORD is at
+least `acm-backend-ctags-candidate-min-length' characters long.  The
+result is memoized in `acm-backend-ctags-cache-candiates'."
   (acm-with-cache-candidates
    acm-backend-ctags-cache-candiates
    (when (and acm-enable-ctags
@@ -63,10 +75,14 @@ Annotations include kind, type, etc.")
      acm-backend-ctags-items)))
 
 (defun acm-backend-ctags-clean ()
+  "Clear the ctags candidates and the candidate cache in this buffer."
   (setq-local acm-backend-ctags-items nil)
   (setq-local acm-backend-ctags-cache-candiates nil))
 
 (defun acm-backend-ctags-candidate-expand (candidate-info bound-start &optional preview)
+  "Insert the ctags label of CANDIDATE-INFO, deleting from BOUND-START.
+PREVIEW, when non-nil, only shows the label in an overlay and leaves
+the buffer unchanged."
   (if preview
       (acm-preview-create-overlay bound-start (point) (plist-get candidate-info :label))
     (delete-region bound-start (point))

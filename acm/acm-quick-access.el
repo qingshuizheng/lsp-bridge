@@ -24,9 +24,13 @@ Enable this option will cause interfering digital insertion sometimes."
   :type 'boolean
   :group 'acm-quick-access)
 
-(defvar acm-quick-access-init-p nil)
+(defvar acm-quick-access-init-p nil
+  "Non-nil once the quick-access keys are bound in `acm-mode-map'.")
 
 (defun acm-quick-access-init ()
+  "Bind the quick-access keys in `acm-mode-map' once.
+Do nothing when the keys are already bound or when
+`acm-enable-quick-access' is nil."
   (when (and (not acm-quick-access-init-p)
              acm-enable-quick-access)
     (acm-keymap--bind-quick-access acm-mode-map)
@@ -45,6 +49,10 @@ Enable this option will cause interfering digital insertion sometimes."
     "M"))
 
 (defun acm-keymap--bind-quick-access (keymap)
+  "Bind the quick-access key sequences in KEYMAP.
+Every key of `acm-quick-access-keys' is bound to
+`acm-complete-quick-access' with the modifier from
+`acm-keymap--quick-access-modifier', unless KEYMAP already binds it."
   (let ((modifier (acm-keymap--quick-access-modifier)))
     (dolist (key acm-quick-access-keys)
       (let ((key-seq (acm-keymap--kbd-quick-access modifier key)))
@@ -52,6 +60,9 @@ Enable this option will cause interfering digital insertion sometimes."
           (define-key keymap key-seq #'acm-complete-quick-access))))))
 
 (defun acm-keymap--kbd-quick-access (modifier key)
+  "Return the key sequence made of MODIFIER and KEY.
+MODIFIER is a one-character modifier such as \"M\" and KEY is the rest
+of the sequence, as in the members of `acm-quick-access-keys'."
   (kbd (format "%s-%s" modifier key)))
 
 (defun acm-complete-quick-access (row)
@@ -68,6 +79,11 @@ See `acm-quick-access-keys' for more details."
     (acm-complete)))
 
 (defun acm-insert-number-or-complete-candiate ()
+  "Insert the typed number, or complete the candidate it selects.
+When `acm-quick-access-use-number-select' is non-nil and the typed
+digit selects a visible candidate, call
+`acm-complete-quick-access' for it; otherwise insert the character
+with `self-insert-command'."
   (interactive)
   (if acm-quick-access-use-number-select
       (let ((current-char (key-description (this-command-keys-vector)))

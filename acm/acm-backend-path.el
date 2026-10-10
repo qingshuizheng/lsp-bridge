@@ -93,15 +93,25 @@
   :type 'boolean
   :group 'acm-backend-path)
 
-(defvar-local acm-backend-path-items nil)
+(defvar-local acm-backend-path-items nil
+  "List of path completion candidates recorded for this buffer.")
 
 (defun acm-backend-path-candidates (keyword)
+  "Return path completion candidates matching KEYWORD.
+Return nil unless `acm-enable-path' is non-nil.  Candidates come from
+`acm-backend-path-items' and are memoized in
+`acm-backend-path-cache-candiates'."
   (acm-with-cache-candidates
    acm-backend-path-cache-candiates
    (when acm-enable-path
      acm-backend-path-items)))
 
 (defun acm-backend-path-candidate-expand (candidate-info bound-start &optional preview)
+  "Insert the file of CANDIDATE-INFO, deleting from BOUND-START.
+The directory of the text before point is prepended to the file name;
+a leading dot is not duplicated for files that already start with one.
+PREVIEW, when non-nil, only shows the file name in an overlay and
+leaves the buffer unchanged."
   (let* ((keyword (acm-get-input-prefix))
          (file-name (plist-get candidate-info :label))
          (parent-dir (file-name-directory keyword)))
@@ -117,6 +127,7 @@
       (insert (concat parent-dir file-name)))))
 
 (defun acm-backend-path-clean ()
+  "Clear the path candidates and the candidate cache in this buffer."
   (setq-local acm-backend-path-items nil)
   (setq-local acm-backend-path-cache-candiates nil))
 

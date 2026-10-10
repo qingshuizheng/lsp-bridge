@@ -1,7 +1,7 @@
-;;; acm-backend-lsp-workspace-symbol.el --- LSP backend for acm  -*- lexical-binding: t; no-byte-compile: t; -*-
+;;; acm-backend-lsp-workspace-symbol.el --- LSP workspace symbol backend for acm  -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;; Filename: acm-backend-lsp-workspace-symbol.el
-;; Description: LSP backend for acm
+;; Description: LSP workspace symbol backend for acm
 ;; Author: Andy Stewart <lazycat.manatee@gmail.com>
 ;; Maintainer: Andy Stewart <lazycat.manatee@gmail.com>
 ;; Copyright (C) 2022, Andy Stewart, all rights reserved.
@@ -39,7 +39,7 @@
 
 ;;; Commentary:
 ;;
-;; LSP backend for acm
+;; LSP workspace symbol backend for acm
 ;;
 
 ;;; Installation:
@@ -85,7 +85,7 @@
 ;;; Code:
 
 (defgroup acm-backend-lsp-workspace-symbol nil
-  "LSP backend for acm."
+  "LSP workspace symbol backend for acm."
   :group 'acm)
 
 (defcustom acm-enable-lsp-workspace-symbol nil
@@ -113,6 +113,10 @@ Anyway, if want use `acm-candidate-fuzzy-search' filter again in acm menu, turn 
   :group 'acm-backend-lsp-workspace-symbol)
 
 (defun acm-backend-lsp-workspace-symbol-init ()
+  "Reset the buffer-local workspace symbol completion state.
+Clear the cached candidates, the completion position, the trigger
+characters and the server names, then create an empty hash table in
+`acm-backend-lsp-workspace-symbol-items' for the server candidates."
   (setq-local acm-backend-lsp-workspace-symbol-cache-candidates nil)
   (setq-local acm-backend-lsp-workspace-symbol-completion-position nil)
   (setq-local acm-backend-lsp-workspace-symbol-completion-trigger-characters nil)
@@ -120,6 +124,13 @@ Anyway, if want use `acm-candidate-fuzzy-search' filter again in acm menu, turn 
   (setq-local acm-backend-lsp-workspace-symbol-items (make-hash-table :test 'equal)))
 
 (defun acm-backend-lsp-workspace-symbol-candidates (keyword)
+  "Return workspace symbol candidates matching KEYWORD.
+Candidates come from `acm-backend-lsp-workspace-symbol-items', which
+the Python side fills per server, and are memoized in
+`acm-backend-lsp-workspace-symbol-cache-candidates'.  Filtering only
+happens here when
+`acm-backend-lsp-workspace-symbol-frontend-filter-p' is non-nil,
+because Python has already filtered and sorted the candidates."
   (let ((match-candidates
          (acm-with-cache-candidates
           acm-backend-lsp-workspace-symbol-cache-candidates
@@ -155,6 +166,7 @@ Anyway, if want use `acm-candidate-fuzzy-search' filter again in acm menu, turn 
       match-candidates))))
 
 (defun acm-backend-lsp-workspace-symbol-clean ()
+  "Clear the workspace symbol candidates and cache in this buffer."
   (setq-local acm-backend-lsp-workspace-symbol-items (make-hash-table :test 'equal))
   (setq-local acm-backend-lsp-workspace-symbol-cache-candidates nil))
 

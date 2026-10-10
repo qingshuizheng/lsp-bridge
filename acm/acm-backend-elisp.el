@@ -98,19 +98,31 @@
   :type 'integer
   :group 'acm-backend-elisp)
 
-(defvar-local acm-backend-elisp-items nil)
+(defvar-local acm-backend-elisp-items nil
+  "List of elisp symbol names offered as completion candidates.
+It is filled by `lsp-bridge-search-backend--record-items' with the
+symbols that `lsp-bridge-elisp-symbols-update' sent to Python.")
 
-(defvar acm-backend-elisp-parse-depth 100)
-(defvar acm-backend-elisp-parse-limit 30)
+(defvar acm-backend-elisp-parse-depth 100
+  "How many enclosing lists to walk when looking for local bindings.")
+(defvar acm-backend-elisp-parse-limit 30
+  "How many bindings to scan inside a single binding form.")
 (defvar acm-backend-elisp-var-binding-regexp
-  "\\_<\\(?:cl-\\)?\\(?:def\\(?:macro\\|subst\\|un\\)\\|l\\(?:ambda\\|e\\(?:\\(?:xical-le\\)?t\\)\\)\\)\\*?\\_>")
+  "\\_<\\(?:cl-\\)?\\(?:def\\(?:macro\\|subst\\|un\\)\\|l\\(?:ambda\\|e\\(?:\\(?:xical-le\\)?t\\)\\)\\)\\*?\\_>"
+  "Regexp matching the head of a form that binds local variables.")
 (defvar acm-backend-elisp-var-binding-regexp-1
-  "\\_<\\(?:cl-\\)?\\(?:do\\(?:list\\|times\\)\\)\\*?\\_>")
+  "\\_<\\(?:cl-\\)?\\(?:do\\(?:list\\|times\\)\\)\\*?\\_>"
+  "Regexp matching the head of a form that binds iteration variables.")
 
-(defvar acm-backend-elisp-symbols-update-timer nil)
-(defvar acm-backend-elisp-symbols-update-size 0)
+(defvar acm-backend-elisp-symbols-update-timer nil
+  "Idle timer that synchronizes elisp symbols with the Python side.")
+(defvar acm-backend-elisp-symbols-update-size 0
+  "Number of elisp symbols sent to Python the last time it synchronized.")
 
 (defun acm-backend-elisp-candidates (keyword)
+  "Return elisp symbol candidates matching KEYWORD.
+Candidates are derived from `acm-backend-elisp-items' and memoized
+in `acm-backend-elisp-cache-candiates' for the current buffer."
   (acm-with-cache-candidates
    acm-backend-elisp-cache-candiates
    (mapcar
@@ -125,6 +137,9 @@
     acm-backend-elisp-items)))
 
 (defun acm-backend-elisp-candidate-doc (candidate)
+  "Return the documentation string for elisp CANDIDATE.
+Read the function documentation of the candidate label, then its
+face documentation, then its variable documentation."
   (let* ((symbol (intern (plist-get candidate :label)))
          (doc (ignore-errors (documentation symbol))))
     (cond (doc
@@ -135,6 +150,7 @@
            (documentation-property symbol 'variable-documentation)))))
 
 (defun acm-backend-elisp-symbol-type (symbol)
+  "Return a string naming the kind of definition SYMBOL refers to."
   (cond ((featurep symbol)
          "feature")
         ((special-form-p symbol)
@@ -160,6 +176,9 @@
       (message "Feature not found: %s" feature-string))))
 
 (defun acm-backend-elisp-find-def ()
+  "Visit the definition of the symbol at point.
+The command used depends on the symbol type reported by
+`acm-backend-elisp-symbol-type'; features open their library file."
   (let* ((symbol-string (thing-at-point 'symbol t))
          (symbol (intern symbol-string)))
     (pcase (acm-backend-elisp-symbol-type symbol)
@@ -173,6 +192,7 @@
       ("variable" (find-variable symbol)))))
 
 (defun acm-backend-elisp-global-symbols ()
+  "Return all interned symbols that are bound, defined or a face."
   (all-completions ""
                    obarray
                    (lambda (symbol)
@@ -182,6 +202,10 @@
                          (facep symbol)))))
 
 (defun acm-backend-elisp-local-symbols ()
+  "Return names of variables bound in the forms enclosing point.
+Return nil unless the current buffer is an elisp buffer; at most
+`acm-backend-elisp-parse-depth' enclosing lists are inspected and at
+most `acm-backend-elisp-parse-limit' bindings per binding form."
   (when (acm-is-elisp-mode-p)
     (let ((regexp "[ \t\n]*\\(\\_<\\(?:\\sw\\|\\s_\\)*\\_>\\)")
           (pos (point))
@@ -218,10 +242,12 @@
       res)))
 
 (defun acm-backend-elisp-get-symbols ()
+  "Return local symbols at point followed by all global symbols."
   (append (acm-backend-elisp-local-symbols)
           (acm-backend-elisp-global-symbols)))
 
 (defun acm-backend-elisp-clean ()
+  "Clear the elisp candidates and the candidate cache in this buffer."
   (setq-local acm-backend-elisp-items nil)
   (setq-local acm-backend-elisp-cache-candiates nil))
 

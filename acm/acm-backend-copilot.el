@@ -1,4 +1,4 @@
-;;; acm-backend-copilot.el --- Description -*- lexical-binding: t; no-byte-compile: t; -*-
+;;; acm-backend-copilot.el --- Copilot backend for acm -*- lexical-binding: t; no-byte-compile: t; -*-
 ;;
 ;; Copyright (C) 2023 royokong
 ;;
@@ -15,7 +15,7 @@
 ;;
 ;;; Commentary:
 ;;
-;;  Description
+;; Copilot backend for acm
 ;;
 ;;; Code:
 
@@ -75,9 +75,15 @@ in the proxy plist. For example:
   :group 'acm-backend-copilot)
 
 
-(defvar-local acm-backend-copilot-items nil)
+(defvar-local acm-backend-copilot-items nil
+  "List of Copilot completion candidates recorded for this buffer.")
 
 (defun acm-backend-copilot-candidates (keyword)
+  "Return Copilot completion candidates matching KEYWORD.
+Candidates come from `acm-backend-copilot-items' and are memoized in
+`acm-backend-copilot-cache-candiates'.  When
+`acm-backend-copilot-show-trailing' is non-nil, each candidate keeps
+only the trailing part of its label, like VSCode Copilot does."
   (acm-with-cache-candidates
    acm-backend-copilot-cache-candiates
    (if acm-backend-copilot-show-trailing
@@ -85,7 +91,11 @@ in the proxy plist. For example:
      acm-backend-copilot-items)))
 
 (defun acm-backend-copilot-candidates-preprocess (copilot-candidates)
-  "Preprocess copilot candidates to show only trailing parts like VSCode Copilot."
+  "Return COPILOT-CANDIDATES with the text before point removed.
+The part of the current line up to its last whitespace run is stripped
+from the `displayLabel' of the candidates that start with it, so only
+the trailing text is shown, like VSCode Copilot.  Each candidate plist
+is modified in place."
   (let* ((line-text (buffer-substring-no-properties (line-beginning-position) (point)))
          (trimmed (string-trim-left line-text))
          (prefix (if (string-match ".*\\s-+" trimmed)
@@ -102,6 +112,13 @@ in the proxy plist. For example:
             copilot-candidates)))
 
 (defun acm-backend-copilot-candidate-expand (candidate-info bound-start &optional preview)
+  "Insert the Copilot suggestion held in CANDIDATE-INFO.
+Move to the line of the candidate and replace the rest of that line
+with its label; when `acm-backend-copilot-accept' is non-nil, also
+tell the Copilot server that the completion was accepted.
+PREVIEW, when non-nil, only shows the label in an overlay and leaves
+the buffer unchanged.  BOUND-START is part of the backend interface
+but is not used here."
   ;; We need replace whole area with copilot label.
   (let ((end-position (line-end-position)))
     (forward-line (- (plist-get candidate-info :line) (count-lines (point-min) (line-beginning-position))))
@@ -114,9 +131,11 @@ in the proxy plist. For example:
          "copilot_completion_accept" (plist-get candidate-info :id))))))
 
 (defun acm-backend-copilot-candidate-doc (candidate)
+  "Return the documentation held in Copilot CANDIDATE."
   (plist-get candidate :documentation))
 
 (defun acm-backend-copilot-clean ()
+  "Clear the Copilot candidates and the candidate cache in this buffer."
   (setq-local acm-backend-copilot-items nil)
   (setq-local acm-backend-copilot-cache-candiates nil))
 

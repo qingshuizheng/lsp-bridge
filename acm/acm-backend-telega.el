@@ -3,7 +3,7 @@
 ;;; Code:
 
 (defgroup acm-backend-telega nil
-  "Telega backedn for ACM."
+  "Telega backend for ACM."
   :group 'acm)
 
 (defcustom acm-enable-telega t
@@ -21,8 +21,10 @@ Number if async request has been made, but request is not yet completed.
   (and lsp-bridge-mode acm-enable-telega (derived-mode-p 'telega-chat-mode)))
 
 (defun acm-backend-telega-items-set (members)
-  "Callback for the `telega--searchChatMembers'.
-Sets `acm-backend-telega-items' for the current chatbuf."
+  "Set `acm-backend-telega-items' from MEMBERS in the current chatbuf.
+It is the callback of `telega--searchChatMembers'.  Only MEMBERS that
+have a username become candidates, using the username as label and the
+member title as annotation."
   (cl-assert (acm-backend-telega-enabled-p))
   (setq acm-backend-telega-items
         (mapcar (lambda (user)
@@ -74,6 +76,11 @@ Sets `acm-backend-telega-items' for the current chatbuf."
           )))
 
 (defun acm-backend-telega-candidates (keyword)
+  "Return telega username candidates matching KEYWORD.
+Return nil unless lsp-bridge is enabled in the current telega chat
+buffer and \"@\" precedes KEYWORD.  When KEYWORD is empty return
+`acm-backend-telega-items' unchanged, otherwise return the items whose
+label or annotation matches KEYWORD, sorted by prefix."
   (when (and (acm-backend-telega-enabled-p)
              (save-excursion
                (backward-char (length keyword))

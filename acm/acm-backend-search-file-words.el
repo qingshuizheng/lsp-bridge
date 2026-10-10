@@ -1,7 +1,7 @@
-;;; acm-backend-search-file-words.el --- Path backend for acm  -*- lexical-binding: t; no-byte-compile: t; -*-
+;;; acm-backend-search-file-words.el --- Search file words backend for acm  -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;; Filename: acm-backend-search-file-words.el
-;; Description: Path backend for acm
+;; Description: Search file words backend for acm
 ;; Author: Andy Stewart <lazycat.manatee@gmail.com>
 ;; Maintainer: Andy Stewart <lazycat.manatee@gmail.com>
 ;; Copyright (C) 2022, Andy Stewart, all rights reserved.
@@ -9,7 +9,7 @@
 ;; Version: 0.1
 ;; Last-Updated: 2022-06-07 08:58:47
 ;;           By: Andy Stewart
-;; URL: https://www.github.org/manateelazycat/acm-backend-path
+;; URL: https://www.github.org/manateelazycat/acm-backend-search-file-words
 ;; Keywords:
 ;; Compatibility: GNU Emacs 28.1
 ;;
@@ -39,7 +39,7 @@
 
 ;;; Commentary:
 ;;
-;; Path backend for acm
+;; Search file words backend for acm
 ;;
 
 ;;; Installation:
@@ -85,7 +85,7 @@
 ;;; Code:
 
 (defgroup acm-backend-search-file-words nil
-  "Backend fo completion words in other buffer."
+  "Backend for completion words in other buffer."
   :group 'acm)
 
 (defcustom acm-backend-search-file-words-candidate-min-length 0
@@ -99,7 +99,7 @@
   :group 'acm-backend-search-file-words)
 
 (defcustom acm-backend-search-file-words-enable-fuzzy-match nil
-  "enable fuzzy match candidate."
+  "Enable fuzzy matching of file word candidates."
   :type 'boolean
   :group 'acm-backend-search-file-words)
 
@@ -113,11 +113,20 @@
   :type 'boolean
   :group 'acm-backend-search-file-words)
 
-(defvar-local acm-backend-search-file-words-items nil)
+(defvar-local acm-backend-search-file-words-items nil
+  "List of word candidates recorded for this buffer.")
 
-(defvar acm-backend-search-file-words-bound-regex "^[\"' ]")
+(defvar acm-backend-search-file-words-bound-regex "^[\"' ]"
+  "Syntax specification that delimits the word searched around point.
+`acm-backend-search-file-words-get-point-string' passes it to
+`skip-syntax-backward' and `skip-syntax-forward'.")
 
 (defun acm-backend-search-file-words-candidates (keyword)
+  "Return file word candidates matching KEYWORD.
+Candidates come from `acm-backend-search-file-words-items' and are
+memoized in `acm-backend-search-file-words-cache-candiates'; return
+nil unless `acm-enable-search-file-words' is non-nil and KEYWORD is at
+least `acm-backend-search-file-words-candidate-min-length' long."
   (acm-with-cache-candidates
    acm-backend-search-file-words-cache-candiates
    (when (and acm-enable-search-file-words
@@ -125,6 +134,11 @@
      acm-backend-search-file-words-items)))
 
 (defun acm-backend-search-file-words-candidate-expand (candidate-info bound-start &optional preview)
+  "Insert the word held in CANDIDATE-INFO.
+In elisp buffers the symbol around point is replaced; elsewhere the
+deleted region starts at BOUND-START.
+PREVIEW, when non-nil, only shows the word in an overlay and leaves
+the buffer unchanged."
   (let ((beg (if (acm-is-elisp-mode-p)
                  (car (bounds-of-thing-at-point 'symbol))
                (- (point) (length (acm-get-input-prefix)))))
@@ -149,6 +163,7 @@
      )))
 
 (defun acm-backend-search-file-words-clean ()
+  "Clear the file word candidates and the candidate cache in this buffer."
   (setq-local acm-backend-search-file-words-items nil)
   (setq-local acm-backend-search-file-words-cache-candiates nil))
 

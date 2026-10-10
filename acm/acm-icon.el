@@ -88,7 +88,10 @@
   '(("bootstrap" . "https://icons.getbootstrap.com/icons/%s.svg")
     ("material" . "https://raw.githubusercontent.com/Templarian/MaterialDesign/master/svg/%s.svg")
     ("octicons" . "https://raw.githubusercontent.com/primer/octicons/master/icons/%s-24.svg")
-    ("boxicons" . "https://boxicons.com/static/img/svg/regular/bx-%s.svg")))
+    ("boxicons" . "https://boxicons.com/static/img/svg/regular/bx-%s.svg"))
+  "Alist mapping icon collection names to their download URLs.
+Each value is a format string that takes the icon name as its only
+argument; it is used by `acm-icon-fetch-all'.")
 
 ;; Search icon from https://pictogrammers.com/library/mdi/icon/
 (defvar acm-icon-alist
@@ -168,16 +171,27 @@
     ("jupyter" . ("material" "exponent" "#f47b7b"))
     ("copilot" . ("octicons" "copilot" "#808080"))
     ("workspace-symbol" . ("material" "shark-fin-outline" "#0085c3"))
-    (t . ("material" "smoking-pipe" "#90cef1"))))
+    (t . ("material" "smoking-pipe" "#90cef1")))
+  "Alist mapping candidate type names to icon specifications.
+Each element has the form (TYPE COLLECTION NAME COLOR), where
+COLLECTION is a key of `acm-icon-collections', NAME is the icon name
+inside that collection and COLOR is a foreground color name.  The
+final `t' element is the fallback for unknown candidate types.")
 
-(defvar acm-icon-cache (make-hash-table :test 'equal))
-(defvar acm-icon-dir (expand-file-name "icons" (file-name-directory load-file-name)))
-(defvar acm-icon-width 4)
+(defvar acm-icon-cache (make-hash-table :test 'equal)
+  "Hash table caching rendered icons, keyed by \"COLLECTION_NAME\".")
+(defvar acm-icon-dir (expand-file-name "icons" (file-name-directory load-file-name))
+  "Directory holding the SVG icon files used by `acm-icon'.")
+(defvar acm-icon-width 4
+  "Width of a rendered icon, measured in frame character widths.")
 
 (defun acm-icon-filepath (collection name)
+  "Return the local SVG file path of icon NAME in COLLECTION."
   (concat (file-name-as-directory acm-icon-dir) (format "%s_%s.svg" collection name)))
 
 (defun acm-icon-fetch-all ()
+  "Download every icon of `acm-icon-alist' into `acm-icon-dir'.
+Each icon overwrites the file named by `acm-icon-filepath'."
   (interactive)
   (dolist (icon acm-icon-alist)
     (let* ((collection (nth 0 (cdr icon)))
@@ -189,6 +203,8 @@
         (write-region (point-min) (point-max) filename)))))
 
 (defun acm-icon-parse (collection name)
+  "Return the parsed XML tree of icon NAME in COLLECTION.
+The SVG file is read from the path returned by `acm-icon-filepath'."
   (with-temp-buffer
     (insert-file-contents (acm-icon-filepath collection name))
     (xml-parse-region (point-min) (point-max))))
@@ -202,6 +218,10 @@ If COLOR-NAME is unknown to Emacs, then return COLOR-NAME as-is."
       color-name)))
 
 (defun acm-icon (collection name fg-color)
+  "Return an SVG image object for icon NAME in COLLECTION.
+FG-COLOR is a face name or a color name; the icon is scaled to
+`acm-icon-width' characters wide and one character high.  The SVG
+file is read with `acm-icon-parse'."
   (let* ((root (acm-icon-parse collection name))
 
          ;; Read original viewbox
@@ -234,6 +254,10 @@ If COLOR-NAME is unknown to Emacs, then return COLOR-NAME as-is."
     (svg-image svg :ascent 'center :scale 1)))
 
 (defun acm-icon-build (collection name fg-color)
+  "Return a propertized string displaying icon NAME from COLLECTION.
+The icon is rendered by `acm-icon' with FG-COLOR and cached in
+`acm-icon-cache'.  Return the empty string when `acm-enable-icon' is
+nil or SVG images are unavailable."
   (if (and acm-enable-icon
            (image-type-available-p 'svg))
       (let* ((icon-key (format "%s_%s" collection name))

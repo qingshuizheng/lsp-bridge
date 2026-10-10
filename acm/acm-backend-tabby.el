@@ -13,9 +13,13 @@
   :type 'boolean
   :group 'acm-backend-tabby)
 
-(defvar-local acm-backend-tabby-items nil)
+(defvar-local acm-backend-tabby-items nil
+  "List of tabby completion candidates recorded for this buffer.")
 
 (defun acm-backend-tabby-candidates (keyword)
+  "Return tabby completion candidates matching KEYWORD.
+Candidates are read from `acm-backend-tabby-items', sorted by prefix
+for KEYWORD and memoized in `acm-backend-tabby-cache-candiates'."
   (acm-with-cache-candidates
    acm-backend-tabby-cache-candiates
    (acm-candidate-sort-by-prefix
@@ -24,7 +28,10 @@
 
 
 (defun acm-backend-tabby-find-max-common (str1 str2)
-  "Find max common overlap between end of str1 and start of str2."
+  "Return STR1 and STR2 joined on their longest overlap, or nil.
+The overlap is the longest suffix of STR1 that is also a prefix of
+STR2; the two strings are concatenated without repeating it.  Return
+nil when they do not overlap."
   (let* ((max-count (min (length str1) (length str2)))
          (overlap-size
           (catch 'found
@@ -42,7 +49,12 @@
 
 
 (defun acm-backend-tabby--get-candidates (&optional current-symbol is-manual)
-  "Do completion. IS-MANUAL is non-nil if the completion is triggered manually."
+  "Ask tabby for completion candidates in the current buffer.
+CURRENT-SYMBOL, when a string, is merged with the symbol before point
+into a longer completion by `acm-backend-tabby-find-max-common'.
+IS-MANUAL is passed to `tabby--get-completion-context'.  Cancel the
+ongoing tabby request instead of starting a new one.  The candidates
+are stored through `lsp-bridge-search-backend--record-items'."
   (interactive)
   (when (string= tabby--status "initialization_done")
     (if (not (zerop tabby--ongoing-request-id))
@@ -79,6 +91,10 @@
               (tabby--agent-provide-completions request on-response))))))
 
 (defun acm-backend-tabby-record (current-symbol)
+  "Request tabby completions for the current buffer.
+Load the tabby library unless it is already available, clear
+`acm-backend-tabby-items', then ask for completions filtered by
+CURRENT-SYMBOL."
   (interactive)
   (unless (fboundp 'tabby--agent-provide-completions)
     (require 'tabby))
@@ -86,6 +102,7 @@
   (acm-backend-tabby--get-candidates current-symbol nil))
 
 (defun acm-backend-tabby-clean ()
+  "Clear the tabby candidates and the candidate cache in this buffer."
   (setq-local acm-backend-tabby-items nil)
   (setq-local acm-backend-tabby-cache-candiates nil))
 

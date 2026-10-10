@@ -13,9 +13,14 @@
   :type 'boolean
   :group 'acm-backend-jupyter)
 
-(defvar-local acm-backend-jupyter-items nil)
+(defvar-local acm-backend-jupyter-items nil
+  "List of jupyter completion candidates recorded for this buffer.")
 
 (defun acm-backend-jupyter-candidates (keyword)
+  "Return jupyter completion candidates matching KEYWORD.
+Candidates are read from `acm-backend-jupyter-items', sorted by
+prefix for KEYWORD and memoized in
+`acm-backend-jupyter-cache-candiates'."
   (acm-with-cache-candidates
    acm-backend-jupyter-cache-candiates
    (acm-candidate-sort-by-prefix
@@ -23,6 +28,13 @@
     acm-backend-jupyter-items)))
 
 (defun acm-backend-jupyter-record (current-symbol)
+  "Record the jupyter completions for the current buffer.
+Load the jupyter libraries when `jupyter-org-completion-at-point' is
+not yet defined, clear `acm-backend-jupyter-items', then collect the
+completions reported by `jupyter-org-completion-at-point' and keep
+only those starting with CURRENT-SYMBOL when it is a string.  The
+candidates are stored through
+`lsp-bridge-search-backend--record-items'."
   (interactive)
   (unless (fboundp 'jupyter-org-completion-at-point)
     (require 'jupyter)
@@ -45,6 +57,7 @@
       (lsp-bridge-search-backend--record-items "jupyter" candidates-with-metadata))))
 
 (defun acm-backend-jupyter-clean ()
+  "Clear the jupyter candidates and the candidate cache in this buffer."
   (setq-local acm-backend-jupyter-items nil)
   (setq-local acm-backend-jupyter-cache-candiates nil))
 

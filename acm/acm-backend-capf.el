@@ -122,9 +122,19 @@
 (defvar acm-backend-capf-mode-hooks
   (mapcar (lambda (mode)
             (intern (concat (symbol-name mode) "-hook")))
-          acm-backend-capf-mode-list))
+          acm-backend-capf-mode-list)
+  "Hooks of the modes listed in `acm-backend-capf-mode-list'.
+`global-lsp-bridge-mode' enables `lsp-bridge-mode' from these hooks in
+addition to `lsp-bridge-default-mode-hooks'.")
 
 (defun acm-backend-capf-candiates (keyword)
+  "Return CAPF completion candidates matching KEYWORD.
+Ask `completion-at-point-functions' through
+`completion--capf-wrapper' and turn each completion into a candidate
+plist.  Return nil unless the major mode is a member of
+`acm-backend-capf-mode-list'.  When CAPF leaves the text before point
+out of its candidates, that prefix is prepended back to every
+candidate."
   (when (member major-mode acm-backend-capf-mode-list)
     (let ((res (run-hook-wrapped 'completion-at-point-functions
                                  #'completion--capf-wrapper 'all))

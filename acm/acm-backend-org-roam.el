@@ -15,6 +15,11 @@
   :group 'acm-backend-org-roam)
 
 (defun acm-backend-org-roam-candidates (keyword)
+  "Return Org roam title candidates matching KEYWORD.
+Return nil unless `acm-enable-org-roam' is non-nil and org-roam is
+loaded.  The titles are fuzzy-matched against KEYWORD, sorted by
+prefix and truncated to
+`acm-backend-org-roam-candidates-number' entries."
   (when (and acm-enable-org-roam
              (featurep 'org-roam))
     (let* ((titles (org-roam--get-titles))
@@ -32,6 +37,12 @@
         (cl-subseq match-titles 0 (min (length match-titles) acm-backend-org-roam-candidates-number)))))))
 
 (defun acm-backend-org-roam-candidate-expand (candidate-info bound-start)
+  "Insert the Org roam link of CANDIDATE-INFO at point.
+When point is inside `org-roam-bracket-completion-re', replace the
+text from BOUND-START to point with the candidate label and move point
+past the closing brackets.  The label is prefixed with \"roam:\"
+unless point is outside a source block and the first match group is
+non-blank.  Do nothing when the regexp does not match."
   (let (roam-p start end)
     (when (org-in-regexp org-roam-bracket-completion-re 1)
       (setq roam-p (not (or (org-in-src-block-p)
