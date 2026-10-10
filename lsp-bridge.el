@@ -135,9 +135,12 @@
 
 (require 'lsp-bridge-core)
 
-(defvar acm-library-path (expand-file-name "acm" (if load-file-name
-                                                     (file-name-directory load-file-name)
-                                                   default-directory))
+(defvar acm-library-path
+  (expand-file-name
+   "acm"
+   (if load-file-name
+       (file-name-directory load-file-name)
+     default-directory))
   "Directory holding the bundled acm completion framework.
 Set from the location of this library and added to `load-path'.")
 (add-to-list 'load-path acm-library-path t)
@@ -220,28 +223,27 @@ fills in the documentation and additional text edits of the item."
         (lsp-bridge-call-async "fetch_completion_item_info" acm-backend-lsp-filepath key server-name))
       (setq-local acm-backend-lsp-fetch-completion-item-ticker (list acm-backend-lsp-filepath key kind)))))
 
-(defcustom lsp-bridge-completion-popup-predicates '(
-                                                    lsp-bridge--not-delete-command
-                                                    lsp-bridge--not-follow-complete
-                                                    lsp-bridge--not-match-stop-commands
-                                                    lsp-bridge--not-match-hide-characters
-                                                    lsp-bridge--not-match-hide-keywords
+(defcustom lsp-bridge-completion-popup-predicates
+  '(lsp-bridge--not-delete-command
+    lsp-bridge--not-follow-complete
+    lsp-bridge--not-match-stop-commands
+    lsp-bridge--not-match-hide-characters
+    lsp-bridge--not-match-hide-keywords
 
-                                                    lsp-bridge--not-only-blank-before-cursor
-                                                    lsp-bridge--not-in-string
-                                                    lsp-bridge--not-in-org-table
+    lsp-bridge--not-only-blank-before-cursor
+    lsp-bridge--not-in-string
+    lsp-bridge--not-in-org-table
 
-                                                    lsp-bridge--not-execute-macro
-                                                    lsp-bridge--not-in-multiple-cursors
-                                                    lsp-bridge--not-in-mark-macro
+    lsp-bridge--not-execute-macro
+    lsp-bridge--not-in-multiple-cursors
+    lsp-bridge--not-in-mark-macro
 
-                                                    lsp-bridge--is-evil-state
-                                                    lsp-bridge--is-meow-state
+    lsp-bridge--is-evil-state
+    lsp-bridge--is-meow-state
 
-                                                    lsp-brige--not-in-chatgpt-response
+    lsp-brige--not-in-chatgpt-response
 
-                                                    lsp-bridge--not-complete-manually
-                                                    )
+    lsp-bridge--not-complete-manually)
   "Predicate functions that decide whether to popup completion.
 Each predicate is called with no argument while handling a
 completion response; the menu pops up only when all of them return
@@ -250,11 +252,10 @@ macro and multiple-cursor states and the mode."
   :type '(repeat function)
   :group 'lsp-bridge)
 
-(defcustom lsp-bridge-enable-predicates '(
-                                          lsp-bridge--not-acm-doc-markdown-buffer
-                                          lsp-bridge--not-mind-wave-chat-buffer
-                                          lsp-bridge--not-zsh-buffer
-                                          )
+(defcustom lsp-bridge-enable-predicates
+  '(lsp-bridge--not-acm-doc-markdown-buffer
+    lsp-bridge--not-mind-wave-chat-buffer
+    lsp-bridge--not-zsh-buffer)
   "Predicate functions that decide whether lsp-bridge may start.
 Each predicate is called with no argument from the mode hooks listed
 in `lsp-bridge-default-mode-hooks'; lsp-bridge stays disabled in the
@@ -465,9 +466,12 @@ LSP-Bridge will enable completion inside string literals."
 (defvar lsp-bridge-last-change-is-delete-command-p nil
   "Whether the last buffer change deleted text.")
 
-(defvar lsp-bridge-python-file (expand-file-name "lsp_bridge.py" (if load-file-name
-                                                                     (file-name-directory load-file-name)
-                                                                   default-directory))
+(defvar lsp-bridge-python-file
+  (expand-file-name
+   "lsp_bridge.py"
+   (if load-file-name
+       (file-name-directory load-file-name)
+     default-directory))
   "Full path of lsp_bridge.py, the Python side of lsp-bridge.")
 
 (defvar-local lsp-bridge-mark-ring nil
@@ -477,21 +481,22 @@ LSP-Bridge will enable completion inside string literals."
   "Position recorded before jumping to a definition.
 Used to return to the original location afterwards.")
 
-(defcustom lsp-bridge-python-command (cond ((memq system-type '(cygwin windows-nt ms-dos))
-                                            (cond ((executable-find "pypy3.exe")
-                                                   "pypy3.exe")
-                                                  ((executable-find "python3.exe")
-                                                   "python3.exe")
-                                                  ((executable-find "python.exe")
-                                                   "python.exe")))
-                                           (t (cond ((executable-find "python-lsp-bridge")
-                                                     "python-lsp-bridge")
-                                                    ((executable-find "pypy3")
-                                                     "pypy3")
-                                                    ((executable-find "python3")
-                                                     "python3")
-                                                    ((executable-find "python")
-                                                     "python"))))
+(defcustom lsp-bridge-python-command
+  (cond ((memq system-type '(cygwin windows-nt ms-dos))
+         (cond ((executable-find "pypy3.exe")
+                "pypy3.exe")
+               ((executable-find "python3.exe")
+                "python3.exe")
+               ((executable-find "python.exe")
+                "python.exe")))
+        (t (cond ((executable-find "python-lsp-bridge")
+                  "python-lsp-bridge")
+                 ((executable-find "pypy3")
+                  "pypy3")
+                 ((executable-find "python3")
+                  "python3")
+                 ((executable-find "python")
+                  "python"))))
   "The Python interpreter used to run lsp_bridge.py."
   :type 'string)
 
@@ -523,23 +528,19 @@ https://docs.python.org/3/library/logging.html#levels."
   :type 'boolean)
 
 (defcustom lsp-bridge-multi-lang-server-extension-list
-  '(
-    (("vue") . "volar_emmet")
+  '((("vue") . "volar_emmet")
     (("ts" "mts")  . "typescript_eslint")
     (("tsx") . "typescriptreact_eslint")
     (("component.html") . "angular_template_html")
-    (("component.ts") . "angular_template_typescript")
-    )
+    (("component.ts") . "angular_template_typescript"))
   "The multi lang server rule for file extension."
   :type 'cons)
 
 (defcustom lsp-bridge-single-lang-server-extension-list
-  '(
-    (("wxml") . "wxml-language-server")
+  '((("wxml") . "wxml-language-server")
     (("html") . "vscode-html-language-server")
     (("astro") . "astro-ls")
-    (("typ") . "tinymist")
-    )
+    (("typ") . "tinymist"))
   "The lang server rule for file extension."
   :type 'cons)
 
@@ -681,32 +682,43 @@ letting lsp-bridge pop the menu up while typing.")
   :type 'cons)
 
 (defcustom lsp-bridge-single-lang-server-mode-list
-  '(
-    ((c-mode c-ts-mode c++-mode c++-ts-mode objc-mode c-or-c++-mode c-or-c++-ts-mode) . lsp-bridge-c-lsp-server)
-    ((cmake-mode cmake-ts-mode) .                                                lsp-bridge-cmake-lsp-server)
-    ((java-mode java-ts-mode) .                                                  "jdtls")
-    ((julia-mode) .                                                              "julials")
-    ((python-mode python-ts-mode) .                                              lsp-bridge-python-lsp-server)
-    ((ruby-mode ruby-ts-mode) .                                                  lsp-bridge-ruby-lsp-server)
-    ((rust-mode rustic-mode rust-ts-mode rstml-ts-mode) .                        "rust-analyzer")
-    (move-mode .                                                                 "move-analyzer")
-    ((elixir-mode elixir-ts-mode heex-ts-mode) .                                 lsp-bridge-elixir-lsp-server)
-    ((go-mode go-ts-mode) .                                                      "gopls")
-    (groovy-mode .                                                               "groovy-language-server")
-    (powershell-mode .                                                           "powershell-editor-services")
-    (haskell-mode .                                                              "hls")
-    ((lua-mode lua-ts-mode)  .                                                   lsp-bridge-lua-lsp-server)
-    ((markdown-mode gfm-mode) .                                                  lsp-bridge-markdown-lsp-server)
-    (dart-mode .                                                                 "dart-analysis-server")
-    ((scala-mode scala-ts-mode) .                                                "metals")
-    ((js2-mode js-mode js-ts-mode rjsx-mode) .                                   lsp-bridge-javascript-lsp-server)
-    (js-jsx-mode .                                                               lsp-bridge-javascript-react-lsp-server)
-    ((typescript-tsx-mode tsx-ts-mode) .                                         lsp-bridge-typescript-react-lsp-server)
-    ((typescript-mode typescript-ts-mode) .                                      lsp-bridge-typescript-lsp-server)
-    ((js-json-mode json-ts-mode json-mode) .                                     "vscode-json-language-server")
-    (tuareg-mode .                                                               "ocamllsp")
-    (erlang-mode .                                                               "erlang-ls")
-    ((LaTeX-mode latex-mode Tex-latex-mode texmode context-mode texinfo-mode bibtex-mode) . lsp-bridge-tex-lsp-server)
+  '(((c-mode
+      c-ts-mode
+      c++-mode
+      c++-ts-mode
+      objc-mode
+      c-or-c++-mode
+      c-or-c++-ts-mode) .                                  lsp-bridge-c-lsp-server)
+    ((cmake-mode cmake-ts-mode) .                          lsp-bridge-cmake-lsp-server)
+    ((java-mode java-ts-mode) .                            "jdtls")
+    ((julia-mode) .                                        "julials")
+    ((python-mode python-ts-mode) .                        lsp-bridge-python-lsp-server)
+    ((ruby-mode ruby-ts-mode) .                            lsp-bridge-ruby-lsp-server)
+    ((rust-mode rustic-mode rust-ts-mode rstml-ts-mode) .  "rust-analyzer")
+    (move-mode .                                           "move-analyzer")
+    ((elixir-mode elixir-ts-mode heex-ts-mode) .           lsp-bridge-elixir-lsp-server)
+    ((go-mode go-ts-mode) .                                "gopls")
+    (groovy-mode .                                         "groovy-language-server")
+    (powershell-mode .                                     "powershell-editor-services")
+    (haskell-mode .                                        "hls")
+    ((lua-mode lua-ts-mode)  .                             lsp-bridge-lua-lsp-server)
+    ((markdown-mode gfm-mode) .                            lsp-bridge-markdown-lsp-server)
+    (dart-mode .                                           "dart-analysis-server")
+    ((scala-mode scala-ts-mode) .                          "metals")
+    ((js2-mode js-mode js-ts-mode rjsx-mode) .             lsp-bridge-javascript-lsp-server)
+    (js-jsx-mode .                                         lsp-bridge-javascript-react-lsp-server)
+    ((typescript-tsx-mode tsx-ts-mode) .                   lsp-bridge-typescript-react-lsp-server)
+    ((typescript-mode typescript-ts-mode) .                lsp-bridge-typescript-lsp-server)
+    ((js-json-mode json-ts-mode json-mode) .               "vscode-json-language-server")
+    (tuareg-mode .                                         "ocamllsp")
+    (erlang-mode .                                         "erlang-ls")
+    ((LaTeX-mode
+      latex-mode
+      Tex-latex-mode
+      texmode
+      context-mode
+      texinfo-mode
+      bibtex-mode) .                                       lsp-bridge-tex-lsp-server)
     ((clojure-mode
       clojurec-mode
       clojurescript-mode
@@ -714,66 +726,66 @@ letting lsp-bridge pop the menu up while typing.")
       clojure-ts-mode
       clojure-ts-clojurec-mode
       clojure-ts-clojurescript-mode
-      clojure-ts-clojuredart-mode)  .                                                   "clojure-lsp")
-    ((sh-mode bash-mode bash-ts-mode) .                                          "bash-language-server")
-    (fish-mode .                                                                 "fish-lsp")
-    ((css-mode css-ts-mode) .                                                    "vscode-css-language-server")
-    (elm-mode   .                                                                "elm-language-server")
-    ((php-mode php-ts-mode) .                                                    lsp-bridge-php-lsp-server)
-    ((yaml-mode yaml-ts-mode) .                                                  "yaml-language-server")
-    ((zig-mode zig-ts-mode) .                                                    "zls")
-    ((dockerfile-mode dockerfile-ts-mode) .                                      "docker-langserver")
-    (d-mode .                                                                    "serve-d")
-    ((fortran-mode f90-mode) .                                                   "fortls")
-    ((nix-mode nix-ts-mode) .                                                    lsp-bridge-nix-lsp-server)
-    (nickel-mode .                                                               "nls")
-    (ess-r-mode .                                                                lsp-bridge-r-lsp-server)
-    ((graphql-mode graphql-ts-mode) .                                            "graphql-lsp")
-    (swift-mode .                                                                "swift-sourcekit")
-    ((csharp-mode csharp-ts-mode) .                                              lsp-bridge-csharp-lsp-server)
-    (kotlin-mode .                                                               "kotlin-language-server")
-    (verilog-mode .                                                              lsp-bridge-verilog-lsp-server)
-    (vhdl-mode .                                                                 "vhdl-tool")
-    (svelte-mode .                                                               "svelteserver")
-    (fsharp-mode .                                                               "fsautocomplete")
-    (beancount-mode .                                                            "beancount-language-server")
-    (racket-mode    .                                                            "racket-langserver")
-    (mojo-mode    .                                                              "mojo-lsp-server")
-    (solidity-mode .                                                             "solidity")
-    (gleam-ts-mode .                                                             "gleam")
-    (ada-mode .                                                                  "ada-language-server")
-    (hyprlang-ts-mode .                                                          "hyprls")
-    (scad-mode .                                                                 "openscad-lsp")
-    (sml-mode .                                                                  "millet")
-    (fuzion-mode .                                                               "fuzion-language-server")
-    (fennel-mode .                                                               "fennel-ls")
-    (ttcn3-mode .                                                                "ntt")
-    (v-mode .                                                                    "v-analyzer")
-    (cwl-mode .                                                                  "benten")
-    (lean4-mode .                                                                "lean")
-    (lean4-select-mode .                                                         "lean")
-    (odin-mode .                                                                 "ols")
-    (ballerina-mode .                                                            "ballerina-lang-server")
-    (bibtex-mode .                                                               "citation-langserver")
-    (feature-mode .                                                              "cucumber-language-server")
-    (rego-mode .                                                                 "regal")
-    (puppet-mode .                                                               "puppet-languageserver")
-    (nxml-mode .                                                                 lsp-bridge-xml-lsp-server)
-    (robot-mode .                                                                "vscode-rf-language-server")
-    (vimrc-mode .                                                                "vim-language-server")
-    (wat-mode .                                                                  "wasm-language-tools")
-    (terraform-mode .                                                            "terraform-ls")
-    (jsonnet-mode .                                                              "jsonnet-language-server")
-    (glsl-mode .                                                                 "glsl-language-server")
-    (cobol-mode .                                                                "che-che4z-lsp-for-cobol")
-    (hlasm-mode .                                                                "che-che4z-lsp-for-hlasm")
-    (yang-mode .                                                                 "yang-lsp")
-    (mint-mode .                                                                 "mint-ls")
-    (purescript-mode .                                                           "purescript-language-server")
-    (perl-mode .                                                                 "perl-language-server")
-    (futhark-mode .                                                              "futhark-lsp")
-    (conf-toml-mode .                                                            "taplo")
-    (slint-mode .                                                                "slint-lsp")
+      clojure-ts-clojuredart-mode)  .                      "clojure-lsp")
+    ((sh-mode bash-mode bash-ts-mode) .                    "bash-language-server")
+    (fish-mode .                                           "fish-lsp")
+    ((css-mode css-ts-mode) .                              "vscode-css-language-server")
+    (elm-mode   .                                          "elm-language-server")
+    ((php-mode php-ts-mode) .                              lsp-bridge-php-lsp-server)
+    ((yaml-mode yaml-ts-mode) .                            "yaml-language-server")
+    ((zig-mode zig-ts-mode) .                              "zls")
+    ((dockerfile-mode dockerfile-ts-mode) .                "docker-langserver")
+    (d-mode .                                              "serve-d")
+    ((fortran-mode f90-mode) .                             "fortls")
+    ((nix-mode nix-ts-mode) .                              lsp-bridge-nix-lsp-server)
+    (nickel-mode .                                         "nls")
+    (ess-r-mode .                                          lsp-bridge-r-lsp-server)
+    ((graphql-mode graphql-ts-mode) .                      "graphql-lsp")
+    (swift-mode .                                          "swift-sourcekit")
+    ((csharp-mode csharp-ts-mode) .                        lsp-bridge-csharp-lsp-server)
+    (kotlin-mode .                                         "kotlin-language-server")
+    (verilog-mode .                                        lsp-bridge-verilog-lsp-server)
+    (vhdl-mode .                                           "vhdl-tool")
+    (svelte-mode .                                         "svelteserver")
+    (fsharp-mode .                                         "fsautocomplete")
+    (beancount-mode .                                      "beancount-language-server")
+    (racket-mode    .                                      "racket-langserver")
+    (mojo-mode    .                                        "mojo-lsp-server")
+    (solidity-mode .                                       "solidity")
+    (gleam-ts-mode .                                       "gleam")
+    (ada-mode .                                            "ada-language-server")
+    (hyprlang-ts-mode .                                    "hyprls")
+    (scad-mode .                                           "openscad-lsp")
+    (sml-mode .                                            "millet")
+    (fuzion-mode .                                         "fuzion-language-server")
+    (fennel-mode .                                         "fennel-ls")
+    (ttcn3-mode .                                          "ntt")
+    (v-mode .                                              "v-analyzer")
+    (cwl-mode .                                            "benten")
+    (lean4-mode .                                          "lean")
+    (lean4-select-mode .                                   "lean")
+    (odin-mode .                                           "ols")
+    (ballerina-mode .                                      "ballerina-lang-server")
+    (bibtex-mode .                                         "citation-langserver")
+    (feature-mode .                                        "cucumber-language-server")
+    (rego-mode .                                           "regal")
+    (puppet-mode .                                         "puppet-languageserver")
+    (nxml-mode .                                           lsp-bridge-xml-lsp-server)
+    (robot-mode .                                          "vscode-rf-language-server")
+    (vimrc-mode .                                          "vim-language-server")
+    (wat-mode .                                            "wasm-language-tools")
+    (terraform-mode .                                      "terraform-ls")
+    (jsonnet-mode .                                        "jsonnet-language-server")
+    (glsl-mode .                                           "glsl-language-server")
+    (cobol-mode .                                          "che-che4z-lsp-for-cobol")
+    (hlasm-mode .                                          "che-che4z-lsp-for-hlasm")
+    (yang-mode .                                           "yang-lsp")
+    (mint-mode .                                           "mint-ls")
+    (purescript-mode .                                     "purescript-language-server")
+    (perl-mode .                                           "perl-language-server")
+    (futhark-mode .                                        "futhark-lsp")
+    (conf-toml-mode .                                      "taplo")
+    (slint-mode .                                          "slint-lsp")
     )
   "The lang server rule for file mode."
   :type 'cons)
@@ -912,8 +924,7 @@ letting lsp-bridge pop the menu up while typing.")
     conf-toml-mode-hook
     fish-mode-hook
     wat-mode-hook
-    slint-mode-hook
-    )
+    slint-mode-hook)
   "The default mode hook to enable lsp-bridge."
   :type '(repeat variable))
 
@@ -1364,7 +1375,7 @@ the file name through the multi and single lang server rules."
    ("Cnst" . font-lock-constant-face)      ; Constant - 14
    ("Str " . font-lock-string-face)        ; String - 15
    ("Num " . font-lock-builtin-face)       ; Number - 16
-   ("Bool " . font-lock-builtin-face)      ; Boolean - 17
+   ("Bool" . font-lock-builtin-face)       ; Boolean - 17
    ("Arr " . font-lock-builtin-face)       ; Array - 18
    ("Obj " . font-lock-builtin-face)       ; Object - 19
    ("Key " . font-lock-constant-face)      ; Key - 20
@@ -1437,7 +1448,6 @@ The hooks listed in `lsp-bridge-default-mode-hooks' and
 `acm-backend-capf-mode-hooks' get a function that enables the mode
 only when all predicates in `lsp-bridge-enable-predicates' allow it."
   (interactive)
-
   (dolist (hook (append
                  lsp-bridge-default-mode-hooks
                  acm-backend-capf-mode-hooks))
@@ -1445,9 +1455,7 @@ only when all predicates in `lsp-bridge-enable-predicates' allow it."
                      (when (cl-every (lambda (pred)
                                        (lsp-bridge-check-predicate pred "global-lsp-bridge-mode"))
                                      lsp-bridge-enable-predicates)
-                       (lsp-bridge-mode 1))
-                     ))))
-
+                       (lsp-bridge-mode 1))))))
 
 ;;;###autoload
 (define-minor-mode lsp-bridge-mode
@@ -1460,5 +1468,4 @@ only when all predicates in `lsp-bridge-enable-predicates' allow it."
     (lsp-bridge--disable)))
 
 (provide 'lsp-bridge)
-
 ;;; lsp-bridge.el ends here

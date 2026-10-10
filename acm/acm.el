@@ -204,27 +204,29 @@ candidate."
 
 (defvaralias 'acm-completion-backend-merge-order 'acm-backend-order)
 
-(defcustom acm-backend-order '("mode-first-part-candidates"
-                               "template-first-part-candidates"
-                               "copilot-candidates"
-                               "template-second-part-candidates"
-                               "mode-second-part-candidates")
+(defcustom acm-backend-order
+  '("mode-first-part-candidates"
+    "template-first-part-candidates"
+    "copilot-candidates"
+    "template-second-part-candidates"
+    "mode-second-part-candidates")
   "Order in which the candidate groups are concatenated in the menu.
 Each element names one of the groups built by
 `acm-update-candidates', such as \"mode-first-part-candidates\"."
   :type 'list
   :group 'acm)
 
-(defcustom acm-completion-mode-candidates-merge-order '("elisp-candidates"
-                                                        "lsp-candidates"
-                                                        "lsp-workspace-symbol-candidates"
-                                                        "capf-candidates"
-                                                        "jupyter-candidates"
-                                                        "tabby-candidates"
-                                                        "ctags-candidates"
-                                                        "vulpea-candidates"
-                                                        "file-words-candidates"
-                                                        "telega-candidates")
+(defcustom acm-completion-mode-candidates-merge-order
+  '("elisp-candidates"
+    "lsp-candidates"
+    "lsp-workspace-symbol-candidates"
+    "capf-candidates"
+    "jupyter-candidates"
+    "tabby-candidates"
+    "ctags-candidates"
+    "vulpea-candidates"
+    "file-words-candidates"
+    "telega-candidates")
   "Order in which the completion backends are asked for candidates.
 Each element names one of the candidate groups consumed by
 `acm-update-candidates', such as \"lsp-candidates\"."
@@ -289,8 +291,6 @@ returned."
   (dotimes (i 10)
     (define-key acm-mode-map (format "%d" i) #'acm-insert-number-or-complete-candiate)))
 
-
-
 (defvar-local acm-candidates nil
   "All candidates collected by `acm-update-candidates' in this buffer.")
 (defvar-local acm-menu-candidates nil
@@ -310,7 +310,6 @@ also sets it per buffer from the prefix style of the backend.")
 (defvar-local acm-filter-string ""
   "Characters typed while the acm filter is on.")
 
-
 (defvar acm-preview-overlay nil
   "Overlay drawing the preview of the selected candidate, or nil.")
 
@@ -318,8 +317,7 @@ also sets it per buffer from the prefix style of the backend.")
   '((t :inherit shadow :strike-through t))
   "Face used for deprecated candidates.")
 
-(defface acm-filter-face
-  '()
+(defface acm-filter-face '()
   "Face used for the filter string shown by `acm-filter-update'.")
 
 (defsubst acm-indent-pixel (xpos)
@@ -380,8 +378,8 @@ backend of the current candidate to clean its cache."
 
 (defun acm-overriding-key-setup ()
   "Some key define in language mode map will conflict with acm-mode map.
-
-So we use `minor-mode-overriding-map-alist' to override key, make sure all keys in acm-mode can response."
+So we use `minor-mode-overriding-map-alist' to override key, make sure
+all keys in acm-mode can response."
   (when (bound-and-true-p haskell-indentation-mode)
     (let ((override-map (make-sparse-keymap)))
       (define-key override-map [?\C-m] 'acm-complete)
@@ -389,7 +387,8 @@ So we use `minor-mode-overriding-map-alist' to override key, make sure all keys 
            `((haskell-indentation-mode . ,override-map))))))
 
 (defun acm-overriding-key-remove ()
-  "We need remove override acm-mode keys, to make sure language mode key can work after acm menu hide."
+  "We need remove override acm-mode keys, to make sure language mode key
+can work after acm menu hide."
   (when (bound-and-true-p haskell-indentation-mode)
     (set (make-local-variable 'minor-mode-overriding-map-alist)
          (assq-delete-all 'haskell-indentation-mode minor-mode-overriding-map-alist))))
@@ -477,19 +476,21 @@ is nil."
   (when (and candidates
              (consp candidates))
     (if keyword
-        (cl-sort candidates (lambda (a b)
-                              (let ((a-include-prefix (string-prefix-p keyword (plist-get a :label)))
-                                    (b-include-prefix (string-prefix-p keyword (plist-get b :label))))
-                                (cond
-                                 ;; Sort by prefix first.
-                                 ((and b-include-prefix (not a-include-prefix))
-                                  nil)
-                                 ((and a-include-prefix (not b-include-prefix))
-                                  t)
-                                 ;; Then sort by candidate length.
-                                 (t
-                                  (< (length (plist-get a :label))
-                                     (length (plist-get b :label))))))))
+        (cl-sort
+         candidates
+         (lambda (a b)
+           (let ((a-include-prefix (string-prefix-p keyword (plist-get a :label)))
+                 (b-include-prefix (string-prefix-p keyword (plist-get b :label))))
+             (cond
+              ;; Sort by prefix first.
+              ((and b-include-prefix (not a-include-prefix))
+               nil)
+              ((and a-include-prefix (not b-include-prefix))
+               t)
+              ;; Then sort by candidate length.
+              (t
+               (< (length (plist-get a :label))
+                  (length (plist-get b :label))))))))
       ;; Don't sort candidates is keyword is empty string.
       candidates)))
 
@@ -639,15 +640,14 @@ the menu or renders it.  Return nil."
          (candidates (or candidate (acm-update-candidates)))
          (menu-candidates (cl-subseq candidates 0 (min (length candidates) acm-menu-length)))
          (current-select-candidate-index (cl-position previous-select-candidate (mapcar 'acm-menu-index-info menu-candidates) :test 'equal))
-         (acm-input-bound-style (if (acm-in-vulpea-bracket-p)
-                                    "vulpea"
-                                  "ascii"))
+         (acm-input-bound-style (if (acm-in-vulpea-bracket-p) "vulpea" "ascii"))
          (bounds (acm-get-input-prefix-bound)))
     (cond
      ;; Hide completion menu if there is only one exact match candidate, except when the candidate is a template.
      ((and (equal (length candidates) 1)
            (string-equal keyword (plist-get (nth 0 candidates) :label))
-           (not (member (plist-get (nth 0 candidates) :annotation) '("Emmet Abbreviation" "Snippet" "Yas-Snippet" "Tempel" "Vulpea"))))
+           (not (member (plist-get (nth 0 candidates) :annotation)
+                        '("Emmet Abbreviation" "Snippet" "Yas-Snippet" "Tempel" "Vulpea"))))
       (acm-hide))
      ((> (length candidates) 0)
       (let* ((menu-old-cache (cons (acm-popup menu-max-length-cache) (acm-popup menu-number-cache))))
@@ -702,7 +702,7 @@ the menu or renders it.  Return nil."
         ;; CI don't need popup completion menu.
         (when (posn-at-point (acm-popup popup-point))
           (acm-popup-set 'popup-position
-                (acm-frame-get-popup-position (acm-popup popup-point)))
+                         (acm-frame-get-popup-position (acm-popup popup-point)))
 
           ;; Create menu frame if it not exists.
           (acm-frame-create-frame-if-not-exist menu-frame (acm-popup menu-buffer) "acm frame" 0 t)
@@ -881,9 +881,10 @@ otherwise."
           (insert (substring common-string (length (acm-get-input-prefix))))
         (message "No common string found")))))
 
-(defvar acm-string-width-function (if (fboundp 'string-pixel-width)
-                                      'string-pixel-width
-                                    'string-width)
+(defvar acm-string-width-function
+  (if (fboundp 'string-pixel-width)
+      'string-pixel-width
+    'string-width)
   "Function used to measure the width of candidate strings.
 Bound to `string-pixel-width' when it exists and to `string-width'
 otherwise; read by `acm-menu-max-length' and
@@ -894,7 +895,9 @@ otherwise; read by `acm-menu-max-length' and
   (cl-reduce #'max
              (mapcar (lambda (v)
                        (funcall acm-string-width-function
-                                (format "%s %s" (plist-get v :displayLabel) (plist-get v :annotation))))
+                                (format "%s %s"
+                                        (plist-get v :displayLabel)
+                                        (plist-get v :annotation))))
                      acm-menu-candidates)))
 
 (defun acm-menu-render-items (items menu-index)
@@ -1180,8 +1183,7 @@ end."
     (acm-menu-adjust-pos)
 
     ;; Fetch `documentation' and `additionalTextEdits' information.
-    (acm-doc-try-show)
-    ))
+    (acm-doc-try-show)))
 
 (cl-defmacro acm-silent (&rest body)
   "Silence BODY."
@@ -1228,8 +1230,7 @@ when `acm-enable-preview' is non-nil."
        (acm-menu-update-candidates)
        (acm-menu-render menu-old-cache))
      (when acm-enable-preview
-       (acm-preview-current))
-     ))
+       (acm-preview-current))))
 
 (defun acm-char-before ()
   "Return the character before point as a string.
@@ -1284,8 +1285,7 @@ whole list is selected."
   (acm-menu-update
    (let ((menu-length (length acm-menu-candidates)))
      (setq-local acm-menu-offset (- (length acm-candidates) menu-length))
-     (setq-local acm-menu-index (- menu-length 1))
-     )))
+     (setq-local acm-menu-index (- menu-length 1)))))
 
 (defun acm-select-next ()
   "Select next candidate.
@@ -1353,7 +1353,6 @@ With `acm-menu-cycle' non-nil, the first candidate wraps to the last."
     (let ((acm-enable-doc t))
       (acm-doc-try-show))))
 
-
 (defvar acm-markdown-render-prettify-symbols-alist
   (nconc
    (cl-loop for i from 0 to 255
@@ -1388,8 +1387,9 @@ off line numbers and the mode line.  Return nil."
       (gfm-view-mode)
 
       ;; Then remapping background and height of `markdown-code-face' to same as acm doc buffer.
-      (face-remap-add-relative 'markdown-code-face :background (face-attribute 'default :background (acm-popup menu-frame)))
-      ))
+      (face-remap-add-relative
+       'markdown-code-face
+       :background (face-attribute 'default :background (acm-popup menu-frame)))))
 
   (read-only-mode 0)
 
@@ -1443,8 +1443,7 @@ Return nil at the beginning or the end of the buffer."
         (save-excursion
           (or
            (nth 4 (or state (acm-current-parse-state)))
-           (eq (get-text-property (point) 'face) 'font-lock-comment-face))
-          )))))
+           (eq (get-text-property (point) 'face) 'font-lock-comment-face)))))))
 
 (defun acm-in-string-p (&optional state)
   "Return non-nil if point is inside a string.
@@ -1462,8 +1461,7 @@ Return nil at the beginning or the end of the buffer."
         (save-excursion
           (and
            (nth 3 (or state (acm-current-parse-state)))
-           (not (equal (point) (line-end-position))))
-          )))))
+           (not (equal (point) (line-end-position)))))))))
 
 (defun acm-current-parse-state ()
   "Return the `parse-partial-sexp' state of the buffer at point.
@@ -1519,8 +1517,7 @@ QUIET is non-nil, also echo a message."
       ;; Delete last char of `acm-filter-string'
       (setq-local acm-filter-string (substring acm-filter-string 0 -1))
 
-      (acm-filter-update)
-      )))
+      (acm-filter-update))))
 
 (defun acm-filter-update ()
   "Redraw the filter overlay string and refresh the candidate list.
@@ -1549,5 +1546,4 @@ filtered again."
   (put sym 'completion-predicate #'ignore))
 
 (provide 'acm)
-
 ;;; acm.el ends here

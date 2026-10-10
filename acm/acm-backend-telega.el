@@ -155,10 +155,13 @@ EMOJI-KEYWORD is one entry of the `:emojis' of `telega--searchEmojis'."
 It is the callback of `telega--searchChatMembers'.  Every member becomes a
 candidate: those with a username are labelled with it, the others with their
 title, and the expansion turns the latter into a mention entity."
-  (cl-assert (acm-backend-telega-enabled-p))
-  (setq acm-backend-telega-items
-        (mapcar #'acm-backend-telega--mention-candidate members))
-  (message "Fetch telega userlist... done."))
+  ;; The request is asynchronous, so the buffer may have left the chat (or the
+  ;; mode may have been turned off) while it was in flight.  That is not an
+  ;; error worth aborting on: there is simply nothing to update any more.
+  (when (acm-backend-telega-enabled-p)
+    (setq acm-backend-telega-items
+          (mapcar #'acm-backend-telega--mention-candidate members))
+    (message "Fetch telega userlist... done.")))
 
 (defun acm-backend-telega-update-items (&rest _args)
   "Update the optional items."
@@ -183,8 +186,7 @@ title, and the expansion turns the latter into a mention entity."
                        :callback
                        (lambda (members)
                          (with-telega-chatbuf chat
-                           (acm-backend-telega-items-set members))))))))
-          )))
+                           (acm-backend-telega-items-set members)))))))))))
 
 (defun acm-backend-telega-mention-candidates (keyword)
   "Return the chat member candidates matching KEYWORD.
@@ -196,8 +198,18 @@ or annotation matches KEYWORD, sorted by prefix."
              (save-excursion
                (backward-char (length keyword))
                (= (char-before) ?@)))
+    ;; The member list is fetched once per chat, asynchronously.
+    ;; `telega-chatbuf--switch-in' normally asks for it, but that hook can run
+    ;; before lsp-bridge-mode is on in the buffer (or with the mode off), and then
+    ;; nothing would ever ask again: the sentinel would stay `fetch' and "@"
+    ;; would never complete.  Ask here too, so the first keystroke after entering
+    ;; a chat starts the fetch instead of relying on that one hook.
+    (when (eq acm-backend-telega-items 'fetch)
+      (acm-backend-telega-update-items))
     (if (string-equal keyword "")
-        acm-backend-telega-items
+        ;; While the request is in flight the slot holds the sentinel, which is not
+        ;; a candidate and must not be handed to the menu.
+        (and (listp acm-backend-telega-items) acm-backend-telega-items)
       (acm-candidate-sort-by-prefix
        keyword
        (seq-filter
