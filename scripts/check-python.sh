@@ -11,7 +11,10 @@ set -eu
 cd "$(dirname "$0")/.."
 STRICT=0
 [ "${1:-}" = "--strict" ] && STRICT=1
-PY=$(git ls-files '*.py' | grep -v '^test/' | grep -v '^core/pystardict.py$')
+# `git ls-files` reports the index, where a file that this change deletes is
+# still listed until the deletion is staged; compiling it would fail for a file
+# that is gone on purpose.
+PY=$(git ls-files '*.py' | grep -v '^test/' | grep -v '^core/pystardict.py$' | while read -r f; do [ -f "$f" ] && echo "$f"; done)
 
 echo "== py_compile"
 # shellcheck disable=SC2086

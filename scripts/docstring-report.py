@@ -88,6 +88,16 @@ ELISP_PROGRAM = r"""
 """
 
 
+def existing(files: list[pathlib.Path]) -> list[pathlib.Path]:
+    """Return FILES without the ones the working tree no longer has.
+
+    The file lists come from `git ls-files`, which reports the index: a file that
+    a change under review deletes is still listed until the deletion is staged,
+    and reading it would fail the gate for a file that is gone on purpose.
+    """
+    return [path for path in files if path.exists()]
+
+
 def repo_files(pattern: str) -> list[pathlib.Path]:
     """Return the repository files matching PATTERN.
 
@@ -193,8 +203,8 @@ def main() -> int:
     args = ap.parse_args()
     limit = set(args.paths) or None
 
-    missing, per_file = run_elisp(elisp_files(limit))
-    py_missing, py_per_file = run_python(python_files(limit))
+    missing, per_file = run_elisp(existing(elisp_files(limit)))
+    py_missing, py_per_file = run_python(existing(python_files(limit)))
     missing += py_missing
     per_file.update(py_per_file)
 

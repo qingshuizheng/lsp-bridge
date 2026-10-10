@@ -1,11 +1,46 @@
-import hashlib
+"""Resolving Solidity symbols without an answer from the language server.
+
+The language server answers most questions; when it does not - an import
+that resolves to another file, a struct field, a method brought in by
+`using for', a function inherited from a base contract - the helpers here
+read the sources of the project and work the definition out."""
+
 import json
 import os
 import re
-import tempfile
-from urllib.parse import urlparse, unquote
 
 from core.utils import *
+from core.handler.textpos import *
+
+__all__ = [
+    "_detect_solidity_project_root",
+    "_find_import_file_for_symbol",
+    "_find_public_variable_in_file",
+    "_find_solidity_symbol_in_project",
+    "_find_struct_field_decl_pos_in_line",
+    "_find_struct_field_in_file",
+    "_find_struct_field_type_in_file",
+    "_find_symbol_in_file",
+    "_get_member_access_receiver",
+    "_get_solidity_call_arity_at_cursor",
+    "_get_solidity_server_name",
+    "_infer_variable_type_from_lines",
+    "_is_inside_inline_assembly",
+    "_is_solidity_builtin_member_access",
+    "_is_yul_builtin_call_at_cursor",
+    "_normalize_solidity_type_name",
+    "_parse_all_imports",
+    "_read_solidity_remappings",
+    "_resolve_import_file_path",
+    "_resolve_inherited_function",
+    "_resolve_method_call_definition",
+    "_resolve_solidity_import_path",
+    "_resolve_struct_field_definition",
+    "_resolve_struct_field_type",
+    "_resolve_using_for_method_definition",
+    "_try_solidity_fallback",
+    "find_define_response",
+]
 
 
 def _detect_solidity_project_root(start_path):
@@ -366,235 +401,9 @@ def _find_import_file_for_symbol(current_file, symbol_name, project_path, functi
     return None
 
 
-def _extract_word_at(line_text, char_pos):
-    """Extract the identifier at the given character position in a line."""
-    if not line_text or char_pos < 0:
-        return None
-    if char_pos >= len(line_text):
-        char_pos = len(line_text) - 1
-    if char_pos < 0:
-        return None
-
-    start = char_pos
-    while start > 0 and (line_text[start - 1].isalnum() or line_text[start - 1] == '_'):
-        start -= 1
-    end = char_pos
-    while end < len(line_text) and (line_text[end].isalnum() or line_text[end] == '_'):
-        end += 1
-
-    word = line_text[start:end]
-    if not word or not (word[0].isalpha() or word[0] == '_'):
-        return None
-    return word
-
-
-def _extract_word_span_at(line_text, char_pos):
-    """Extract (start, end) span of identifier at char_pos in line_text."""
-    if not line_text or char_pos < 0:
-        return None
-    if char_pos >= len(line_text):
-        char_pos = len(line_text) - 1
-    if char_pos < 0:
-        return None
-
-    start = char_pos
-    while start > 0 and (line_text[start - 1].isalnum() or line_text[start - 1] == '_'):
-        start -= 1
-    end = char_pos
-    while end < len(line_text) and (line_text[end].isalnum() or line_text[end] == '_'):
-        end += 1
-
-    word = line_text[start:end]
-    if not word or not (word[0].isalpha() or word[0] == '_'):
-        return None
-    return (start, end)
-
-
-def _read_text_file(filepath):
-    """Read file content from file server, fallback to disk."""
-    if not filepath or not os.path.isfile(filepath):
-        return None
-    content = get_file_content_from_file_server(filepath)
-    if content:
-        return content
-    try:
-        with open(filepath, encoding="utf-8", errors="ignore") as f:
-            return f.read()
-    except OSError:
-        return None
-
-
-def _line_start_offsets(content):
-    """Build line-start absolute offsets for content."""
-    starts = [0]
-    for i, ch in enumerate(content):
-        if ch == "\n":
-            starts.append(i + 1)
-    return starts
-
-
-def _index_to_position(content, index):
-    """Convert absolute index in content to LSP-style position."""
-    if index < 0:
-        return {"line": 0, "character": 0}
-    line = content.count("\n", 0, index)
-    line_start = content.rfind("\n", 0, index)
-    char = index if line_start < 0 else index - line_start - 1
-    return {"line": line, "character": char}
-
-
-def _find_matching_paren(content, open_idx):
-    """Find matching ')' for the '(' at open_idx."""
-    if open_idx < 0 or open_idx >= len(content) or content[open_idx] != "(":
-        return None
-
-    depth = 1
-    i = open_idx + 1
-    in_string = None
-    escaped = False
-    in_line_comment = False
-    in_block_comment = False
-
-    while i < len(content):
-        ch = content[i]
-        nxt = content[i + 1] if i + 1 < len(content) else ""
-
-        if in_line_comment:
-            if ch == "\n":
-                in_line_comment = False
-            i += 1
-            continue
-
-        if in_block_comment:
-            if ch == "*" and nxt == "/":
-                in_block_comment = False
-                i += 2
-                continue
-            i += 1
-            continue
-
-        if in_string is not None:
-            if ch == "\\" and not escaped:
-                escaped = True
-                i += 1
-                continue
-            if ch == in_string and not escaped:
-                in_string = None
-            escaped = False
-            i += 1
-            continue
-
-        if ch == "/" and nxt == "/":
-            in_line_comment = True
-            i += 2
-            continue
-        if ch == "/" and nxt == "*":
-            in_block_comment = True
-            i += 2
-            continue
-        if ch == '"' or ch == "'":
-            in_string = ch
-            escaped = False
-            i += 1
-            continue
-
-        if ch == "(":
-            depth += 1
-        elif ch == ")":
-            depth -= 1
-            if depth == 0:
-                return i
-
-        i += 1
-
-    return None
-
-
-def _count_top_level_items(csv_like_text):
-    """Count top-level comma-separated items in a Solidity list."""
-    if not csv_like_text or not csv_like_text.strip():
-        return 0
-
-    depth_paren = 0
-    depth_bracket = 0
-    depth_brace = 0
-    count = 1
-
-    i = 0
-    in_string = None
-    escaped = False
-    in_line_comment = False
-    in_block_comment = False
-
-    while i < len(csv_like_text):
-        ch = csv_like_text[i]
-        nxt = csv_like_text[i + 1] if i + 1 < len(csv_like_text) else ""
-
-        if in_line_comment:
-            if ch == "\n":
-                in_line_comment = False
-            i += 1
-            continue
-
-        if in_block_comment:
-            if ch == "*" and nxt == "/":
-                in_block_comment = False
-                i += 2
-                continue
-            i += 1
-            continue
-
-        if in_string is not None:
-            if ch == "\\" and not escaped:
-                escaped = True
-                i += 1
-                continue
-            if ch == in_string and not escaped:
-                in_string = None
-            escaped = False
-            i += 1
-            continue
-
-        if ch == "/" and nxt == "/":
-            in_line_comment = True
-            i += 2
-            continue
-        if ch == "/" and nxt == "*":
-            in_block_comment = True
-            i += 2
-            continue
-        if ch == '"' or ch == "'":
-            in_string = ch
-            escaped = False
-            i += 1
-            continue
-
-        if ch == "(":
-            depth_paren += 1
-        elif ch == ")":
-            if depth_paren > 0:
-                depth_paren -= 1
-        elif ch == "[":
-            depth_bracket += 1
-        elif ch == "]":
-            if depth_bracket > 0:
-                depth_bracket -= 1
-        elif ch == "{":
-            depth_brace += 1
-        elif ch == "}":
-            if depth_brace > 0:
-                depth_brace -= 1
-        elif ch == "," and depth_paren == 0 and depth_bracket == 0 and depth_brace == 0:
-            count += 1
-
-        i += 1
-
-    return count
-
-
 def _get_member_access_receiver(current_file, cursor_pos):
     """If cursor symbol is in `receiver.symbol`, return receiver name."""
-    content = _read_text_file(current_file)
+    content = read_text_file(current_file)
     if not content:
         return None
 
@@ -605,7 +414,7 @@ def _get_member_access_receiver(current_file, cursor_pos):
         return None
 
     line_text = lines[line_num]
-    span = _extract_word_span_at(line_text, char_num)
+    span = extract_word_span_at(line_text, char_num)
     if not span:
         return None
     sym_start, _ = span
@@ -645,30 +454,10 @@ def _get_member_access_receiver(current_file, cursor_pos):
     return recv
 
 
-_SOLIDITY_BUILTIN_NAMESPACES = {"abi", "msg", "tx", "block"}
-
-
 def _is_solidity_builtin_member_access(current_file, cursor_pos):
     """True when cursor is on member access from Solidity built-in namespace."""
     receiver = _get_member_access_receiver(current_file, cursor_pos)
     return receiver in _SOLIDITY_BUILTIN_NAMESPACES
-
-
-_YUL_BUILTIN_FUNCTIONS = {
-    "add", "sub", "mul", "div", "sdiv", "mod", "smod", "exp",
-    "and", "or", "xor", "not", "byte", "shl", "shr", "sar",
-    "lt", "gt", "slt", "sgt", "eq", "iszero",
-    "keccak256", "mload", "mstore", "mstore8", "sload", "sstore", "tload", "tstore",
-    "calldataload", "calldatasize", "calldatacopy",
-    "returndatasize", "returndatacopy",
-    "extcodesize", "extcodecopy", "extcodehash",
-    "create", "create2", "call", "callcode", "delegatecall", "staticcall",
-    "return", "revert", "invalid", "selfdestruct",
-    "log0", "log1", "log2", "log3", "log4",
-    "address", "balance", "selfbalance", "origin", "caller", "callvalue",
-    "gas", "gasprice", "codesize", "codecopy", "msize", "pc", "pop",
-    "blockhash", "coinbase", "timestamp", "number", "difficulty", "prevrandao", "gaslimit", "chainid", "basefee",
-}
 
 
 def _is_inside_inline_assembly(content, absolute_index):
@@ -761,7 +550,7 @@ def _get_solidity_call_arity_at_cursor(current_file, cursor_pos, symbol_name):
     if not symbol_name or not current_file or not os.path.isfile(current_file):
         return None
 
-    content = _read_text_file(current_file)
+    content = read_text_file(current_file)
     if not content:
         return None
 
@@ -772,12 +561,12 @@ def _get_solidity_call_arity_at_cursor(current_file, cursor_pos, symbol_name):
         return None
 
     line_text = lines[line_num]
-    span = _extract_word_span_at(line_text, char_num)
+    span = extract_word_span_at(line_text, char_num)
     if not span:
         return None
     _, sym_end = span
 
-    line_offsets = _line_start_offsets(content)
+    line_offsets = line_start_offsets(content)
     if line_num >= len(line_offsets):
         return None
     sym_end_abs = line_offsets[line_num] + sym_end
@@ -788,19 +577,19 @@ def _get_solidity_call_arity_at_cursor(current_file, cursor_pos, symbol_name):
     if i >= len(content) or content[i] != "(":
         return None
 
-    close_idx = _find_matching_paren(content, i)
+    close_idx = find_matching_paren(content, i)
     if close_idx is None:
         return None
 
     args_part = content[i + 1:close_idx]
-    return _count_top_level_items(args_part)
+    return count_top_level_items(args_part)
 
 
 def _is_yul_builtin_call_at_cursor(current_file, cursor_pos, symbol_name):
     """True if cursor is on a Yul builtin used inside inline assembly."""
     if not symbol_name or symbol_name not in _YUL_BUILTIN_FUNCTIONS:
         return False
-    content = _read_text_file(current_file)
+    content = read_text_file(current_file)
     if not content:
         return False
 
@@ -811,12 +600,12 @@ def _is_yul_builtin_call_at_cursor(current_file, cursor_pos, symbol_name):
         return False
 
     line_text = lines[line_num]
-    span = _extract_word_span_at(line_text, char_num)
+    span = extract_word_span_at(line_text, char_num)
     if not span:
         return False
     start, _ = span
 
-    line_offsets = _line_start_offsets(content)
+    line_offsets = line_start_offsets(content)
     if line_num >= len(line_offsets):
         return False
     abs_index = line_offsets[line_num] + start
@@ -824,38 +613,12 @@ def _is_yul_builtin_call_at_cursor(current_file, cursor_pos, symbol_name):
     return _is_inside_inline_assembly(content, abs_index)
 
 
-def _get_symbol_at_cursor(current_file, cursor_pos):
-    """Read the current file and extract the symbol name under the cursor."""
-    if not current_file or not os.path.isfile(current_file):
-        return None
-
-    content = get_file_content_from_file_server(current_file)
-    if not content:
-        try:
-            with open(current_file, encoding="utf-8", errors="ignore") as f:
-                content = f.read()
-        except OSError:
-            return None
-
-    lines = content.splitlines()
-    line_num = cursor_pos.get("line", -1) if isinstance(cursor_pos, dict) else -1
-    char_num = cursor_pos.get("character", 0) if isinstance(cursor_pos, dict) else 0
-    if line_num < 0 or line_num >= len(lines):
-        return None
-
-    word = _extract_word_at(lines[line_num], char_num)
-    return word
-
-
-_SOLIDITY_DEF_KEYWORDS = r'\b(?:contract|interface|library|struct|enum|error|event|function|modifier|type)\s+'
-
-
 def _find_symbol_in_file(filepath, symbol_name, function_arity=None):
     """Search one .sol file for the definition of SYMBOL_NAME.
 
     Returns a {"line": N, "character": N} dict, or None.
     """
-    file_content = _read_text_file(filepath)
+    file_content = read_text_file(filepath)
     if not file_content:
         return None
 
@@ -865,13 +628,13 @@ def _find_symbol_in_file(filepath, symbol_name, function_arity=None):
         for m in function_pattern.finditer(file_content):
             has_function_overload = True
             open_idx = m.end() - 1
-            close_idx = _find_matching_paren(file_content, open_idx)
+            close_idx = find_matching_paren(file_content, open_idx)
             if close_idx is None:
                 continue
             params_part = file_content[open_idx + 1:close_idx]
-            arity = _count_top_level_items(params_part)
+            arity = count_top_level_items(params_part)
             if arity == function_arity:
-                return _index_to_position(file_content, m.start())
+                return index_to_position(file_content, m.start())
         # If overloads exist but no exact arity match, avoid wrong jump.
         if has_function_overload:
             return None
@@ -919,7 +682,7 @@ def _find_struct_field_in_file(filepath, struct_name, field_name):
 
     Returns a {"line": N, "character": N} dict, or None.
     """
-    content = _read_text_file(filepath)
+    content = read_text_file(filepath)
     if not content:
         return None
 
@@ -1004,7 +767,7 @@ def _infer_variable_type_from_lines(lines, var_name):
 
 def _find_struct_field_type_in_file(filepath, struct_name, field_name):
     """Search a .sol file for field type within a struct definition."""
-    content = _read_text_file(filepath)
+    content = read_text_file(filepath)
     if not content:
         return None
 
@@ -1083,7 +846,7 @@ def _resolve_struct_field_type(current_file, struct_name, field_name, project_pa
             if not fname.endswith(".sol"):
                 continue
             fpath = os.path.join(dirpath, fname)
-            content = _read_text_file(fpath)
+            content = read_text_file(fpath)
             if not content:
                 continue
             if struct_def_pat.search(content):
@@ -1092,40 +855,6 @@ def _resolve_struct_field_type(current_file, struct_name, field_name, project_pa
                     return field_type
 
     return None
-
-
-def _extract_receiver_segment_before_dot(line_text, dot_pos):
-    """Extract receiver identifier segment before a dot; supports indexed forms."""
-    pos = dot_pos - 1
-    while pos >= 0 and line_text[pos] == ' ':
-        pos -= 1
-    if pos < 0:
-        return None
-
-    # Skip index expressions like foo[bar].baz
-    while pos >= 0 and line_text[pos] == ']':
-        bracket_depth = 1
-        pos -= 1
-        while pos >= 0 and bracket_depth > 0:
-            if line_text[pos] == ']':
-                bracket_depth += 1
-            elif line_text[pos] == '[':
-                bracket_depth -= 1
-            pos -= 1
-        while pos >= 0 and line_text[pos] == ' ':
-            pos -= 1
-
-    if pos < 0:
-        return None
-
-    seg_end = pos + 1
-    while pos >= 0 and (line_text[pos].isalnum() or line_text[pos] == '_'):
-        pos -= 1
-    seg_start = pos + 1
-    name = line_text[seg_start:seg_end]
-    if not name or not (name[0].isalpha() or name[0] == '_'):
-        return None
-    return (name, seg_start, seg_end)
 
 
 def _normalize_solidity_type_name(type_name):
@@ -1142,7 +871,7 @@ def _resolve_using_for_method_definition(current_file, symbol_name, receiver_typ
     if not symbol_name or not receiver_type:
         return None
 
-    content = _read_text_file(current_file)
+    content = read_text_file(current_file)
     if not content:
         return None
 
@@ -1191,7 +920,7 @@ def _resolve_using_for_method_definition(current_file, symbol_name, receiver_typ
             if found_pos:
                 return (lib_file, found_pos)
 
-        lib_content = _read_text_file(lib_file)
+        lib_content = read_text_file(lib_file)
         if not lib_content:
             continue
         for _, imp_path in _parse_all_imports(lib_content):
@@ -1331,7 +1060,7 @@ def _find_public_variable_in_file(filepath, var_name):
 
     Returns a {"line": N, "character": N} dict, or None.
     """
-    content = _read_text_file(filepath)
+    content = read_text_file(filepath)
     if not content:
         return None
 
@@ -1374,7 +1103,7 @@ def _resolve_method_call_definition(current_file, cursor_pos, symbol_name, proje
     if not symbol_name or not current_file or not os.path.isfile(current_file):
         return None
 
-    content = _read_text_file(current_file)
+    content = read_text_file(current_file)
     if not content:
         return None
 
@@ -1399,7 +1128,7 @@ def _resolve_method_call_definition(current_file, cursor_pos, symbol_name, proje
     if dot_pos < 0 or line_text[dot_pos] != '.':
         return None  # Not a method call
 
-    recv_info = _extract_receiver_segment_before_dot(line_text, dot_pos)
+    recv_info = extract_receiver_segment_before_dot(line_text, dot_pos)
     if not recv_info:
         return None
     receiver_name, recv_start, _ = recv_info
@@ -1414,7 +1143,7 @@ def _resolve_method_call_definition(current_file, cursor_pos, symbol_name, proje
         while prev_dot_pos >= 0 and line_text[prev_dot_pos] == ' ':
             prev_dot_pos -= 1
         if prev_dot_pos >= 0 and line_text[prev_dot_pos] == '.':
-            root_recv = _extract_receiver_segment_before_dot(line_text, prev_dot_pos)
+            root_recv = extract_receiver_segment_before_dot(line_text, prev_dot_pos)
             if root_recv:
                 root_name = root_recv[0]
                 root_type = _infer_variable_type_from_lines(lines, root_name)
@@ -1600,7 +1329,7 @@ def _find_solidity_symbol_in_project(current_file, cursor_pos, project_path, sym
     Used when the Solidity LSP answers with `file:///` and the cursor is not on
     an import line.
     """
-    word = symbol_name or _get_symbol_at_cursor(current_file, cursor_pos)
+    word = symbol_name or get_symbol_at_cursor(current_file, cursor_pos)
     if not word:
         return None
 
@@ -1652,7 +1381,7 @@ def _try_solidity_fallback(obj, define_jump_handler):
     if not project_path or not os.path.isdir(project_path):
         project_path = _detect_solidity_project_root(current_file)
 
-    symbol_name = _get_symbol_at_cursor(current_file, obj.pos)
+    symbol_name = get_symbol_at_cursor(current_file, obj.pos)
     call_arity = _get_solidity_call_arity_at_cursor(current_file, obj.pos, symbol_name)
 
     # ── Strategy 1: cursor is on an import line → resolve the import file path ──
@@ -1789,47 +1518,3 @@ def find_define_response(obj, response, define_jump_handler) -> None:
             return
         obj.file_action.create_external_file_action(filepath)
         eval_in_emacs(define_jump_handler, filepath, get_lsp_file_host(), start_pos)
-
-def create_decompile_external_file(uri_resolver, language_dir, decompile_dir, source_code):
-    """Write decompiled SOURCE_CODE to an external file and return its URI.
-
-    Some LSP servers, such as Java or C#, need to decompile source code to an
-    *external* file before jumping to a definition in the *original* file.
-    Base on lsp-bridge default policy, lsp-bridge will create NEW LSP server for *external* file if *external* file own by different directory.
-    If *external* file use *new* LSP server, `lsp-bridge-find-def` won't response in *external* file,
-    because *new* LSP server don't know project information about *original* project.
-
-    So we call `create_external_file_action` on *external* file, pass *original* file's LSP server to FileAction structural function,
-    to make sure *external* file share SAME LSP server with *original* file.
-
-    Last, we can do `lsp-bridge-find-def` in *external* file.
-    """
-    # Init.
-    external_file_dir = ''
-
-    # Build temp directory base on project hash.
-    md5 = hashlib.md5()
-    md5.update(uri_resolver.file_action.get_lsp_server_project_path())
-    project_hash = md5.hexdigest()
-    data_dir = pathlib.Path(os.path.join(tempfile.gettempdir(), language_dir, project_hash))
-    external_file_dir = data_dir / decompile_dir
-
-    # Build temp file path.
-    url = urlparse(uri_resolver.external_file_link)
-    path = unquote(url.path)[1:] # remove first / from path to make `external_file_dir` can join `path` at below
-    external_file = external_file_dir / path
-
-    # Create temp file if is not exists.
-    external_file.parent.mkdir(exist_ok=True, parents=True)
-
-    # Write source code to temp file.
-    if not external_file.exists():
-        with open(external_file, 'w') as f:
-            f.write(source_code)
-
-    external_file = external_file.as_posix()
-
-    # Create external file action, make sure external file share one LSP server with current file.
-    uri_resolver.file_action.create_external_file_action(external_file, uri_resolver.external_file_link)
-
-    return external_file

@@ -1,5 +1,5 @@
 from core.handler import Handler
-from core.handler.find_define_base import find_define_response
+from core.handler.solidity import find_define_response
 from core.utils import *
 from typing import Union
 import linecache

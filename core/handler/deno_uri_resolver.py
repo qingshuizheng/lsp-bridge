@@ -1,6 +1,6 @@
 
 from core.handler import Handler
-from core.handler.find_define_base import create_decompile_external_file
+from core.handler.decompile import create_decompile_external_file
 from core.utils import *
 
 

@@ -22,7 +22,10 @@ else
     # sorted, so that the warning profile does not depend on the order git
     # happens to list untracked files in (a file compiled first pulls its
     # requires in, which changes what the files after it are warned about).
-    FILES=$(git ls-files --cached --others --exclude-standard '*.el' | sort)
+    # A file this change deletes is still in the index until the deletion is
+    # staged, but it cannot be read or compiled any more.
+    FILES=$(git ls-files --cached --others --exclude-standard '*.el' | sort \
+            | while read -r f; do [ -f "$f" ] && echo "$f"; done)
 fi
 COUNT=$(echo "$FILES" | wc -w | tr -d ' ')
 
