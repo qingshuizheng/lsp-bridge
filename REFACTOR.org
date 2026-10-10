@@ -49,8 +49,12 @@
 ** 进度
 
 - 2026-10-11 docstring 阶段收尾：**1524/1524 定义有 docstring（100%）**，
-  整树 byte-compile warning 207 → 173（少掉的多是"docstring 超宽"）。
-  每个文件都用"剥掉 docstring 槽后与 HEAD 逐 form =equal="证明过是纯文档改动。
+  整树 byte-compile warning 207 → 127，**checkdoc 全树 0 findings**
+  （唯一的例外是 vendored 的 =lsp-bridge-epc.el=），参数扫描（区分大小写）
+  也 0 findings。每个文件都用"剥掉 docstring 槽后与 HEAD 逐 form =equal="
+  证明过是纯文档改动（只有两处 message 字符串按 checkdoc 要求改了标点/大小写）。
+- =scripts/check-elisp.sh= + =CHECKDOC=1= 与 =scripts/check-python.sh --strict=
+  现在都是全绿，就是文档阶段的验收命令。
 
 ** 目标结构
 
