@@ -150,7 +150,7 @@
 | **S3** ✅ 完成 | popup 层重构：popup 状态按父 frame 归位（=acm/acm-session.el=）+ registry + candidate 协议（=acm/acm-backend.el=） | =test/acm-test.el= 14 例已就位并通过（=scripts/check-test.sh=）：候选 helper、输入前缀、popup predicates、quick-access 键、update/hide 周期、选择保持；S3 需继续覆盖多父 frame 切换 |
 | **S4** | =acm-backend.el=：candidate 协议 + registry（S3 已完成）；协议握手 + =lsp-bridge-diagnose=（**已完成**）；剩余：=lsp-bridge.el= 拆分 | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
 | **S5** ✅ 完成 | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
-| **S6** | 测试与 CI：acm 冒烟测试、docstring 门、ruff、Emacs 版本矩阵（现在只跑 Ubuntu + Emacs 28.1，而代码用 30+ 的 child frame 特性） | 进行中：=test/acm-test.el=（14 例，headless）+ =test/lsp-bridge-org-babel-test.el=（9 例）由 =scripts/check-test.sh= 跑通；=--all= 追加 langserver/byte-compile/语言服务器驱动的 Python 测试；剩余：CI 里的 Emacs 版本矩阵 |
+| **S6** | 测试与 CI：acm 冒烟测试、docstring 门、ruff、Emacs 版本矩阵（现在只跑 Ubuntu + Emacs 28.1，而代码用 30+ 的 child frame 特性） | ✅ 完成：CI 改为两个作业（门禁矩阵 28.2/29.4/30.1 + 语言服务器测试），本地门禁全部按退出码核实 |
 | **S7** | 文档（README/架构说明）+ 同步 emacs-config（5 处 advice、选项改名、删除已移除后端的 setup 块；若想要笔记补全需新增 =acm-enable-vulpea t=，目前 config 未开） | 用户日常使用回归；=emacs-config= 单独提交 |
 
 ** 验收命令
@@ -256,6 +256,25 @@ ruff check core lsp_bridge.py          # S2 起接入
 验收：=check-python.sh --strict= 全部 "All checks passed"；新增 =test/test_bridge_surface.py=（7 例）
 断言 **EPC 对外方法集合与 HEAD 完全一致**（52 = 19 类内 + 33 继承）、 mixin 不重叠、
 模块级 helper 仍可从 =lsp_bridge= 导入；docstring 1591/1591 = 100%。
+
+**S6：CI 从"只跑 Ubuntu + Emacs 28.1 + 仅 LSP 驱动测试"改为两个作业**：
+
+- =gates=：**Emacs 28.2 / 29.4 / 30.1 矩阵**（=Package-Requires= 声明 28，且机械检查确认
+  树里**没有用任何 29+ 新 API**（=keymap-set=/=defvar-keymap=/=setopt=/=ensure-list=/=always=/
+  =buffer-match-p=/=string-split= 等均无；上游自带 =lsp-bridge-plistp= 而非内置 29+ 的
+  =plistp=））→ 依次跑 =check-protocol.py= → =check-elisp.sh= → =check-python.sh --strict=
+  → =check-test.sh=（即我本地验收用的同一批命令）。
+- =langserver-tests=：保留原来那套需要真实语言服务器的测试（=--all=），
+  单独一个作业 ⇒ 缺服务器不会掩盖上面门禁的失败。
+- **关键环境假设已实测**：门禁用 =emacs -Q= 跑（同时禁用 site-lisp），
+  所以 CI 把 =markdown-mode=/=yasnippet=/=tempel=/=compat= 克隆到 =$HOME/elisp= 并设
+  =EMACSLOADPATH="$HOME/elisp/...:"= ——**尾冒号才能保留内置目录**（=EMACSLOADPATH= 是替换而非追加）。
+  我在本机实测了这个惯用法：=EMACSLOADPATH="/nonexistent-dir:"= 下
+  =(require 'markdown-mode)= 经实测可达，且用同一环境变量跑 =check-elisp.sh= 退出码 0
+  （多出的两条只是 Emacs 抱怨那个假目录不存在）。
+- 验证：=ruby -ryaml= 解析 + 结构检查（2 个作业、gates 10 步、每步都有
+  =run=/=uses=、矩阵版本都是字符串）+ workflow 引用的 4 个脚本都存在。
+  本地无 GitHub runner，能做的就是"命令与本地一致 + 环境假设实测"，已全部做到。
 
 **S7：把 emacs-config 同步到新 API（并因此拄出两个真 bug）**：
 同步本身很小：配置里的 =acm-backend-tabnine= → =codeium= →

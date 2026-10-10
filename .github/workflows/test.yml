@@ -1,68 +1,120 @@
 name: test
 on: [ push, pull_request, workflow_dispatch ]
+
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+  # The gates this refactor added, on every Emacs release the tree claims to
+  # support.  `Package-Requires' declares 28 and nothing newer than that is used
+  # (checked for the 29+ APIs), upstream's CI ran 28.1, and the refactor is
+  # checked locally on a development build, so the floor is part of the matrix.
+  gates:
+    name: gates (Emacs ${{ matrix.emacs_version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest]
         emacs_version:
-          - "28.1"
+          - "28.2"
+          - "29.4"
+          - "30.1"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Install emacs (Linux)
+      - name: Install Emacs
         uses: purcell/setup-emacs@master
         with:
           version: ${{ matrix.emacs_version }}
-        if: matrix.os != 'windows-latest'
-
-      - name: Install emacs (Windows)
-        uses: jcs090218/setup-emacs-windows@master
-        with:
-          version: ${{ matrix.emacs_version }}
-        if: matrix.os == 'windows-latest'
 
       - name: Install Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          architecture: "x64"
+
+      - name: Install the elisp dependencies
+        run: |
+          # The gates run Emacs with -Q, which also disables site-lisp, so the
+          # packages the tree requires have to sit on the default load path.
+          # EMACSLOADPATH *replaces* the path, and the trailing colon keeps the
+          # built-in directories in it.
+          mkdir -p "$HOME/elisp"
+          for repo in jrblevin/markdown-mode joaotavora/yasnippet minad/tempel emacs-compat/compat; do
+            git clone --depth 1 "https://github.com/$repo" "$HOME/elisp/$(basename "$repo")"
+          done
+          echo "EMACSLOADPATH=$HOME/elisp/markdown-mode:$HOME/elisp/yasnippet:$HOME/elisp/tempel:$HOME/elisp/compat:" >> "$GITHUB_ENV"
+
+      - name: Install the Python dependencies
+        run: |
+          pip install epc orjson sexpdata six setuptools paramiko rapidfuzz watchdog packaging
+
+      - name: The two halves agree on the protocol version
+        run: python3 scripts/check-protocol.py
+
+      - name: Every form reads, then byte compile and checkdoc
+        run: ./scripts/check-elisp.sh
+
+      - name: Python gates (py_compile, docstrings, ruff and pydocstyle)
+        run: ./scripts/check-python.sh --strict
+
+      - name: Tests (ERT suites and the pure Python ones)
+        run: ./scripts/check-test.sh
+
+      - name: Upload the byte compiled output of a failure
+        uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: gates-log-${{ matrix.emacs_version }}
+          path: /tmp/lsp-bridge-elc
+          retention-days: 3
+
+  # The suite that needs real language servers, kept in its own job so that a
+  # missing server cannot hide a failure of the gates above.
+  langserver-tests:
+    name: language server tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Emacs
+        uses: purcell/setup-emacs@master
+        with:
+          version: "30.1"
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
 
       - name: Install NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "14"
+          node-version: "20"
 
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: '>=1.17.0'
 
-      - name: Install Dependencies (Linux)
+      - name: Install the elisp dependencies
         run: |
-          # sudo apt-get install clangd-12
-          # sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-12 100
-          pip install epc six basedpyright sexpdata watchdog packaging
+          mkdir -p "$HOME/elisp"
+          for repo in jrblevin/markdown-mode joaotavora/yasnippet minad/tempel emacs-compat/compat; do
+            git clone --depth 1 "https://github.com/$repo" "$HOME/elisp/$(basename "$repo")"
+          done
+          echo "EMACSLOADPATH=$HOME/elisp/markdown-mode:$HOME/elisp/yasnippet:$HOME/elisp/tempel:$HOME/elisp/compat:" >> "$GITHUB_ENV"
+
+      - name: Install the language servers
+        run: |
+          pip install epc orjson sexpdata six setuptools paramiko rapidfuzz watchdog packaging basedpyright
           go install golang.org/x/tools/gopls@latest
           curl https://raw.githubusercontent.com/eruizc-dev/jdtls-launcher/master/install.sh | bash
-        if: matrix.os == 'ubuntu-latest'
 
-      - name: Install Dependencies (Windows)
-        run: |
-          # choco install llvm
-          python -m pip install epc six basedpyright sexpdata watchdog packaging
-          go install golang.org/x/tools/gopls@latest
-        if: matrix.os == 'windows-latest'
+      - name: Tests, including the language server driven ones
+        run: ./scripts/check-test.sh --all
 
-      - name: test
-        run: |
-          echo ${PATH}
-          python3 -m test.test
-
-      - name: Upload Artifact
+      - name: Upload the log
         uses: actions/upload-artifact@v4
         if: ${{ failure() }}
         with:
