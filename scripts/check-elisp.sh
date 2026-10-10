@@ -19,7 +19,10 @@ else
     # Tracked files plus the ones that are new but not committed yet, so that a
     # file added by a refactor step is compiled by the same run that reviews it;
     # --exclude-standard keeps ignored files (byte code, .venv) out.
-    FILES=$(git ls-files --cached --others --exclude-standard '*.el')
+    # sorted, so that the warning profile does not depend on the order git
+    # happens to list untracked files in (a file compiled first pulls its
+    # requires in, which changes what the files after it are warned about).
+    FILES=$(git ls-files --cached --others --exclude-standard '*.el' | sort)
 fi
 COUNT=$(echo "$FILES" | wc -w | tr -d ' ')
 
