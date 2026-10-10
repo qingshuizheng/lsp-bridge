@@ -81,6 +81,21 @@ ELISP_PROGRAM = r"""
 """
 
 
+def repo_files(pattern: str) -> list[pathlib.Path]:
+    """Return the repository files matching PATTERN.
+
+    Uses `git ls-files' with `--others --exclude-standard', so ignored trees
+    (a .venv created by `uv run', for one) never end up in the report, while
+    files that are new but not committed yet are still checked.
+    """
+    out = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z",
+         pattern],
+        cwd=ROOT, capture_output=True, text=True, check=True,
+    ).stdout
+    return [ROOT / name for name in out.split("\0") if name]
+
+
 def elisp_files(limit: set[str] | None) -> list[pathlib.Path]:
     """Return the elisp files to check, vendored ones excluded.
 
@@ -88,9 +103,8 @@ def elisp_files(limit: set[str] | None) -> list[pathlib.Path]:
     returned.
     """
     return sorted(
-        p for p in ROOT.glob("**/*.el")
+        p for p in repo_files("*.el")
         if p.name not in VENDORED
-        and ".git" not in p.parts
         and (limit is None or str(p.relative_to(ROOT)) in limit)
     )
 
@@ -102,9 +116,8 @@ def python_files(limit: set[str] | None) -> list[pathlib.Path]:
     returned.
     """
     return sorted(
-        p for p in ROOT.glob("**/*.py")
+        p for p in repo_files("*.py")
         if str(p.relative_to(ROOT)) not in VENDORED
-        and ".git" not in p.parts
         and "test/" not in str(p.relative_to(ROOT))
         and (limit is None or str(p.relative_to(ROOT)) in limit)
     )
