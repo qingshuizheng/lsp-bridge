@@ -127,7 +127,7 @@
 `global-lsp-bridge-mode' enables `lsp-bridge-mode' from these hooks in
 addition to `lsp-bridge-default-mode-hooks'.")
 
-(defun acm-backend-capf-candiates (keyword)
+(defun acm-backend-capf-candidates (keyword)
   "Return CAPF completion candidates matching KEYWORD.
 Ask `completion-at-point-functions' through
 `completion--capf-wrapper' and turn each completion into a candidate

@@ -91,20 +91,7 @@
 
 (require 'acm-icon)
 (require 'acm-frame)
-(require 'acm-backend-yas)
-(require 'acm-backend-elisp)
-(require 'acm-backend-lsp)
-(require 'acm-backend-lsp-workspace-symbol)
-(require 'acm-backend-path)
-(require 'acm-backend-search-file-words)
-(require 'acm-backend-tempel)
-(require 'acm-backend-telega)
-(require 'acm-backend-ctags)
-(require 'acm-backend-copilot)
-(require 'acm-backend-vulpea)
-(require 'acm-backend-jupyter)
-(require 'acm-backend-tabby)
-(require 'acm-backend-capf)
+(require 'acm-backend)
 (require 'acm-quick-access)
 
 ;;; Code:
@@ -388,9 +375,7 @@ backend of the current candidate to clean its cache."
     ;; If completion menu is show, clean backend cache.
     ;; Don't clean backend cache if menu is hide, to make sure completion menu have candidate when call command `lsp-bridge-popup-complete-menu'.
     (when completion-menu-is-show-p
-      (when-let* ((backend-clean (intern-soft (format "acm-backend-%s-clean" backend)))
-                  (fp (fboundp backend-clean)))
-        (funcall backend-clean)))
+      (acm-backend-clean backend))
 
     ;; Remove override map when hide acm menu.
     (acm-overriding-key-remove)))
@@ -540,163 +525,89 @@ Do nothing when TIMER is nil."
                   (member (plist-get candidate :label) lsp-labels))
                 candidates))
 
+(defun acm-update-template-candidates (keyword char-before-keyword lsp-candidates)
+  "Return the yasnippet and tempel candidates for KEYWORD.
+Return nil when templates must not be shown: inside a comment, or while
+LSP-CANDIDATES is non-empty and CHAR-BEFORE-KEYWORD is not a completion
+trigger character.  Whether the templates are fetched now, one tick later or
+only after `acm-template-candidate-timer' fired is decided by the buffer-local
+tickers, so that the menu does not flicker while the user is typing; the
+candidates of both template backends are concatenated."
+  (when (and (not (acm-in-comment-p))
+             (or (zerop (length lsp-candidates))
+                 (and (boundp 'acm-backend-lsp-completion-trigger-characters)
+                      (not (member char-before-keyword
+                                   acm-backend-lsp-completion-trigger-characters)))))
+    (let (yas-candidates tempel-candidates)
+      (cond
+       ;; Templates are shown because the ticker asked for them.
+       (acm-template-candidate-show-p
+        (setq yas-candidates (acm-backend-candidates "yas" keyword)
+              tempel-candidates (acm-backend-candidates "tempel" keyword))
+        (setq-local acm-template-candidate-show-p nil)
+        (setq-local acm-template-candidate-show-ticker acm-template-candidate-ticker))
+       ;; Keep them while they were just shown, to avoid a flickering menu.
+       ((= (- acm-template-candidate-ticker acm-template-candidate-show-ticker) 1)
+        (setq yas-candidates (acm-backend-candidates "yas" keyword)
+              tempel-candidates (acm-backend-candidates "tempel" keyword)))
+       ;; Otherwise wait 200 ms, cancelling the previous wait.
+       (t
+        (acm-cancel-timer acm-template-candidate-timer)
+        (setq acm-template-candidate-timer
+              (run-with-timer 0.2 nil #'acm-template-candidate-update))))
+      (append yas-candidates tempel-candidates))))
+
 (defun acm-update-candidates ()
   "Collect, merge and filter the candidates for the current input.
-Ask every enabled backend for candidates for the prefix at point; the
-mode candidates are appended in the order of
-`acm-completion-mode-candidates-merge-order' and then split, so the
-first menu page also holds the first template candidates.  The
-groups are concatenated in the order of `acm-backend-order'.  When
-`acm-filter-overlay' is set, only the candidates matching
-`acm-filter-string' are kept.  Returns the candidate list, and
-advances the buffer-local template ticker or arms
-`acm-template-candidate-timer' while doing so."
+Ask every enabled backend for candidates for the prefix at point, through the
+registry of `acm-backend'; the mode candidates are appended in the order of
+`acm-completion-mode-candidates-merge-order' and then split, so the first menu
+page also holds the first template candidates.  The groups are concatenated in
+the order of `acm-backend-order'.  When the path backend found something, its
+candidates are the only ones, because a valid path at point is what the user
+is typing.  With `acm-filter-overlay' set, only the candidates matching
+`acm-filter-string' are kept.  Returns the candidate list, and advances the
+buffer-local template ticker or arms `acm-template-candidate-timer' while
+doing so."
   (let* ((keyword (acm-get-input-prefix))
          (char-before-keyword (save-excursion
                                 (backward-char (length keyword))
                                 (acm-char-before)))
-         (candidates (list))
-         (mode-candidates-min-index 2)
-         (template-candidates-min-index 2)
-         lsp-candidates
-         lsp-workspace-symbol-candidates
-         file-words-candidates
-         capf-candidates
-         path-candidates
-         yas-candidates
-         copilot-candidates
-         jupyter-candidates
-         tabby-candidates
-         tempel-candidates
-         mode-candidates
-         mode-first-part-candidates
-         mode-second-part-candidates
-         mode-candidates-split-index
-         template-candidates
-         template-first-part-candidates
-         template-second-part-candidates
-         ctags-candidates
-         vulpea-candidates)
-    (when (acm-in-vulpea-bracket-p)
-      (setq vulpea-candidates (acm-backend-vulpea-candidates keyword)))
-
-    (when acm-enable-copilot
-      (setq copilot-candidates (acm-backend-copilot-candidates keyword)))
-
-    (when acm-enable-jupyter
-      (setq jupyter-candidates (acm-backend-jupyter-candidates keyword)))
-
-    (when acm-enable-tabby
-      (setq tabby-candidates (acm-backend-tabby-candidates keyword)))
-
-    (when acm-enable-capf
-      (setq capf-candidates (acm-backend-capf-candiates keyword)))
-
-    (setq path-candidates (acm-backend-path-candidates keyword))
+         (queries (acm-backends-fetch keyword))
+         (path-candidates (acm-backends-group queries "path-candidates"))
+         candidates)
     (if (> (length path-candidates) 0)
-        ;; Only show path candidates if prefix is valid path.
         (setq candidates path-candidates)
-
-      (when acm-enable-ctags
-        (setq ctags-candidates (unless (acm-in-comment-p) (acm-backend-ctags-candidates keyword))))
-      ;; Fetch syntax completion candidates.
-      (setq lsp-candidates (unless (acm-in-comment-p) (acm-backend-lsp-candidates keyword)))
-      (setq file-words-candidates (acm-backend-search-file-words-candidates keyword))
-      (when acm-enable-lsp-workspace-symbol
-        (setq lsp-workspace-symbol-candidates (unless (acm-in-comment-p) (acm-backend-lsp-workspace-symbol-candidates keyword))))
-
-      (let ((lsp-labels (mapcar (lambda (candidate) (plist-get candidate :label)) lsp-candidates)))
-        ;; Remove duplicates from both `lsp-workspace-symbol-candidates` and `file-words-candidates`
-        (setq lsp-workspace-symbol-candidates (acm-remove-duplicate-candidates lsp-workspace-symbol-candidates lsp-labels))
-        (setq file-words-candidates (acm-remove-duplicate-candidates file-words-candidates lsp-labels)))
-
-
-
-      (setq mode-candidates
-            (apply #'append (mapcar (lambda (mode-candidate-name)
-                                      (pcase mode-candidate-name
-                                        ("elisp-candidates" (unless (acm-in-comment-p) (acm-backend-elisp-candidates keyword)))
-                                        ("lsp-candidates" lsp-candidates)
-                                        ("lsp-workspace-symbol-candidates" lsp-workspace-symbol-candidates)
-                                        ("capf-candidates" capf-candidates)
-                                        ("jupyter-candidates" jupyter-candidates)
-                                        ("tabby-candidates" tabby-candidates)
-                                        ("ctags-candidates" ctags-candidates)
-                                        ("vulpea-candidates" vulpea-candidates)
-                                        ("file-words-candidates" file-words-candidates)
-                                        ("telega-candidates" (acm-backend-telega-candidates keyword))
-                                        ))
-                                    acm-completion-mode-candidates-merge-order)))
-
-      (when (and (or
-                  ;; Show snippet candidates if lsp-candidates length is zero.
-                  (zerop (length lsp-candidates))
-                  ;; Don't search snippet if char before keyword is not in `acm-backend-lsp-completion-trigger-characters'.
-                  (and (boundp 'acm-backend-lsp-completion-trigger-characters)
-                       (not (member char-before-keyword acm-backend-lsp-completion-trigger-characters))))
-                 (not (acm-in-comment-p)))
-
-        ;; Only calculate template candidate when type last character.
-        (cond
-         ;; Show template candidates when flag `acm-template-candidate-show-p' is t.
-         (acm-template-candidate-show-p
-          (setq yas-candidates (acm-backend-yas-candidates keyword))
-          (setq tempel-candidates (acm-backend-tempel-candidates keyword))
-          (setq-local acm-template-candidate-show-p nil)
-          (setq-local acm-template-candidate-show-ticker acm-template-candidate-ticker))
-         ;; Don't hide template candidates if just shown in last time, avoid menu flick by template candiates.
-         ((= (- acm-template-candidate-ticker acm-template-candidate-show-ticker) 1)
-          (setq yas-candidates (acm-backend-yas-candidates keyword))
-          (setq tempel-candidates (acm-backend-tempel-candidates keyword)))
-         ;; Try show template candidates after 200ms later.
-         ;; Cancel timer if last timer haven't executed when user type new character.
-         (t
-          (acm-cancel-timer acm-template-candidate-timer)
-          (setq acm-template-candidate-timer (run-with-timer 0.2 nil #'acm-template-candidate-update)))))
-
-      ;; Build template candidates.
-      ;; And make sure show part of template candidates in first completion menu.
-      (setq template-candidates (append yas-candidates tempel-candidates))
-      (if (> (length template-candidates) template-candidates-min-index)
-          (progn
-            (setq template-first-part-candidates (cl-subseq template-candidates 0 template-candidates-min-index))
-            (setq template-second-part-candidates (cl-subseq template-candidates template-candidates-min-index)))
-        (setq template-first-part-candidates template-candidates)
-        (setq template-second-part-candidates nil))
-
-      ;; Keep the first menu page long enough for the templates that go into
-      ;; it, so the mode candidates which follow are visible as well.
-      (setq mode-candidates-split-index
-            (max (- acm-menu-length (length template-first-part-candidates))
-                 mode-candidates-min-index))
-
-      ;; Build mode candidates.
-      (if (> (length mode-candidates) mode-candidates-split-index)
-          (progn
-            (setq mode-first-part-candidates (cl-subseq mode-candidates 0 mode-candidates-split-index))
-            (setq mode-second-part-candidates (cl-subseq mode-candidates mode-candidates-split-index)))
-        (setq mode-first-part-candidates mode-candidates)
-        (setq mode-second-part-candidates nil))
-
-      ;; Build all backend candidates.
-      (setq candidates (apply #'append (mapcar (lambda (backend-name)
-                                                 (pcase backend-name
-                                                   ("mode-first-part-candidates" mode-first-part-candidates)
-                                                   ("template-first-part-candidates" template-first-part-candidates)
-                                                   ("copilot-candidates" copilot-candidates)
-                                                   ("template-second-part-candidates" template-second-part-candidates)
-                                                   ("mode-second-part-candidates" mode-second-part-candidates)
-                                                   ))
-                                               acm-backend-order))
-            ))
-
-    ;; Return candidates.
+      (acm-backends-dedupe-against-lsp queries)
+      (let* ((lsp-candidates (acm-backends-group queries "lsp-candidates"))
+             (mode-candidates (acm-backends-group-candidates
+                               queries acm-completion-mode-candidates-merge-order))
+             (template-candidates (acm-update-template-candidates
+                                   keyword char-before-keyword lsp-candidates))
+             (template-split-index (min (length template-candidates) 2))
+             (template-first-part-candidates (cl-subseq template-candidates 0 template-split-index))
+             (template-second-part-candidates (cl-subseq template-candidates template-split-index))
+             ;; Keep the first menu page long enough for the templates that go
+             ;; into it, so the mode candidates which follow are visible too.
+             (mode-split-index (max (- acm-menu-length (length template-first-part-candidates)) 2))
+             (mode-split (min (length mode-candidates) mode-split-index))
+             (mode-first-part-candidates (cl-subseq mode-candidates 0 mode-split))
+             (mode-second-part-candidates (cl-subseq mode-candidates mode-split)))
+        (setq candidates
+              (apply #'append
+                     (mapcar (lambda (group-name)
+                               (pcase group-name
+                                 ("mode-first-part-candidates" mode-first-part-candidates)
+                                 ("template-first-part-candidates" template-first-part-candidates)
+                                 ("copilot-candidates" (acm-backends-group queries "copilot-candidates"))
+                                 ("template-second-part-candidates" template-second-part-candidates)
+                                 ("mode-second-part-candidates" mode-second-part-candidates)))
+                             acm-backend-order)))))
     (if acm-filter-overlay
-        ;; When acm-filter turn on, use `acm-filter-string' filter candidates.
         (cl-remove-if-not (lambda (candidate)
-                            (acm-candidate-fuzzy-search acm-filter-string (plist-get candidate :label)))
+                            (acm-candidate-fuzzy-search acm-filter-string
+                                                        (plist-get candidate :label)))
                           candidates)
-      ;; Otherwise return origin candidates.
       candidates)))
 
 (defun acm-menu-index-info (candidate)
@@ -865,18 +776,15 @@ Installed on the buffer-local `pre-command-hook' by `acm-update'."
 
 (defun acm-complete (&optional not-hide)
   "Insert the selected candidate into the buffer.
-Call the `acm-backend-<BACKEND>-candidate-expand' function of the
-candidate when it exists, otherwise replace the input prefix by the
-candidate label.  Delete `acm-preview-overlay' and, unless NOT-HIDE
+Call the expand function the backend of the candidate is registered
+with when it has one, otherwise replace the input prefix by the candidate
+label.  Delete `acm-preview-overlay' and, unless NOT-HIDE
 is non-nil, hide the menu and the doc frame."
   (interactive)
   (let* ((candidate-info (acm-menu-current-candidate))
-         (bound-start acm-menu-frame-popup-point)
-         (backend (plist-get candidate-info :backend))
-         (candidate-expand (intern-soft (format "acm-backend-%s-candidate-expand" backend))))
-
-    (if (fboundp candidate-expand)
-        (funcall candidate-expand candidate-info bound-start)
+         (bound-start acm-menu-frame-popup-point))
+    (if (acm-backend-expand-p candidate-info)
+        (acm-backend-expand candidate-info bound-start)
       (delete-region bound-start (point))
       (insert (plist-get candidate-info :label))))
 
@@ -909,18 +817,11 @@ made it taller."
   (let* ((candidate-info (acm-menu-current-candidate))
          (beg acm-menu-frame-popup-point)
          (cand (plist-get candidate-info :label))
-         (end (+ beg (length cand)))
-         (backend (plist-get candidate-info :backend))
-         (candidate-expand (intern-soft (format "acm-backend-%s-candidate-expand" backend))))
+         (end (+ beg (length cand))))
     (when acm-preview-overlay (delete-overlay acm-preview-overlay))
-    (if (and (fboundp candidate-expand)
-             ;; check if candidate-expand support preview.
-             (let ((doc (documentation candidate-expand t)))
-               (if doc
-                   (string-match " PREVIEW" doc)
-                 (member 'preview (help-function-arglist candidate-expand)))))
+    (if (acm-backend-preview-p candidate-info)
         (save-excursion
-          (setq acm-preview-overlay (funcall candidate-expand candidate-info beg t)))
+          (setq acm-preview-overlay (acm-backend-expand candidate-info beg t)))
       (setq acm-preview-overlay (acm-preview-create-overlay beg (point) cand)))
     ;; adjust pos of menu frame.
     (when-let* ((popup-pos (acm-frame-get-popup-position
@@ -1031,7 +932,7 @@ removed.  Return nil."
 
           ;; Hide doc frame if some backend not support fetch candidate documentation.
           (when (and
-                 (not (fboundp (intern-soft (format "acm-backend-%s-candidate-doc" (plist-get v :backend)))))
+                 (not (acm-backend-doc-p v))
                  (acm-frame-visible-p acm-doc-frame))
             (acm-doc-hide)))
 
@@ -1085,10 +986,7 @@ by auto import."
   ;; because `completion_item_resolve' will fetch `additionalTextEdits', otherwise, auto import feature is miss.
   (let* ((candidate (acm-menu-current-candidate))
          (backend (plist-get candidate :backend))
-         (candidate-doc-func (intern-soft (format "acm-backend-%s-candidate-doc" backend)))
-         (candidate-doc
-          (when (fboundp candidate-doc-func)
-            (funcall candidate-doc-func candidate))))
+         (candidate-doc (acm-backend-doc candidate)))
     (when acm-enable-doc
       (if (or (consp candidate-doc) ; If the type fo snippet is set to command, then the "doc" will be a list.
               (and (stringp candidate-doc) (not (string-empty-p candidate-doc))))
