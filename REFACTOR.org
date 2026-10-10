@@ -149,7 +149,7 @@
 | **S2** ✅ 基本完成 | Python docstring 补全 + =except:= 清理 + ruff/pydocstyle 配置与门禁 | =scripts/check-python.sh --strict= 全绿（py_compile / docstring 存在性 / 硬门禁 / D 门禁）；剩余：=F403/F405= star-import 421 条（需与 =core/utils.py= 的导出面一起决定，见「已做的决定」）与 =E501=（旧行宽） |
 | **S3** ✅ 完成 | popup 层重构：popup 状态按父 frame 归位（=acm/acm-session.el=）+ registry + candidate 协议（=acm/acm-backend.el=） | =test/acm-test.el= 14 例已就位并通过（=scripts/check-test.sh=）：候选 helper、输入前缀、popup predicates、quick-access 键、update/hide 周期、选择保持；S3 需继续覆盖多父 frame 切换 |
 | **S4** | =acm-backend.el=：candidate 协议 + registry（S3 已完成）；协议握手 + =lsp-bridge-diagnose=（**已完成**）；剩余：=lsp-bridge.el= 拆分 | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
-| **S5** | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
+| **S5** 🔄 第一步完成 | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
 | **S6** | 测试与 CI：acm 冒烟测试、docstring 门、ruff、Emacs 版本矩阵（现在只跑 Ubuntu + Emacs 28.1，而代码用 30+ 的 child frame 特性） | 进行中：=test/acm-test.el=（14 例，headless）+ =test/lsp-bridge-org-babel-test.el=（9 例）由 =scripts/check-test.sh= 跑通；=--all= 追加 langserver/byte-compile/语言服务器驱动的 Python 测试；剩余：CI 里的 Emacs 版本矩阵 |
 | **S7** | 文档（README/架构说明）+ 同步 emacs-config（5 处 advice、选项改名、删除已移除后端的 setup 块；若想要笔记补全需新增 =acm-enable-vulpea t=，目前 config 未开） | 用户日常使用回归；=emacs-config= 单独提交 |
 
@@ -234,6 +234,27 @@ ruff check core lsp_bridge.py          # S2 起接入
    （无值的 defvar = 声明 ✓，docstring 门禁已能识别）；只对**包外**库用 =require=（=cl-lib=／=tramp=／=subr-x=）。
    对包内文件 =require=（例如 =(require 'lsp-bridge-epc)=）会把整个 =lsp-bridge.el= 提前加载，
    从而**改变后续文件的告警画像** ⇒ 一律声明，不 require 包内文件。
+**S5 第一步：Solidity fallback 拆分 + 通用文本工具独立**：
+=core/handler/find_define_base.py=（1835 行、 37 个模块级函数）按调用图与语言相关性拆成三个模块：
+
+| 文件 | 行数 | 职责 |
+|------+------+------|
+| =core/handler/textpos.py= | 305 | 纯文本/位置工具（9 个）：取词与词区间、行首偏移、索引→LSP 位置（**0-based**）、配对括号（跳过字符串内括号）、顶层逗号计数、读取文本。原来是 Solidity 的私有 =_foo= 助手，现在成为共享 API，故去掉下划线 |
+| =core/handler/solidity.py= | 1519 | Solidity/Yul 解析与回退解析（27 个）：工程根与 remappings、import 解析、struct 字段、=using for= 方法、继承函数、成员访问、修饰符 arity、=find_define_response= 公开入口 |
+| =core/handler/decompile.py= | 60 | =create_decompile_external_file= ：把反编译产物落成临时文件（C#/Deno 用） |
+
+导入方 4 处随之更新（=find_define.py=／=peek.py= → =core.handler.solidity=；
+=csharp_uri_resolver.py=／=deno_uri_resolver.py= → =core.handler.decompile=）；
+`find_define_base.py` 删除（git 识别为重命名，便于 review）。
+新增 =test/test_textpos.py=（13 例）覆盖搬出来的纯函数——它同时是“拆分没有改变行为”的证据：
+我最初凭直觉写的 3 条期望是错的（位置是 0-based、边界上取前一个词、字符串里的括号会被跳过），
+实测后按**真实行为**修正测试而不是改实现。
+验收：=check-python.sh --strict= 全部 "All checks passed"（含 strict D 规则）、docstring 1588/1588、
+门禁与 =check-test.sh= 全绿（ERT 62 例 + Python 24 例）。
+另记：LSP 驱动的 =check-test.sh --all= 在本机失败（=AttributeError: 'NoneType' ...=），
+**在 HEAD 上同样失败** ⇒ 是环境缺少真实语言服务器，不是本次拆分引入的。
+剩余：=lsp_bridge.py=（1841 行，=LspBridge= 单类约 1580 行）的拆分。
+
 **收口 2：lsp-bridge 自己的两个 frame 也归位到 session（修掉 =acm-frame-new= 悬空调用）**：
 =lsp-bridge-popup-documentation-frame=／=lsp-bridge-signature-frame= 是**全局变量**单一实例，
 与 =acm-session= 的设计冲突；而调用它们的 =(acm-frame-new ...)= 在早前一轮被当作死代码删除时，

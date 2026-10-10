@@ -454,6 +454,8 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 
 popup 拥有的一切——菜单、 文档、 调用层级、 hover 文档、 签名帮助五个子 frame， 它们显示的 buffer， 菜单弹出的位置， 以及避免重复计算的缓存——都属于创建它的那个 frame， 存在一个 `acm-session` 里（ =acm/acm-session.el=， 以父 frame 为键的哈希表） 。 因此两个 Emacs frame 各有自己的 popup， 而 popup 只在其父 frame 被删除时才连同 frame 与 buffer 一起丢弃。 读用 `acm-popup`， 写用 `acm-popup-set`。
 
+Python 侧同样是分层的： `lsp_bridge.py` 是进程与 EPC 接口， `core/lspserver.py` 与 `core/fileaction.py` 负责与语言服务器通信， `core/handler/` 按请求种类分模块， 而需要在服务器没给出答案时自己推算的处理器（Solidity 符号、 反编译产物）则建立在 `core/handler/textpos.py` 的文本与偏移工具之上。
+
 一个后端就是 `acm/acm-backend.el` 里的一条注册： 它的取候选/展开/文档函数、 启用它的选项或谓词、 它贡献的候选组， 以及它具备的能力（ 是否支持预览、 是否有缓存要清、 候选是否要在语言服务器已给出同样标题时去掉） 。 增加一个后端就是往那里加数据——`acm-backend-register` 也允许第三方包自己注册——菜单代码不再需要知道它的名字。
 
 `vulpea` 后端按 Vulpea 自己选笔记时的语义工作： 一篇笔记会以**标题**和它的**每个别名**分别作为候选（ =vulpea-note-expand-aliases=） ； 没有 id 的普通标题（不是笔记）会被跳过； 候选的标注用 =vulpea-select-annotate=（ 标签， 若按别名选中还会显示原始标题——与 =vulpea-find= 显示的一致） ； 插入链接的描述用**被选中的那个名字**。 如果你更想用 [`vulpea-capf`](https://github.com/neonmei/vulpea-capf) 那个包： 它是一组 =completion-at-point= 函数， 因此还能在 Org buffer 里补全裸词； 本后端只处理 =[[= 括号内。 想让 =vulpea-capf= 经由 acm 的 capf 后端出现， 需要把 =org-mode= 加进 =acm-backend-capf-mode-list= —— 并且不要在同一个 buffer 里同时开启两者， 否则括号内的候选会出现两份。
