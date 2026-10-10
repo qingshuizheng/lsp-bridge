@@ -234,6 +234,14 @@ ruff check core lsp_bridge.py          # S2 起接入
    （无值的 defvar = 声明 ✓，docstring 门禁已能识别）；只对**包外**库用 =require=（=cl-lib=／=tramp=／=subr-x=）。
    对包内文件 =require=（例如 =(require 'lsp-bridge-epc)=）会把整个 =lsp-bridge.el= 提前加载，
    从而**改变后续文件的告警画像** ⇒ 一律声明，不 require 包内文件。
+**进度 5**：第 5 步（=workspace= 层）已完成 —— =lsp-bridge-workspace.el=（339 行、24 个定义：
+workspace symbol 三件与其 =--record-items=、=jump-to-file=、=auto-format-code=／=code-format=／
+=format--update=、=workspace-apply-edit=、=pick-file-path=／=file-apply-edits=、
+=indent-left=／=indent-right=、document-highlight 一整套（选项/定时器/渲染/清理/切换/setup）），
+=lsp-bridge.el= 3335 → 3037 行。验收：归一化 warning 多重集**完全一致**（152 = 152，空 diff）。
+注意 =acm-backend-lsp-workspace-symbol-items= 等三个名字是 acm 侧**动态**生成的分组变量
+（=set (make-local-variable (intern ...))=），树里没有字面定义，因此**不生成声明**、保持其告警可见。
+
 **进度 4**：第 4 步（=jump/find/rename= 层）已完成 —— =lsp-bridge-jump.el=（295 行、23 个定义：
 =find-def=／=-other-window=／=-return=、=find-type-def=、=find-impl=、=find-references= 与其
 =--popup=／=fallback=、=rename= 与 =rename--highlight=、=flash-region=／=flash-line=、

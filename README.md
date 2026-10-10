@@ -728,6 +728,7 @@ The following is the directory structure of the lsp-bridge project:
 | lsp-bridge-remote.el                  | Remote and tramp support: opening remote buffers, syncing the tramp info and sending requests for them              |
 | lsp-bridge-document.el                | Documentation and signature help: the doc frame, the signature frame and their callbacks                           |
 | lsp-bridge-jump.el                    | Jump commands: definition, type definition, implementation, references, rename and the mark ring                     |
+| lsp-bridge-workspace.el               | Workspace symbols, code format, applying edits, indent and document highlight                                        |
 | core/fileaction.py                    | Per-file state machine that routes requests, handles responses, and coordinates editor state                        |
 | core/lspserver.py                     | LSP transport layer for each server process, including request/response ordering                                    |
 | core/handler/                         | Concrete handlers for LSP methods and editor actions                                                                |

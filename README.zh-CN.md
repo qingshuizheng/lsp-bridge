@@ -723,6 +723,7 @@ lsp-bridge 每种语言的服务器配置存储在 [lsp-bridge/langserver](https
 | lsp-bridge-remote.el                | 远程与 tramp 支持： 打开远程 buffer、 同步 tramp 信息、 为它们发请求                                                |
 | lsp-bridge-document.el              | 文档与签名帮助： 文档 frame、 签名 frame 及其回调                                                                   |
 | lsp-bridge-jump.el                  | 跳转命令： 定义、 类型定义、 实现、 引用、 重命名与 mark ring                                                        |
+| lsp-bridge-workspace.el             | workspace symbol、 代码格式化、 应用编辑、 缩进与 document highlight                                                  |
 | acm/                                | lsp-bridge 使用的异步补全菜单前端和补全界面                                                                          |
 | core/fileaction.py                  | 每个文件的状态机， 负责路由请求、处理响应以及协调编辑器状态                                                         |
 | core/lspserver.py                   | 每个语言服务器进程的 LSP 传输层， 负责请求和响应顺序控制                                                             |
