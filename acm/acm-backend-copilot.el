@@ -45,7 +45,7 @@
   :group 'acm-backend-copilot)
 
 (defcustom acm-backend-copilot-show-trailing nil
-  "Show only the trailing parts for copilot. (like the VSCode)"
+  "Show only the trailing part of a Copilot candidate, like VSCode."
   :group 'acm-backend-copilot)
 
 (defcustom acm-backend-copilot-accept nil
@@ -59,8 +59,8 @@
   :group 'acm-backend-copilot)
 
 (defcustom acm-backend-copilot-network-proxy nil
-  " from `copilot.el'
- Network proxy to use for Copilot. Nil means no proxy.
+  "Network proxy to use for Copilot, nil means no proxy.
+Taken from `copilot.el'.
 Format: '(:host \"127.0.0.1\" :port 80 :username \"username\" :password \"password\")
 Username and password are optional.
 

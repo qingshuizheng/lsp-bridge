@@ -339,14 +339,14 @@ and `create-lockfiles' to nil while it is enabled."
   :group 'lsp-bridge)
 
 (defcustom lsp-bridge-user-ssh-private-key nil
-  "custom SSH private key path for use in SSH connections."
+  "Path of a custom SSH private key used for SSH connections."
   :type '(choice (const nil)
                  (string))
   :safe (lambda (v) (or (null v) (stringp v)))
   :group 'lsp-bridge)
 
 (defcustom lsp-bridge-user-ssh-agent nil
-  "use ssh-agent in SSH connections."
+  "Whether to use ssh-agent in SSH connections."
   :type 'boolean
   :safe #'booleanp
   :group 'lsp-bridge)
@@ -376,7 +376,7 @@ LSP-Bridge will enable completion inside string literals."
   :group 'lsp-bridge)
 
 (defcustom lsp-bridge-tramp-blacklist nil
-  "tramp hosts that don't use lsp-bridge"
+  "Tramp hosts that don't use lsp-bridge."
   :type '(repeat string)
   :safe #'listp
   :group 'lsp-bridge)
@@ -615,7 +615,9 @@ Accepted values are `omnisharp-mono', `omnisharp-dotnet' and
   :type 'string)
 
 (defcustom lsp-bridge-nix-lsp-server "nixd"
-  "Default LSP server for nix, you can choose `nixd' `rnix-lsp' or `nil'."
+  "LSP server used for Nix.
+Accepted values are `nixd', `rnix-lsp' and nil; the default is
+`nixd'."
   :type 'string)
 
 (defcustom lsp-bridge-markdown-lsp-server "vale-ls"
@@ -623,15 +625,20 @@ Accepted values are `omnisharp-mono', `omnisharp-dotnet' and
   :type 'string)
 
 (defcustom lsp-bridge-lua-lsp-server "sumneko"
-  "Default LSP server for Lua, you can choose `sumneko' or `lua-lsp'"
+  "LSP server used for Lua.
+Accepted values are `sumneko' and `lua-lsp'; the default is
+`sumneko'."
   :type 'string)
 
 (defcustom lsp-bridge-verilog-lsp-server "verible"
-  "Default LSP server for Verilog, you can choose `verible', `svls'"
+  "LSP server used for Verilog.
+Accepted values are `verible' and `svls'; the default is `verible'."
   :type 'string)
 
 (defcustom lsp-bridge-xml-lsp-server "lemminx"
-  "Default LSP server for XML, you can choose `lemminx', `camells'"
+  "LSP server used for XML.
+Accepted values are `lemminx' and `camells'; the default is
+`lemminx'."
   :type 'string)
 
 (defcustom lsp-bridge-cmake-lsp-server "cmake-language-server"
@@ -678,10 +685,10 @@ If nil, lsp-bridge would try to detect by default."
                  (string)))
 
 (defcustom lsp-bridge-use-wenls-in-org-mode nil
-  "Use `wen' lsp server in org-mode, default is disable.")
+  "Whether to use the `wen' LSP server in `org-mode'.")
 
 (defcustom lsp-bridge-use-ds-pinyin-in-org-mode nil
-  "Use `ds-pinyin' lsp server in org-mode, default is disable.")
+  "Whether to use the `ds-pinyin' LSP server in `org-mode'.")
 
 (defcustom lsp-bridge-complete-manually nil
   "When non-nil, popup the completion menu only on explicit request.
@@ -1118,12 +1125,14 @@ Runs in `find-file-hook' and does nothing when
 (add-hook 'find-file-hook #'lsp-bridge-find-file-hook-function)
 
 (defun lsp-bridge--get-indent-width (mode)
-  "Get indentation offset for MODE."
+  "Return the indentation offset variable for MODE."
   (or (alist-get mode lsp-bridge-formatting-indent-alist)
       (lsp-bridge--get-indent-width (or (get mode 'derived-mode-parent) 'default))))
 
 (cl-defmacro lsp-bridge--with-file-buffer (filename filehost &rest body)
-  "Evaluate BODY in buffer with FILEPATH."
+  "Evaluate BODY in the buffer visiting FILENAME on FILEHOST.
+FILEHOST is resolved to a known host first and the buffer is looked up
+by path for local hosts or by host and path for remote ones."
   (declare (indent 1))
   `(let ((resolved-host (lsp-bridge--resolve-remote-host ,filehost)))
      (when-let* ((buffer (pcase resolved-host
@@ -1351,7 +1360,9 @@ An entry key is matched literally when it is a string and with
    extension-list))
 
 (defun lsp-bridge-get-lang-server-by-extension (filename extension-list)
-  "Get lang server for file extension."
+  "Return the language server entry of EXTENSION-LIST for FILENAME.
+The full extension after the first dot is matched first, then the file
+extension; the cdr of the matching entry is returned."
   ;; Don't search from extension list if filename not include any extension name.
   (when-let* ((dot-pos (cl-position ?. filename))
               (file-extension (when dot-pos
@@ -1369,15 +1380,18 @@ An entry key is matched literally when it is a string and with
         (cdr langserver-info)))))
 
 (defun lsp-bridge-get-multi-lang-server-by-extension (filename)
-  "Get lang server for file extension."
+  "Return the multi lang server name for FILENAME.
+The rule is looked up in `lsp-bridge-multi-lang-server-extension-list'."
   (lsp-bridge-get-lang-server-by-extension filename lsp-bridge-multi-lang-server-extension-list))
 
 (defun lsp-bridge-get-single-lang-server-by-extension (filename)
-  "Get lang server for file extension."
+  "Return the lang server name for FILENAME.
+The rule is looked up in
+`lsp-bridge-single-lang-server-extension-list'."
   (lsp-bridge-get-lang-server-by-extension filename lsp-bridge-single-lang-server-extension-list))
 
 (defun lsp-bridge-lang-server-by-mode (target-mode mode-list)
-  "Get lang server for file mode."
+  "Return the first entry of MODE-LIST that matches TARGET-MODE."
   (cl-find-if
    (lambda (pair)
      (let ((mode (car pair)))
@@ -1413,13 +1427,15 @@ not open."
       (lsp-bridge-get-mode-name-from-file-path filepath))))
 
 (defun lsp-bridge-get-multi-lang-server-by-file-mode (filename)
-  "Get lang server for file mode."
+  "Return the multi lang server name for FILENAME.
+The major mode of the file is looked up in
+`lsp-bridge-multi-lang-server-mode-list'."
   (when-let* ((mode (lsp-brige-get-mode filename))
               (langserver-info (lsp-bridge-lang-server-by-mode mode lsp-bridge-multi-lang-server-mode-list)))
     (lsp-bridge-get-symbol-string-value (cdr langserver-info))))
 
 (defun lsp-bridge-get-single-lang-server-by-file-mode (filename)
-  "Get lang server for file mode.
+  "Return the single lang server name for FILENAME.
 For .org files, scan all buffers for an active C-c ' (org-src-mode)
 sub-buffer editing this file and use its major-mode (e.g.
 groovy-mode) for server lookup.  This avoids depending on the
