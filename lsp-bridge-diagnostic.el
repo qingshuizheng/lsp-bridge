@@ -279,7 +279,7 @@ message is shown in `lsp-bridge-diagnostic-buffer', either in the
 
     ;; Try scroll window when current command is diagnostic jump commands and code content exceeds screen.
     (when (and (> (point-max) (window-end))
-               (member (format "%s" this-command) '("lsp-bridge-diagnostic-jump-next", "lsp-bridge-diagnostic-jump-prev")))
+               (member (lsp-bridge-command-name) '("lsp-bridge-diagnostic-jump-next", "lsp-bridge-diagnostic-jump-prev")))
       ;; NOTE:
       ;; We need use redisplay function to make sure diagnostic show in visible area.
       ;; `redisplay' causes a slight flicker on the screen but currently there is no better solution.

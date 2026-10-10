@@ -141,6 +141,26 @@ restored after it."
 (defvar-local lsp-bridge-cursor-after-command 0
   "Cursor position recorded after the current command ran.")
 
+;;; Naming the command that is running
+;;
+;; Every monitor below has to compare the command that is running, and the
+;; objects `this-command' and `last-command' hold are not always symbols.
+
+(defun lsp-bridge-command-name (&optional command)
+  "Return the name of COMMAND, or of `this-command', as a string.
+A command is normally a symbol, and then this is just its name.  It can also
+be something else, because a package is free to put anything in there: meow
+stores the result of `key-binding', which is a closure when the key is bound
+to a lambda, and `last-command' then carries that object on.  Formatting such
+an object prints it - for a closure that means its whole environment - and
+`prin1' builds that string in C without checking for quit, so a big one (an
+application runtime, say) makes Emacs ignore \\[keyboard-quit] until it is killed.
+Anything that is not a symbol is therefore named by its type."
+  (let ((command (or command this-command)))
+    (if (symbolp command)
+        (symbol-name command)
+      (format "%s" (type-of command)))))
+
 (defun lsp-bridge-monitor-pre-command ()
   "Record the cursor before a command and prepare acm state.
 Runs in `pre-command-hook': it saves the cursor position, completes a
@@ -150,11 +170,11 @@ overlay accepts the typed characters."
 
   ;; Tab-and-go
   (when (and acm-preview-overlay
-             (not (string-prefix-p "acm" (format "%s" this-command))))
+             (not (string-prefix-p "acm" (lsp-bridge-command-name))))
     (acm-complete))
 
   (when acm-filter-overlay
-    (let ((this-command-string (format "%s" this-command)))
+    (let ((this-command-string (lsp-bridge-command-name)))
       (cond ((member this-command-string '("self-insert-command" "org-self-insert-command"))
              (setq this-command 'acm-filter-insert-char)
              (setq last-command 'acm-filter-insert-char))
@@ -171,7 +191,7 @@ completion after insert commands, sends `change_cursor' and
 documentation, diagnostic, signature and code action popups."
   (setq-local lsp-bridge-cursor-after-command (point))
 
-  (let ((this-command-string (format "%s" this-command)))
+  (let ((this-command-string (lsp-bridge-command-name)))
     (when (and lsp-bridge-mode
                (member this-command-string '("self-insert-command" "org-self-insert-command" "lsp-bridge-popup-complete-menu")))
       (lsp-bridge-try-completion))
@@ -347,7 +367,7 @@ backends and search words requests are triggered."
           (unless lsp-bridge-revert-buffer-flag
             (let ((change-text (buffer-substring-no-properties begin end)))
               ;; Record last command to `lsp-bridge-last-change-command'.
-              (setq lsp-bridge-last-change-command (format "%s" this-command))
+              (setq lsp-bridge-last-change-command (lsp-bridge-command-name))
 
               ;; Record last change position to avoid popup outdate completions.
               (lsp-bridge-record-last-change-position)

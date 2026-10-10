@@ -209,7 +209,7 @@ syncs an org src block when Babel is enabled and sends a
 as command names, against `lsp-bridge-completion-stop-commands'."
   (not (or (member (format "%s" lsp-bridge-last-change-command)
                    lsp-bridge-completion-stop-commands)
-           (member (format "%s" last-command) lsp-bridge-completion-stop-commands))))
+           (member (lsp-bridge-command-name last-command) lsp-bridge-completion-stop-commands))))
 
 (defun lsp-bridge-string-interpolation-p (string-interpolation-open-chars-alist)
   "Return non-nil if point is inside a string interpolation.
@@ -256,8 +256,8 @@ regexp that opens an interpolation."
 (defun lsp-bridge--not-follow-complete ()
   "Hide completion if last command is `acm-complete'."
   (or
-   (not (member (format "%s" last-command) '("acm-complete" "acm-complete-quick-access")))
-   (member (format "%s" this-command) '("self-insert-command" "org-self-insert-command"))
+   (not (member (lsp-bridge-command-name last-command) '("acm-complete" "acm-complete-quick-access")))
+   (member (lsp-bridge-command-name) '("self-insert-command" "org-self-insert-command"))
    ))
 
 (defun lsp-bridge--not-only-blank-before-cursor ()
@@ -341,7 +341,7 @@ shown.")
 Copilot, jupyter, tabby and ctags are each asked for candidates when
 their acm option is enabled and the current command and buffer allow
 it."
-  (let* ((this-command-string (format "%s" this-command))
+  (let* ((this-command-string (lsp-bridge-command-name))
          (current-word (thing-at-point 'word t))
          (current-symbol (thing-at-point 'symbol t)))
     ;; Copilot search.

@@ -29,6 +29,9 @@ run_python() {
 echo "== protocol: the two halves declare the same version (scripts/check-protocol.py)"
 python3 scripts/check-protocol.py
 
+echo "== ERT: shared core helpers (test/lsp-bridge-core-test.el)"
+run_ert test/lsp-bridge-core-test.el
+
 echo "== ERT: protocol handshake (test/lsp-bridge-protocol-test.el)"
 run_ert test/lsp-bridge-protocol-test.el
 
