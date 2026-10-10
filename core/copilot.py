@@ -33,7 +33,22 @@ COPILOT_MAJOR_MODES_MAP = {
 }
 
 class Copilot:
+    """Talk to the GitHub Copilot language server for inline completions.
+
+    The server is started on first use (`start_copilot`) in node or binary mode
+    and then spoken to over the LspServerSender/LspServerReceiver pair of
+    `core/lspserver.py`: requests go out from `complete` (through `do_complete`),
+    replies are consumed by `message_dispatcher`, and the candidates are pushed
+    to Emacs on the "copilot" backend.
+    """
     def __init__(self):
+        """Set up the state of a Copilot session before its server exists.
+
+        `is_run` and `is_initialized` gate startup, `file_versions` tracks the
+        document version of every file sent to the server, `wait_id` and
+        `wait_response` carry one synchronous request, and `accept_commands`
+        maps a candidate id to the command to run when it is accepted.
+        """
         self.is_run = False
         self.is_initialized = False
         self.is_get_info = False
@@ -92,6 +107,14 @@ class Copilot:
             return False, f"copilot-language-server not found or not executable: {binary_path}"
 
     def start_copilot(self, project_path=None):
+        """Start the Copilot server and initialize the session.
+
+        PROJECT_PATH adds a workspace folder when given.  In "auto" launch mode
+        node is preferred and the binary is the fallback; "node" and "binary"
+        force one of the two.  When neither works the user is told why and the
+        method returns with `is_run` still False.  Startup sends `initialize`
+        and waits for its reply before sending `initialized`.
+        """
         self.get_info()
         if self.is_run:
             return
@@ -203,10 +226,20 @@ class Copilot:
         self.is_initialized = True
 
     def get_language_id(self, editor_mode):
+        """Return the LSP language id for the Emacs EDITOR_MODE.
+
+        Modes whose names differ from the server's ids (js2, rjsx, ess-r, ...)
+        are translated through `COPILOT_MAJOR_MODES_MAP`.
+        """
         language_id = editor_mode.replace('-mode', '')
         return COPILOT_MAJOR_MODES_MAP[language_id] if language_id in COPILOT_MAJOR_MODES_MAP else language_id
 
     def accept(self, id):
+        """Tell the server that the candidate with this ID was accepted.
+
+        A candidate that carried a command also executes it through
+        `workspace/executeCommand`.
+        """
         self.sender.send_request('notifyAccepted', [{'id': id}, ], generate_request_id())
         if id in self.accept_commands:
             accept_command = self.accept_commands[id]
@@ -217,6 +250,14 @@ class Copilot:
             del self.accept_commands[id]
 
     def message_dispatcher(self):
+        """Consume server messages until the process exits.
+
+        Log messages above level 1 are printed, the reply to the outstanding
+        request clears `wait_id`, and completion replies -- both the plain
+        `completions` and the inline `items` shape -- become candidates for the
+        "copilot" backend through `lsp-bridge-search-backend--record-items`.
+        Errors are logged, not raised.
+        """
         try:
             while True:
                 message = self.receiver.get_message()
@@ -306,6 +347,11 @@ class Copilot:
             logger.error(traceback.format_exc())
 
     def sync_file(self, text, file_path, language_id):
+        """Send the current TEXT of FILE_PATH to the server.
+
+        A file the server has not seen is opened with LANGUAGE_ID; one it knows
+        is sent as a change with the version tracked in `file_versions`.
+        """
         if file_path in self.file_versions:
             self.sender.send_notification(
                 method='textDocument/didChange',
@@ -330,6 +376,14 @@ class Copilot:
                 })
 
     def complete(self,  position, editor_mode, file_path, relative_path, tab_size, text, insert_spaces):
+        """Request inline completions for the file being edited.
+
+        POSITION is the (line, column) pair Emacs passes in, EDITOR_MODE decides
+        the language id, TEXT is the buffer content and TAB_SIZE/INSERT_SPACES
+        are the formatting options.  The file is focused and synchronized first;
+        the request itself goes out from a timer (`do_complete`) so that a burst
+        of keystrokes cancels the pending one.
+        """
         if len(file_path) == 0:
             return
 
@@ -373,6 +427,7 @@ class Copilot:
         self.try_completion_timer.start()
 
     def do_complete(self):
+        """Send the prepared inline-completion request to the server."""
         # send inline completion request
         self.sender.send_request(
             method='textDocument/inlineCompletion',
@@ -381,6 +436,12 @@ class Copilot:
         )
 
     def get_info(self):
+        """Read the Emacs options once and remember them.
+
+        `display_label_max_length` comes from
+        `acm-backend-copilot-candidate-max-length` and `proxy` from
+        `acm-backend-copilot-network-proxy`.  Later calls do nothing.
+        """
         if self.is_get_info:
             return
         (
@@ -398,6 +459,11 @@ class Copilot:
         self.is_get_info = True
 
     def check_status(self):
+        """Ask the server whether someone is signed in and report it in Emacs.
+
+        Blocks until the reply arrives, which the sender thread signals by
+        clearing `wait_id`.
+        """
         self.start_copilot()
         self.wait_id = generate_request_id()
         self.sender.send_request('checkStatus', {"dummy": "checkStatus"}, self.wait_id)
@@ -408,6 +474,11 @@ class Copilot:
                       f' as user {result["user"]}' if 'user' in result else 'NotSignedIn')
 
     def login(self):
+        """Start the GitHub sign-in flow.
+
+        The verification URL is opened in the browser and the user code is shown
+        in Emacs; a session that is already signed in only prints its account.
+        """
         self.start_copilot()
         self.wait_id = generate_request_id()
         self.sender.send_request('signIn', {'dummy': "signInInitiate"}, self.wait_id)
@@ -421,11 +492,18 @@ class Copilot:
         message_emacs(f'Please enter user-code {result["userCode"]}')
 
     def logout(self):
+        """Sign out of Copilot and confirm it in the minibuffer."""
         self.start_copilot()
         self.sender.send_request('signOut', {"dummy": "signOut"}, generate_request_id())
         message_emacs('Logged out')
 
     def change_workspace_folder(self, project_path):
+        """Tell the server that PROJECT_PATH is a workspace folder.
+
+        Nothing happens for a folder the server already knows; otherwise it is
+        added to `workspace_folders` and announced through
+        `workspace/didChangeWorkspaceFolders`.
+        """
         self.start_copilot(project_path=project_path)
         if not self.is_initialized:
             return
@@ -444,6 +522,7 @@ class Copilot:
             })
 
     def did_focus(self, file_path):
+        """Notify the server that the file at FILE_PATH got the focus."""
         if not self.is_initialized:
             return
 

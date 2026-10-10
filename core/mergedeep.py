@@ -7,6 +7,15 @@ from typing import MutableMapping
 
 
 class Strategy(Enum):
+    """Merge strategy for `merge`.
+
+    REPLACE (the default) lets a value from a source replace the destination
+    value, except that two Counters are merged like plain dicts.  ADDITIVE
+    combines lists, sets, tuples and Counters into one collection.
+    TYPESAFE_REPLACE and TYPESAFE_ADDITIVE raise TypeError when the two values
+    have different types and merge otherwise; TYPESAFE is an alias of
+    TYPESAFE_REPLACE.
+    """
     # Replace `destination` item with one from `source` (default).
     REPLACE = 0
     # Combine `list`, `tuple`, `set`, or `Counter` types into one collection.
@@ -20,6 +29,10 @@ class Strategy(Enum):
 
 
 def _handle_merge_replace(destination, source, key):
+    """Replace DESTINATION[KEY] with a deep copy of SOURCE[KEY].
+
+    Two Counters are the exception: they are merged like plain dicts instead.
+    """
     if isinstance(destination[key], Counter) and isinstance(source[key], Counter):
         # Merge both destination and source `Counter` as if they were a standard dict.
         _deepmerge(destination[key], source[key])
@@ -29,6 +42,11 @@ def _handle_merge_replace(destination, source, key):
 
 
 def _handle_merge_additive(destination, source, key):
+    """Combine DESTINATION[KEY] and SOURCE[KEY] into a single collection.
+
+    Lists are extended, sets updated, tuples concatenated and Counters added
+    up; any other type falls back to a REPLACE merge.
+    """
     # Values are combined into one long collection.
     if isinstance(destination[key], list) and isinstance(source[key], list):
         # Extend destination if both destination and source are `list` type.
@@ -47,6 +65,12 @@ def _handle_merge_additive(destination, source, key):
 
 
 def _handle_merge_typesafe(destination, source, key, strategy):
+    """Refuse to merge DESTINATION[KEY] and SOURCE[KEY] of different types.
+
+    Raises TypeError when the two values do not have exactly the same type,
+    otherwise delegates to STRATEGY (REPLACE or ADDITIVE).  The TYPESAFE
+    entries of `_handle_merge` bind STRATEGY through `functools.partial`.
+    """
     # Raise a TypeError if the destination and source types differ.
     if type(destination[key]) is not type(source[key]):  # noqa: E721
         raise TypeError(
@@ -66,12 +90,22 @@ _handle_merge = {
 
 
 def _is_recursive_merge(a, b):
+    """Return True when A and B should be merged key by key.
+
+    Two mappings recurse, but two Counters do not: those are merged as values.
+    """
     both_mapping = isinstance(a, Mapping) and isinstance(b, Mapping)
     both_counter = isinstance(a, Counter) and isinstance(b, Counter)
     return both_mapping and not both_counter
 
 
 def _deepmerge(dst, src, strategy=Strategy.REPLACE):
+    """Merge SRC into DST in place and return DST.
+
+    A key that only exists in SRC is deep-copied over; a key in both is merged
+    recursively when the two values are mappings, left untouched when they are
+    the same object, and handed to STRATEGY otherwise.
+    """
     for key in src:
         if key in dst:
             if _is_recursive_merge(dst[key], src[key]):

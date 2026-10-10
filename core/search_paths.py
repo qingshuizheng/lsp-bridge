@@ -26,13 +26,26 @@ import functools
 from core.utils import eval_in_emacs, cmp
 
 class SearchPaths:
+    """Complete file and directory names for the completion menu.
+
+    One instance lives on the Python side (`LspBridge.search_paths`): Emacs calls
+    `search` while the user types, and the matches are pushed back through
+    `lsp-bridge-search-backend--record-items` on the "path" backend.
+    """
     
     def __init__(self) -> None:
+        """Set up the ticker that discards stale results and the thread queue."""
         self.search_ticker = 0
         self.search_thread_queue = []
         self.search_max_number = 300
         
     def search(self, filename: str, prefix: str):
+        """Search the directory FILENAME for entries matching PREFIX.
+
+        Returns immediately: the directory listing runs in its own thread and
+        reports through `lsp-bridge-search-backend--record-items`, and only the
+        newest search (the current ticker) is allowed to report.
+        """
         ticker = self.search_ticker + 1
         self.search_ticker = ticker
                 
@@ -41,9 +54,20 @@ class SearchPaths:
         self.search_thread_queue.append(search_thread)
 
     def match_symbol(self, prefix, symbol):
+        """Return True when SYMBOL should be offered for PREFIX.
+
+        A candidate matches when it starts with PREFIX, when it starts with
+        PREFIX after its dashes are removed, or when it merely contains PREFIX.
+        """
         return symbol.startswith(prefix) or symbol.replace("-", "").startswith(prefix) or prefix in symbol
         
     def search_symbols(self, filename: str, prefix: str, ticker: int):
+        """Collect the candidates of FILENAME for PREFIX and report them.
+
+        Runs in a worker thread: it stops after `search_max_number` candidates,
+        puts directories before files (then sorts by name), and reports only
+        when TICKER is still the current one.
+        """
         candidates = []
 
         for file in os.listdir(filename):
@@ -66,6 +90,10 @@ class SearchPaths:
             eval_in_emacs("lsp-bridge-search-backend--record-items", "path", sorted(candidates, key=functools.cmp_to_key(lambda a, b: self.sort_files(prefix, a, b))))
 
     def sort_files(self, prefix, file_a, file_b):
+        """Order two candidates, preferring the ones that start with PREFIX.
+
+        Falls back to `sort_file` when both, or neither, start with PREFIX.
+        """
         file_a_starts_with_prefix = file_a["key"].startswith(prefix)
         file_b_starts_with_prefix = file_b["key"].startswith(prefix)
 
@@ -79,6 +107,7 @@ class SearchPaths:
             return self.sort_file(file_a, file_b)
 
     def sort_file(self, file_a, file_b):
+        """Order two candidates: directories before files, then by name."""
         file_a_is_file_dir = file_a["icon"] == "dir"
         file_b_is_file_dir = file_b["icon"] == "dir"
 

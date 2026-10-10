@@ -28,7 +28,19 @@ import re
 from core.utils import *
 
 class SearchFileWords:
+    """Complete words taken from the files of the project.
+
+    Emacs drives the index (`index_files`, `index_file`, `change_buffer`,
+    `close_file`): a dispatcher thread re-reads the pending files, keeps their
+    word sets in `files`, and `search` matches the prefix at point against the
+    union of those sets.
+    """
     def __init__(self):
+        """Read the Emacs options and start the indexing dispatcher thread.
+
+        `max_number`, `fuzzy_match` and `fuzzy_match_threshold` are read once
+        here, so changing the corresponding Emacs options needs a restart.
+        """
         self.files = {}
         self.search_files = set()
         self.search_content_dict = {}
@@ -39,6 +51,11 @@ class SearchFileWords:
         self.search_words_dispatcher_thread.start()
 
     def index_files(self, filepaths):
+        """Queue FILEPATHS for indexing.
+
+        Files that are not indexed yet are registered and the dispatcher is
+        woken up; files that are already known are not read again.
+        """
         for filepath in filepaths:
             self.search_files.add(filepath)
         
@@ -52,6 +69,12 @@ class SearchFileWords:
             self.search_words_queue.put("search_words")
 
     def index_file(self, filepath, content):
+        """Index CONTENT as the current text of FILEPATH.
+
+        The text is remembered in `search_content_dict` (so that later edits can
+        be applied as diffs) and the dispatcher is asked to re-extract the
+        words.
+        """
         self.search_files.add(filepath)
         self.search_content_dict[filepath] = content
 
@@ -61,6 +84,12 @@ class SearchFileWords:
         self.search_words_queue.put("search_words")
 
     def load_file(self, filepath, from_file_server=False):
+        """Read FILEPATH and index it.
+
+        FROM_FILE_SERVER non-nil fetches the content from the lsp-bridge file
+        server instead of the local filesystem, which is how remote files are
+        handled.  Read errors are swallowed.
+        """
         try:
             if from_file_server:
                 content = get_file_content_from_file_server(filepath)
@@ -73,6 +102,12 @@ class SearchFileWords:
         self.index_file(filepath, content)
 
     def change_buffer(self, buffer_name, start_pos, end_pos, change_text):
+        """Apply one buffer change to the indexed content of BUFFER_NAME.
+
+        START_POS and END_POS are EPC argument lists describing the replaced
+        range and CHANGE_TEXT is the replacement.  When nothing is known about
+        the buffer yet, the whole content is fetched from Emacs instead.
+        """
         start_pos = epc_arg_transformer(start_pos)
         end_pos = epc_arg_transformer(end_pos)
 
@@ -87,6 +122,7 @@ class SearchFileWords:
         self.index_file(buffer_name, content)
 
     def close_file(self, filepath):
+        """Stop indexing FILEPATH and forget its words and content."""
         if filepath in self.files:
             if filepath in self.search_files:
                 self.search_files.remove(filepath)
@@ -97,10 +133,18 @@ class SearchFileWords:
             del self.files[filepath]
     
     def search(self, prefix: str):
+        """Start a threaded search for PREFIX over all indexed words."""
         self.search_words_thread = threading.Thread(target=lambda : self.search_words_from_files(prefix))
         self.search_words_thread.start()
         
     def search_words_from_files(self, prefix: str):
+        """Search every indexed word for PREFIX and report the candidates.
+
+        Runs in a worker thread.  When a plain search finds nothing and PREFIX
+        looks like an elisp symbol, its last `-` or `_` segment is searched
+        again and the remaining part of PREFIX is put back in front of each
+        match.  Errors are logged, not raised.
+        """
         try:
             all_words = set()
             for file, words in self.files.items():
@@ -134,6 +178,12 @@ class SearchFileWords:
             logger.error(traceback.format_exc())
             
     def search_word(self, prefix, all_words):
+        """Return the words of ALL_WORDS that match PREFIX.
+
+        With the fuzzy option on, words are ranked with `rapidfuzz` and cut off
+        at `fuzzy_match_threshold`; otherwise only words starting with PREFIX
+        are kept, upper-cased when PREFIX is, and sorted shortest first.
+        """
         candidates = []
         if self.fuzzy_match:
             from rapidfuzz import fuzz
@@ -154,6 +204,13 @@ class SearchFileWords:
         return candidates
             
     def search_dispatcher(self):
+        """Re-extract the words of every file waiting on `search_words_queue`.
+
+        Runs until the process exits.  It snapshots the files that still need
+        indexing, reads the ones whose content is not in memory, keeps the words
+        that pass `filter_word`, and clears the pending set.  Errors are logged,
+        not raised.
+        """
         try:
             while True:
                 message = self.search_words_queue.get(block=True)
@@ -179,4 +236,9 @@ class SearchFileWords:
             logger.error(traceback.format_exc())
 
     def filter_word(self, word: str):
+        """Return True when WORD is worth indexing.
+
+        Words of three characters or fewer, and purely numeric words, are
+        skipped.
+        """
         return len(word) > 3 and (not word.isnumeric())

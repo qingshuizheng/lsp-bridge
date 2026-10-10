@@ -21,22 +21,42 @@ import os
 
 from core.utils import *
 
+# readtags filter that drops anonymous, reference and input-file tags.
 DEFAULT_FILTER_CMD = '(not (or (and $extras ((string->regexp "(^|,) ?(anonymous|reference)(,|$)" :case-fold false) $extras)) (or (and $extras ((string->regexp "(^|,) ?(inputFile)(,|$)" :case-fold false) $extras)) (and $kind ((string->regexp "^(file|F)$" :case-fold false) $kind))) false))'
 
+# readtags sorter: shorter names first, then alphabetically.
 DEFAULT_SORTER_CMD = '(<or> (if (and $name &name) (<> (length $name) (length &name)) 0) (if (and $name &name) (<> $name &name) 0))'
 
 # for Python 3.9-
 def remove_prefix(text, prefix):
+    """Return TEXT with PREFIX removed, or TEXT when it does not start with it.
+
+    Kept for Python 3.9, which has no `str.removeprefix`.
+    """
     if text.startswith(prefix):
         return text[len(prefix):]
     return text
 
 class Ctags:    
+    """Complete project symbols from the ctags `tags` file.
+
+    Every query shells out to `readtags` in the directory of the file being
+    edited: `make_complete` feeds the completion menu and `find_definition`
+    answers jump-to-definition.  A result is dropped when the cursor has moved
+    on, which is what the lock and `current_cursor_offset` guard.
+    """
     def __init__(self) -> None:
+        """Create the backend with no cursor offset recorded yet."""
         self.current_cursor_offset = 0
         self.lock = threading.RLock()
 
     def run_cmd_in_path(self, cmd, filename, in_shell=False):
+        """Run CMD in the directory of FILENAME and return its output lines.
+
+        A FILENAME that is not a file is treated as a directory.  IN_SHELL
+        non-nil hands the command to the shell.  A non-zero exit status is
+        logged and returns no lines; empty lines are dropped either way.
+        """
         if os.path.isfile(filename):
             cwd = os.path.dirname(filename)
         else:
@@ -58,6 +78,12 @@ class Ctags:
         return lines
 
     def parse_tag_line(self, line):
+        """Parse one `tags` line into a dict of its fields.
+
+        Always holds `tagname`, `tagfile` and `tagaddress`, plus every extension
+        field the line carries (`kind`, `signature`, `scope`, ...).  An empty
+        line yields None.
+        """
         if line == '':
             return None
 
@@ -80,6 +106,12 @@ class Ctags:
         return tag
 
     def make_tag_annotation(self, tag):
+        """Build the annotation shown next to a ctags candidate.
+
+        Combines the reference marker, kind, type and scope of TAG, as in
+        `<R>function/typename@Class`; anonymous type names are shortened to
+        `__anon`.
+        """
         kind = tag.get("kind", "")
         typeref = tag.get("typeref", "")
         scope = tag.get("scope", "")
@@ -100,6 +132,7 @@ class Ctags:
         return ''.join(annotation)
 
     def make_ctags_acm_candidate(self, tag: dict):
+        """Turn the parsed TAG into a candidate for the completion menu."""
         candidate = {}
         tagname = tag["tagname"]
 
@@ -117,6 +150,11 @@ class Ctags:
         return candidate
 
     def locate_dominating_file(self, file_or_dir, filename):
+        """Look for FILENAME in FILE_OR_DIR and in its parent directories.
+
+        Returns the first path that exists, or None when no ancestor contains
+        it.  This is how the `tags` file governing a project is found.
+        """
         current_dir = os.path.abspath(file_or_dir)
         
         while True:
@@ -131,6 +169,12 @@ class Ctags:
         return None
 
     def make_complete(self, symbol, filename, max_lines, cursor_offset):
+        """Complete SYMBOL from the tags file that governs FILENAME.
+
+        Reports at most MAX_LINES candidates.  CURSOR_OFFSET records where the
+        cursor was, so a result that arrives after the user moved on is
+        discarded.  Does nothing without a filename or a tags file.
+        """
         self.lock.acquire()
         try:
             self.current_cursor_offset = cursor_offset
@@ -155,6 +199,12 @@ class Ctags:
         self.dispatch(list(candidates), cursor_offset)
 
     def make_xref(self, tag: dict, rootdir):
+        """Turn a parsed TAG into a jump-to-definition item.
+
+        ROOTDIR is the directory holding the tags file; the item carries the
+        absolute (possibly TRAMP-prefixed) path, the line number and the matched
+        text.
+        """
         candidate = {}
         tagname = tag["tagname"]
 
@@ -174,6 +224,11 @@ class Ctags:
         return candidate
 
     def find_definition(self, symbol, filename):
+        """Jump to the definition of SYMBOL using FILENAME's tags file.
+
+        Exact matches are reported through `acm-backend-ctags-xref-callback`; if
+        nothing matches, a message is printed instead.
+        """
         tagsfile = self.locate_dominating_file(filename, "tags")
         if not tagsfile:
             return
@@ -191,6 +246,7 @@ class Ctags:
             eval_in_emacs("acm-backend-ctags-xref-callback", candidates)
 
     def dispatch(self, candidates, cursor_offset):
+        """Report CANDIDATES to Emacs while the cursor is at CURSOR_OFFSET."""
         self.lock.acquire()
         try:
             if self.current_cursor_offset == cursor_offset:
@@ -199,6 +255,13 @@ class Ctags:
             self.lock.release()
 
     def readtags_get_cmd(self, tagsfile, name, match, case_fold, filter, sorter, action):
+        """Build the `readtags` command line of a query.
+
+        TAGSFILE is the tags file to read, NAME the symbol to look up, MATCH is
+        "exact" or "prefix" and CASE_FOLD selects case-insensitive matching.
+        FILTER, SORTER and ACTION are raw readtags expressions; an empty ACTION
+        lists the matching tags.
+        """
         extras = ("-Ene" +
                   ("" if match == "exact" else "p") +
                   ("i" if case_fold else ""))
