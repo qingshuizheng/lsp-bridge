@@ -93,7 +93,7 @@ and run `doom sync` to install it.
 Please note:
 
 1. When using lsp-bridge, please first disable other completion plugins, such as lsp-mode, eglot, company, corfu, etc. lsp-bridge provides a complete solution from the completion backend, completion frontend to multi-backend integration
-2. In addition to providing LSP completion, lsp-bridge also provides many non-LSP completion backends, including capf, file words, paths, Yas/Tempel, Copilot, Tabby, Citre, Ctags, Org roam and other completion backends. If you expect to provide these completions in a certain mode, please add the corresponding mode to `lsp-bridge-default-mode-hooks`. Customize the order of backend, please check `acm-backend-order`.
+2. In addition to providing LSP completion, lsp-bridge also provides many non-LSP completion backends, including capf, file words, paths, Yas/Tempel, Copilot, Tabby, Ctags, Org roam and other completion backends. If you expect to provide these completions in a certain mode, please add the corresponding mode to `lsp-bridge-default-mode-hooks`. Customize the order of backend, please check `acm-backend-order`.
 3. Please do not perform ```byte compilation``` or ```native compilation``` for lsp-bridge as it will result in a difference in API and the latest version after upgrading compiling afterwards, Lsp-bridge is designed with multi-threading that does not require compilation to speed it up
 
 ## Local Usage
@@ -291,8 +291,8 @@ lsp-bridge provides support for more than two language servers for many language
 - `lsp-bridge-get-workspace-folder`: You need to put multiple project in a `workspace` directory in Java before you can jump function defintion normally. This function can be customized, the function input is the project path and returns the `workspace` directory corresponding
 - `lsp-bridge-default-mode-hooks`: The list of modes that automatically start lsp-bridge, you can customize this option to control the scope of starting lsp-bridge
 - `lsp-bridge-org-babel-lang-list`: list of language to support org-mode code block completion, nil enable all languages, default is nil
-- `lsp-bridge-find-def-fallback-function`: When LSP cannot find a definition, you can customize this function for candidate jumping, such as binding the citre function
-- `lsp-bridge-find-ref-fallback-function`: When LSP cannot find a reference, you can customize this function for candidate jumping, such as binding the citre  function
+- `lsp-bridge-find-def-fallback-function`: When LSP cannot find a definition, you can customize this function for candidate jumping
+- `lsp-bridge-find-ref-fallback-function`: When LSP cannot find a reference, you can customize this function for candidate jumping
 - `lsp-bridge-find-def-select-in-open-windows`: If this option is turned on, when searching for function definitions, already open windows will be selected instead of switching buffers. disable by default
 - `lsp-bridge-enable-completion-in-string`: Enable completion pop-up within strings, disabled by default, if you only want to show completion popups in strings for certain languages, please customize the option `lsp-bridge-completion-in-string-file-types`
 - `lsp-bridge-enable-completion-in-minibuffer`: Enable pop-completion up in Minibuffer, disabled by default
@@ -334,12 +334,11 @@ lsp-bridge provides support for more than two language servers for many language
 - `acm-enable-quick-access`: Whether to display an index after the icon, quickly select candidate words using Alt + Number, default is off
 - `acm-quick-access-use-number-select`: Whether to use number keys for quick selection of candidate words, default is off, turning on this option may sometimes interfere with number input or accidentally select candidate words
 - `acm-enable-yas`: yasnippet completion, enable by default
-- `acm-enable-citre`: Integration with [citre(ctags)](https://github.com/universal-ctags/citre). Enable this to add citre (ctags) backend (disabled by default)
 - `acm-enable-lsp-workspace-symbol`: Enable LSP workspace symbol completion, disabled by default
 - `acm-doc-frame-max-lines`: Max line number of help documentation, default is 20
 - `acm-doc-frame-boundary`: Boundary constraint for documentation frame positioning, options include `'parent-frame`, `'display`, default is `'parent-frame`. `'parent-frame` constrains the doc frame within the parent Emacs frame, `'display` allows the doc frame to extend beyond Emacs frame but within display screen boundaries
 - `acm-candidate-match-function`: lsp-bridge frontend filter algorithm for candidates, options include `'regexp-quote`, `'orderless-flex`, `'orderless-literal`, `'orderless-prefixes`, `'orderless-regexp`, `'orderless-initialism`, default is `regexp-quote`, orderless-* started algorithms require additional installation of [orderless](https://github.com/oantolin/orderless)
-- `acm-completion-mode-candidates-merge-order`: Customize the order of the mode candidates, the display order for mode candidates, default order: Elisp、 LSP、 Jupyter、 Tabby Ctags、 Citre、 ROAM、 Word、 Telegra
+- `acm-completion-mode-candidates-merge-order`: Customize the order of the mode candidates, the display order for mode candidates, default order: Elisp、 LSP、 Jupyter、 Tabby Ctags、 ROAM、 Word、 Telegra
 - `acm-backend-lsp-candidate-min-length`: The minimum characters to trigger lsp completion, default is 0
 - `acm-backend-lsp-block-kind-list`: Filters certain types of LSP completion candidates. By default, it's a empty list. When the value is set to `'(Snippet Enum)`, this means that Snippet and Enum completions will not be shown.
 - `acm-backend-elisp-candidate-min-length`: The minimum characters to trigger elisp completion, default is 0
@@ -351,7 +350,6 @@ lsp-bridge provides support for more than two language servers for many language
 - `acm-backend-lsp-enable-auto-import`: Automatic insert import code, enable by default
 - `acm-backend-lsp-candidate-max-length`: Maximum length of LSP candidate, some language, such as Java, argument list is very long, you can increase the value of this option to see clear argument list
 - `acm-backend-yas-candidates-number`: yasnippet display number， 2 by default
-- `acm-backend-citre-keyword-complete`: Completion is performed according to the keywords of each mode defined by `acm-backend-citre-keywords-alist`, which takes effect only after citre is enabled.
 - `acm-backend-lsp-match-mode`: The filtering mode for candidates in LSP backend, there are six options: "prefix", "prefixCaseSensitive", "substring" and "fuzzy". By default it is "fuzzy"
 - `acm-backend-lsp-case-mode`: The case sensitive mode for filtering candidates in LSP backend, there are three options: "ignore", "sensitive" and "smart". By default it is "ignore"
 - `acm-backend-lsp-frontend-filter-p`: Since LSP candidates have been filtered in the Python backend, it's not necessary to perform an additional filter on the frontend (refer to option `acm-candidate-match-function`), disable by default, when set to `t`, this option will call the `acm-candidate-match-function` function on the frontend to filter LSP candidates again

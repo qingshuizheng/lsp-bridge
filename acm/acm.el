@@ -100,7 +100,6 @@
 (require 'acm-backend-search-file-words)
 (require 'acm-backend-tempel)
 (require 'acm-backend-telega)
-(require 'acm-backend-citre)
 (require 'acm-backend-ctags)
 (require 'acm-backend-copilot)
 (require 'acm-backend-org-roam)
@@ -208,7 +207,6 @@
                                                         "jupyter-candidates"
                                                         "tabby-candidates"
                                                         "ctags-candidates"
-                                                        "citre-candidates"
                                                         "org-roam-candidates"
                                                         "file-words-candidates"
                                                         "telega-candidates")
@@ -499,7 +497,6 @@ Only calculate template candidate when type last character."
          template-first-part-candidates
          template-second-part-candidates
          ctags-candidates
-         citre-candidates
          org-roam-candidates)
     (when (acm-in-roam-bracket-p)
       (setq org-roam-candidates (acm-backend-org-roam-candidates keyword)))
@@ -521,8 +518,6 @@ Only calculate template candidate when type last character."
         ;; Only show path candidates if prefix is valid path.
         (setq candidates path-candidates)
 
-      (when acm-enable-citre
-        (setq citre-candidates (unless (acm-in-comment-p) (acm-backend-citre-candidates keyword))))
       (when acm-enable-ctags
         (setq ctags-candidates (unless (acm-in-comment-p) (acm-backend-ctags-candidates keyword))))
       ;; Fetch syntax completion candidates.
@@ -548,7 +543,6 @@ Only calculate template candidate when type last character."
                                         ("jupyter-candidates" jupyter-candidates)
                                         ("tabby-candidates" tabby-candidates)
                                         ("ctags-candidates" ctags-candidates)
-                                        ("citre-candidates" citre-candidates)
                                         ("org-roam-candidates" org-roam-candidates)
                                         ("file-words-candidates" file-words-candidates)
                                         ("telega-candidates" (acm-backend-telega-candidates keyword))
