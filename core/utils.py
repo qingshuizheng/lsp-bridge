@@ -32,6 +32,8 @@ from urllib.parse import urlparse
 
 import sexpdata
 from epc.client import EPCClient
+from functools import wraps
+import threading
 
 try:
     import orjson as json_parser
@@ -236,6 +238,37 @@ def eval_in_emacs(method_name, *args):
         })
     else:
         eval_sexps_in_emacs([sexp])
+
+# The channels the remote file machinery talks on; shared by the modules
+# that send on them, so they live with the other shared definitions.
+REMOTE_FILE_SYNC_CHANNEL = 9999
+REMOTE_FILE_COMMAND_CHANNEL = 9998
+REMOTE_FILE_ELISP_CHANNEL = 9997
+
+
+def threaded(func):
+    """Run FUNC on a freshly started thread instead of the calling one.
+
+    The wrapper starts FUNC with the same arguments in a new
+    ``threading.Thread`` and returns at once.  When the first positional
+    argument exposes a ``thread_queue`` list, the new thread is appended to it
+    so that its owner can join the work later.
+
+    Args:
+        func: The callable to run in a background thread.
+
+    Returns:
+        The wrapper that starts the thread.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        """Start FUNC in a thread and record it on the first argument."""
+        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+        thread.start()
+        if hasattr(args[0], 'thread_queue'):
+            args[0].thread_queue.append(thread)
+    return wrapper
+
 
 def message_emacs(message: str):
     """Message to Emacs with prefix."""
