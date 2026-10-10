@@ -7,7 +7,7 @@
 ;; honours the Lisp syntax table, so strings and comments are skipped) and exit
 ;; non-zero on the first file that does not reach a clean end of file.
 ;;
-;; Usage: emacs -Q --batch -l scripts/check-forms.el --eval '(z/check-forms "a.el" "b.el")'
+;; Usage: Emacs -Q --batch -l scripts/check-forms.el --eval '(z/check-forms "a.el" "b.el")'
 
 ;;; Code:
 
