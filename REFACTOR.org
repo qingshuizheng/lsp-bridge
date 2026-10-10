@@ -48,7 +48,17 @@
 
 ** 进度
 
-- 2026-10-11 =acm-backend-org-roam= → **=acm-backend-vulpea=**（用户要求"匹配 vulpea 包"）：
+- 2026-10-11 =acm-backend-org-roam= → **=acm-backend-vulpea=**（用户要求"匹配 vulpea 包"，
+  并"对比 vulpea 本身的 capf 补全机制"）。对照物是第三方包
+  [[https://github.com/neonmei/vulpea-capf][=vulpea-capf=]]（vulpea 本体**不提供** capf，其 README 指向它；
+  它要求 vulpea ≥2.0，而你部署的是 **2.7.0**）。据此对齐的语义：
+  一篇笔记以标题**和每个别名**分别作为候选（=vulpea-note-expand-aliases=） 、
+  没有 id 的标题跳过、标注用 =vulpea-select-annotate=（标签 + 别名候选显示原始标题） 、
+  链接描述用被选中的名字、候选按**名字**过滤（否则输入别名会把其标题一起拖进来）。
+  保留的差异：本后端只在 =[[= 内触发、闭合 =]]= 可选、整段替换；=vulpea-capf= 的
+  "裸词补全"不重复实现（要用就装它，并把 =org-mode= 加进 =acm-backend-capf-mode-list=，
+  默认列表里没有 org-mode，所以即使装了也不会自动出现在 org buffer）。
+  细节：
   候选来自 =vulpea-db-query= 的 =vulpea-note=，展开用 =vulpea-utils-link-make-string=
   插入 =[[id:UUID][Title]]=；开关 =acm-enable-vulpea=、候选组 =vulpea-candidates=、
   谓词 =acm-in-vulpea-bracket-p=。bracket 正则从 org-roam 的

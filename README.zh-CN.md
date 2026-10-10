@@ -446,10 +446,12 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 | `copilot` | `acm-enable-copilot`（ 关） | GitHub Copilot 的行内补全 |
 | `tabby` | `acm-enable-tabby`（ 关） | Tabby 服务端 |
 | `jupyter` | `acm-enable-jupyter`（ 关） | buffer 对应的 Jupyter kernel |
-| `vulpea` | `acm-enable-vulpea`（ 关） | Vulpea 数据库里的笔记标题， 插入为 `[[id:...][Title]]` 链接 |
+| `vulpea` | `acm-enable-vulpea`（ 关） | Vulpea 数据库里的笔记标题**和别名**， 插入为 `[[id:...][名字]]` 链接 |
 | `lsp-workspace-symbol` | `acm-enable-lsp-workspace-symbol`（ 关） | 整个工作区的符号 |
 
 每个后端还有自己的微调选项（ `acm-backend-<名字>-*`） ， 实现都在 `acm/acm-backend-<名字>.el`， 选项和上面的其它选项列在一起。
+
+`vulpea` 后端按 Vulpea 自己选笔记时的语义工作： 一篇笔记会以**标题**和它的**每个别名**分别作为候选（ =vulpea-note-expand-aliases=） ； 没有 id 的普通标题（不是笔记）会被跳过； 候选的标注用 =vulpea-select-annotate=（ 标签， 若按别名选中还会显示原始标题——与 =vulpea-find= 显示的一致） ； 插入链接的描述用**被选中的那个名字**。 如果你更想用 [`vulpea-capf`](https://github.com/neonmei/vulpea-capf) 那个包： 它是一组 =completion-at-point= 函数， 因此还能在 Org buffer 里补全裸词； 本后端只处理 =[[= 括号内。 想让 =vulpea-capf= 经由 acm 的 capf 后端出现， 需要把 =org-mode= 加进 =acm-backend-capf-mode-list= —— 并且不要在同一个 buffer 里同时开启两者， 否则括号内的候选会出现两份。
 
 ## 已经支持的语言服务器
 
