@@ -239,6 +239,7 @@ lsp-bridge 开箱即用， 安装好语言对应的 [LSP 服务器](https://gith
 - `lsp-bridge-signature-help-fetch`: 在 minibuffer 显示参数信息
 - `lsp-bridge-popup-complete-menu`: 手动弹出补全菜单， 只有当打开 `lsp-bridge-complete-manually` 选项才需要使用这个命令
 - `lsp-bridge-restart-process`: 重启 lsp-bridge 进程 (一般只有开发者才需要这个功能)
+- `lsp-bridge-diagnose`: 报告 Emacs 侧与 Python 侧的协议版本、 两者的握手结果、 进程是否存活、 以及服务端自报的运行时事实， 用于提交 bug
 - `lsp-bridge-peek`: 在 peek window 中展示光标处的定义和引用
 - `lsp-bridge-peek-abort`: 关闭 peek window (默认绑定到 `C-g`)
 - `lsp-bridge-peek-list-next-line`: 选择下一个定义或引用 (默认绑定到 `M-S-n` )
@@ -741,6 +742,7 @@ lsp-bridge 每种语言的服务器配置存储在 [lsp-bridge/langserver](https
 - `scripts/check-elisp.sh` 先确认每个 `.el` 文件都能读到文件末尾 —— 少一个右括号不能藏在"没有 warning"的结果后面 —— 然后把它们全部 byte-compile 到 `/tmp/lsp-bridge-elc`， 保持工作树干净。
 - `CHECKDOC=1 scripts/check-elisp.sh` 做同样的事， 并打印 checkdoc 的检查结果； 整棵树是 checkdoc 干净的， 只有 vendored 的 `lsp-bridge-epc.el` 例外。
 - `scripts/check-python.sh --strict` 跑 `py_compile`、 docstring 存在性门禁和 ruff（ 硬门禁 + pydocstyle） 。
+- `scripts/check-protocol.py` 比较 Emacs 侧与 Python 侧声明的协议版本； 两者必须一起改， 因为 `lsp-bridge--handshake` 会拒绝与说另一个版本的服务器通信。
 - `python3 scripts/docstring-report.py [--list]` 报告还有多少定义没有 docstring； 目前是 100%。
 - `scripts/check-test.sh` 跑 ERT（ `test/acm-test.el`、 `test/lsp-bridge-org-babel-test.el`） 和纯 Python 测试； 加 `--all` 会额外跑需要语言服务器的那些。 它强制读源码而不是陈旧的 byte code。
 
@@ -766,6 +768,8 @@ lsp-bridge 每种语言的服务器配置存储在 [lsp-bridge/langserver](https
   1. 设置选项 `(setq lsp-bridge-log-level 'debug)`
   2. 使用命令 `lsp-bridge-restart-process` 重启 LSP-BRIDGE 进程
   3. 在 issue 中发送`*lsp-bridge*`中的内容, 那里面有很多线索可以帮助我们排查问题
+
+如果 lsp-bridge 完全不能用， 请先运行 `M-x lsp-bridge-diagnose` 并把它的报告一起附上： 它会说明加载的是哪个 lsp-bridge.el、 实际执行的 Python 命令、 两侧协议版本是否一致、 以及服务端自报的运行时事实。
 
 如果你遇到崩溃的问题, 请用下面的方式来收集崩溃信息:
 

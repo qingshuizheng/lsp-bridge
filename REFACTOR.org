@@ -48,6 +48,17 @@
 
 ** 进度
 
+- 2026-10-11 **协议握手 + =lsp-bridge-diagnose=**（S4 第一刀）：两侧各声明协议版本
+  （elisp =lsp-bridge-protocol-version= / Python =PROTOCOL_VERSION=，当前 2）；
+  =lsp-bridge--first-start= 在建好 EPC 层后、 **发送任何数据之前**做一次同步握手
+  （=lsp-bridge-call-sync= → =LspBridge.handshake=），调用失败/版本不符/回复不可解析都只报错并停下，
+  不再把数据喂给听不懂的对端；结果存在 =lsp-bridge--server-handshake= /
+  =lsp-bridge--protocol-error=，由 =lsp-bridge-diagnose= 呈现（=lsp-bridge-diagnose--report=
+  是纯函数：两侧版本、握手结果与能力、进程、服务端事实（python 版本/pid/语言服务器数/跟踪文件数） 、
+  日志位置与级别）。两侧的纯构造函数（=build_handshake=／=build_diagnose=）与 elisp 报告构造器都可单测；
+  新增 =scripts/check-protocol.py= 防止两个版本常量各自漂移，并已进门禁。
+  协议版本 2 的含义：EPC 方法 =handshake=／=diagnose= 存在且返回 JSON 字符串。
+  踩到的坑：握手**调用失败**与"回复不是 JSON"必须分开处理（第一版把错误信息当 JSON 解析，测试立刻抓到）。
 - 2026-10-11 **popup 状态按父 frame 归位**（S3 第二刀，用户最初报的 macOS 全屏跳 space 那一类问题的结构性收口）：
   新增 =acm/acm-session.el=，=acm-session= 结构持有 =menu-frame/doc-frame/menu-buffer/
   doc-buffer/popup-point/popup-position/menu-max-length-cache/menu-number-cache/doc-hide-p/
@@ -137,7 +148,7 @@
 | **S1** ✅ 完成 | elisp docstring 补全（实际 ~470 处），**只加文档、不搬代码**，按文件切片 | =docstring-report.py --check= 全树通过；=check-elisp.sh= 无 warning 回归（整树 warning 207 → 173） |
 | **S2** ✅ 基本完成 | Python docstring 补全 + =except:= 清理 + ruff/pydocstyle 配置与门禁 | =scripts/check-python.sh --strict= 全绿（py_compile / docstring 存在性 / 硬门禁 / D 门禁）；剩余：=F403/F405= star-import 421 条（需与 =core/utils.py= 的导出面一起决定，见「已做的决定」）与 =E501=（旧行宽） |
 | **S3** ✅ 完成 | popup 层重构：popup 状态按父 frame 归位（=acm/acm-session.el=）+ registry + candidate 协议（=acm/acm-backend.el=） | =test/acm-test.el= 14 例已就位并通过（=scripts/check-test.sh=）：候选 helper、输入前缀、popup predicates、quick-access 键、update/hide 周期、选择保持；S3 需继续覆盖多父 frame 切换 |
-| **S4** | =acm-backend.el=：candidate 协议 + registry；=lsp-bridge.el= 拆分；协议握手 + =lsp-bridge-diagnose= | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
+| **S4** | =acm-backend.el=：candidate 协议 + registry（S3 已完成）；协议握手 + =lsp-bridge-diagnose=（**已完成**）；剩余：=lsp-bridge.el= 拆分 | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
 | **S5** | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
 | **S6** | 测试与 CI：acm 冒烟测试、docstring 门、ruff、Emacs 版本矩阵（现在只跑 Ubuntu + Emacs 28.1，而代码用 30+ 的 child frame 特性） | 进行中：=test/acm-test.el=（14 例，headless）+ =test/lsp-bridge-org-babel-test.el=（9 例）由 =scripts/check-test.sh= 跑通；=--all= 追加 langserver/byte-compile/语言服务器驱动的 Python 测试；剩余：CI 里的 Emacs 版本矩阵 |
 | **S7** | 文档（README/架构说明）+ 同步 emacs-config（5 处 advice、选项改名、删除已移除后端的 setup 块；若想要笔记补全需新增 =acm-enable-vulpea t=，目前 config 未开） | 用户日常使用回归；=emacs-config= 单独提交 |
