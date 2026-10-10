@@ -1,3 +1,9 @@
+;;; lsp-bridge-test.el --- In-Emacs smoke test for lsp-bridge
+
+;;; Commentary:
+
+;;; Code:
+
 (defun lsp-bridge-start-test ()
   "Start the LSP bridge test."
   (message "Starting LSP bridge test...")
@@ -11,3 +17,6 @@
     (sleep-for 1))
   (lsp-bridge-call-async "start_test")
   (while 't (sit-for 1)))
+
+(provide 'lsp-bridge-test)
+;;; lsp-bridge-test.el ends here

@@ -54,7 +54,7 @@ block has been pushed to the language server.")
   (setq-local lsp-bridge-org-babel--block-eop nil))
 
 (defun lsp-bridge-org-babel-check-lsp-server ()
-  "Check if current point is in org babel block. "
+  "Check whether point is in an Org Babel source block."
   (if (and lsp-bridge-org-babel--info-cache (lsp-bridge-org-babel-in-block-p (point)))
       lsp-bridge-org-babel--info-cache
     (setq-local lsp-bridge-org-babel--info-cache (org-element-context))

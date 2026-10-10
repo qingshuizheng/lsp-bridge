@@ -25,7 +25,7 @@ The Windows variant is used on Windows systems.")
 E.g. Use `-javaagent:/home/user/.emacs.d/plugin/lombok.jar` to add lombok support")
 
 (defun lsp-bridge-get-jdtls-server-by-project (project-path filepath)
-  "Get JDTLS configuration"
+  "Return the JDTLS configuration for PROJECT-PATH and FILEPATH."
   (let ((config-file (lsp-bridge-jdtls-config-file project-path filepath)))
     (if (not (file-exists-p config-file))
         (lsp-bridge-jdtls-init-config project-path filepath))
@@ -33,7 +33,7 @@ E.g. Use `-javaagent:/home/user/.emacs.d/plugin/lombok.jar` to add lombok suppor
 
 
 (defun lsp-bridge-jdtls-init-config (project-path filepath)
-  "Initialize JDTLS configuration"
+  "Initialize the JDTLS configuration for PROJECT-PATH and FILEPATH."
   (let* ((json-object-type 'plist)
          (config (json-read-file lsp-bridge-jdtls-default-file))
          (config-file (lsp-bridge-jdtls-config-file project-path filepath))
@@ -57,37 +57,37 @@ E.g. Use `-javaagent:/home/user/.emacs.d/plugin/lombok.jar` to add lombok suppor
       (insert (json-encode config)))))
 
 (defun lsp-bridge-jdtls-cache-dir (project-path filepath)
-  "[LSP-Bridge] JDTLS cache directory"
+  "Return the JDTLS cache directory for PROJECT-PATH and FILEPATH."
   (if (lsp-bridge-jdtls-single-file-mode? project-path filepath)
       (lsp-bridge-jdtls-single-file-cache-dir filepath)
     (lsp-bridge-jdtls-project-cache-dir project-path)))
 
 (defun lsp-bridge-jdtls-project-cache-dir (project-path)
-  "Project cache directory"
+  "Return the JDTLS cache directory used for PROJECT-PATH."
   (let ((project-name (file-name-nondirectory project-path))
         (project-hash (md5 project-path)))
     (expand-file-name (concat project-name "-" project-hash)
                       lsp-bridge-jdtls-workspace)))
 
 (defun lsp-bridge-jdtls-single-file-cache-dir (filepath)
-  "Signle file cache directory"
+  "Return the cache directory of the single file FILEPATH."
   (let ((single-file-hash (md5 filepath)))
     (expand-file-name single-file-hash
                       lsp-bridge-jdtls-workspace)))
 
 (defun lsp-bridge-jdtls-config-file (project-path filepath)
-  "JDTLS configuration file path of the project"
+  "Return the JDTLS configuration file path for PROJECT-PATH and FILEPATH."
   (expand-file-name lsp-bridge-jdtls-workspace-file-name
                     (lsp-bridge-jdtls-cache-dir project-path filepath)))
 
 (defun lsp-bridge-jdtls-project-data-dir (project-path filepath)
-  "Project data directory"
+  "Return the JDTLS data directory for PROJECT-PATH and FILEPATH."
   (expand-file-name "jdtls-data"
                     (lsp-bridge-jdtls-cache-dir project-path filepath)))
 
 
 (defun lsp-bridge-jdtls-single-file-mode? (project-path filepath)
-  "Determine whether it is a single file mode?"
+  "Return non-nil when PROJECT-PATH and FILEPATH name the same file."
   (lsp-bridge-path-equal project-path filepath))
 
 (dolist (hook (list
@@ -96,18 +96,22 @@ E.g. Use `-javaagent:/home/user/.emacs.d/plugin/lombok.jar` to add lombok suppor
   (add-hook hook (lambda () (setq-local lsp-bridge-get-single-lang-server-by-project 'lsp-bridge-get-jdtls-server-by-project))))
 
 (defun lsp-bridge-jdtls-apply-workspace-edit (action &optional temp-buffer)
-  "Command java.apply.workspaceEdit handler."
+  "Handle the java.apply.workspaceEdit command in ACTION.
+TEMP-BUFFER, when given, is the buffer the edits are applied to."
   (let ((arguments (plist-get action :arguments)))
     (dolist (argument arguments)
       (lsp-bridge-workspace-apply-edit argument temp-buffer))))
 
 (defun lsp-bridge-jdtls-override-methods-prompt (action &optional temp-buffer)
-  "Command java.action.overrideMethodsPrompt handler."
+  "Handle the java.action.overrideMethodsPrompt command in ACTION.
+TEMP-BUFFER, when given, receives the list of overridable methods."
   (let ((argument (car (plist-get action :arguments))))
     (lsp-bridge-call-file-api "jdtls_list_overridable_methods" argument)))
 
 (defun lsp-bridge-jdtls-add-overridable-methods (resp-json)
-  "Recv java/listOverridableMethods response and process java/addoverridablemethods command"
+  "Handle a java/listOverridableMethods response in RESP-JSON.
+The response is turned into the arguments of the
+java/addOverridableMethods command, which is then sent back."
   ;; NOTE: The reason using json-string directly is that lsp-bridge elisp object <-> python object is still unreliable
   (when-let* ((resp (json-parse-string resp-json :object-type 'plist))
               (response (plist-get resp :response))

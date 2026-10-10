@@ -111,10 +111,10 @@
 (defcustom acm-backend-lsp-match-mode "fuzzy"
   "The match mode to filter completion candidates.
 
-`prefix': filter candidates with input prefix, note such as C++, after `std::', candidate's prefix is not `::'. For input \"abc\", it will match \"^abc.*\"
+`prefix': filter candidates with input prefix, note such as C++, after `std::', candidate's prefix is not `::'.  For input \"abc\", it will match \"^abc.*\"
 `prefixCaseSensitive': filter candidates with input prefix, and case sensitive
-`fuzzy': fitler candidates with fuzzy algorithm. For input \"abc\", it will match \".*a.*b.*c.*\".
-`substring': filter candidates which treated the input as a literal string that must occur in the candidate. For input \"abc\", it will match \".*abc.*\"
+`fuzzy': fitler candidates with fuzzy algorithm.  For input \"abc\", it will match \".*a.*b.*c.*\".
+`substring': filter candidates which treated the input as a literal string that must occur in the candidate.  For input \"abc\", it will match \".*abc.*\"
 
 lsp-bridge still will use `fuzzy' algorithm filter candidates if value is not `prefix' `prefixCaseSensitive' `substring' or `fuzzy'.
 
@@ -133,7 +133,7 @@ it will cause the lsp-bridge to always send the previous batch of candidates whi
 
 `ignore': filter case insensitively
 `sensitive': filter case sensitively
-`smart': filter case sensitively if any cased characters in the input is uppercase. Otherwise, filter case sensitively
+`smart': filter case sensitively if any cased characters in the input is uppercase.  Otherwise, filter case sensitively
 
 Cased characters are those with general category property being one of “Lu” (Letter, uppercase), “Ll” (Letter, lowercase), or “Lt” (Letter, titlecase)."
   :type '(choice (const :tag "Ignore Case" "ignore")
@@ -179,8 +179,7 @@ Below is available types:
 `Variable' `Class' `Interface' `Module' `Property'
 `Unit' `Value' `Enum' `Keyword' `Snippet' `Color'
 `File' `Reference' `Folder' `EnumMember' `Constant'
-`Struct' `Event' `Operator' `TypeParameter'
-")
+`Struct' `Event' `Operator' `TypeParameter'"
 
 (defun acm-backend-lsp-init ()
   "Reset the buffer-local LSP completion state.

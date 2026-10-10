@@ -1,4 +1,8 @@
 ;;; lsp-bridge-call-hierarchy.el --- LSP bridge  -*- lexical-binding: t -*-
+
+;;; Commentary:
+
+;;; Code:
 (require 'acm-frame)
 
 (defvar lsp-bridge-call-hierarchy-name-width 40
@@ -11,7 +15,7 @@
   "Maximum height of the call hierarchy buffer.")
 
 (defvar lsp-bridge-call-hierarchy-preview-height 30
-  "Height of the preview window. (set 0 to disable preview)")
+  "Height of the preview window; 0 disables the preview.")
 
 (defvar lsp-bridge-call-hierarchy--frame nil
   "The child frame that shows the call hierarchy popup.")

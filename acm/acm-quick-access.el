@@ -1,4 +1,8 @@
-;;; acm-quick-access.el -*- lexical-binding: t -*-
+;;; acm-quick-access.el --- acm quick-access keys -*- lexical-binding: t -*-
+
+;;; Commentary:
+
+;;; Code:
 
 (defgroup acm-quick-access nil
   "ACM quick access."
@@ -44,7 +48,7 @@ Do nothing when the keys are already bound or when
                                       (hyper . "H")
                                       (control . "C")))))
       modifier
-    (warn "acm-quick-access-modifier value unknown: %S"
+    (warn "ACM quick-access-modifier value unknown: %S"
           acm-quick-access-modifier)
     "M"))
 

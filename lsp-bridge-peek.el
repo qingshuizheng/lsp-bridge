@@ -136,13 +136,14 @@ It holds the buffer file name and the point of the original
 location, so `lsp-bridge-peek-jump-back' can return to it.")
 
 (defvar lsp-bridge-peek-symbol-tree nil
-  "A tree structure for storing symbols, each element is a list. The first
-item of the list is the name of the symbol, the second item stores the paths
+  "A tree structure for storing symbols.
+Each element is a list: the first item is the name of the symbol, the second
+item stores the paths
 to files where definitions and references are, the third item stores the
 positions where definitions and references are in the file, the fourth item
 is the index of the parent node of the symbol in the list, and the fifth
 item is a list, storing the index of the node's child nodes in the list.
-The sixth item stores which child node is selected next. The seventh item
+The sixth item stores which child node is selected next.  The seventh item
 stores how many lines the file content was moved.")
 
 (defvar lsp-bridge-peek-symbol-at-point nil
@@ -246,8 +247,8 @@ height and background properties of the face."
 
 (define-minor-mode lsp-bridge-peek-mode
   "Mode for `lsp-bridge-peek'.
-This mode is created merely fo handling the UI (display, keymap,
-etc.), and is not for interactive use. Users should use commands
+This mode is created merely for handling the UI (display, keymap,
+etc.), and is not for interactive use.  Users should use commands
 like `lsp-bridge-peek', `lsp-bridge-peek-abort', `lsp-bridge-peek-restore',
 which take care of setting up other things."
   :keymap lsp-bridge-peek-keymap
@@ -656,7 +657,7 @@ When FORCE if non-nil, the content of the peek window is recalculated."
 (defun lsp-bridge-peek--error-if-not-peeking ()
   "Throw an error if not in a peek session."
   (unless lsp-bridge-peek-mode
-    (user-error "Not in a peek session.")))
+    (user-error "Not in a peek session")))
 
 (defun lsp-bridge-peek-list-move-line (num)
   "Select the definition/reference NUM entries from the current one.

@@ -250,7 +250,7 @@ serialized with `lsp-bridge-diagnostic-lock'."
 This is a second declaration of the variable defined above.")
 
 (defun lsp-bridge-diagnostic-insert-colored-string (color text)
-  "Insert a colored string at point in the current buffer."
+  "Insert TEXT coloured with COLOR at point in the current buffer."
   (let ((colored-text (propertize text 'face `(:foreground ,color))))
     (insert colored-text)))
 

@@ -226,9 +226,11 @@ after-string for parameter hints.  Rendering is serialized with
                     (setq hint-index (1+ hint-index)))))))))))
 
 (defun lsp-bridge-inlay-hint-retry (filepath)
-  "InlayHint will got error 'content modified' error if it followed immediately by a didChange request.
+  "Retry the InlayHint request for FILEPATH.
 
-If lsp-bridge detect this error, lsp-bridge will call `lsp-bridge-inlay-hint-retry' function again to avoid inlayHint request no respond."
+The server answers with a content-modified error when an inlayHint request
+follows a didChange immediately; lsp-bridge calls this again so that the
+request does not go unanswered."
   (when (string-prefix-p "file://" filepath)
     (setq filepath (string-remove-prefix "file://" filepath)))
   (when (lsp-bridge-path-equal filepath (buffer-file-name))

@@ -42,7 +42,7 @@
   "Ignore all mouse clicks.")
 
 (defvar acm-frame--emacs-frame nil
-  "The emacs frame.")
+  "The parent Emacs frame the popups are attached to.")
 
 (defconst acm-frame-fit-frame-to-buffer
   (if (functionp 'fit-frame-to-buffer-1)
@@ -198,8 +198,9 @@ POPUP-POS is handed to `acm-frame-adjust-frame-pos' (see there)."
 
 (cl-defmacro acm-frame-create-frame-if-not-exist (frame frame-buffer frame-name margin no-accept-focus)
   "Create the child frame FRAME unless it is already live.
-FRAME-BUFFER is shown inside it with MARGIN columns of left and right
-margin, and NO-ACCEPT-FOCUS is forwarded to `acm-frame-make-frame'."
+FRAME-NAME names the frame, FRAME-BUFFER is shown inside it with MARGIN
+columns of left and right margin, and NO-ACCEPT-FOCUS is forwarded to
+`acm-frame-make-frame'."
   `(unless (frame-live-p ,frame)
      (setq ,frame (acm-frame-make-frame ,frame-name ,no-accept-focus))
 

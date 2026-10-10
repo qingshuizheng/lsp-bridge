@@ -94,15 +94,15 @@ Default is 0.5 second, preview window will stick if this value too small."
   :group 'lsp-bridge)
 
 (defcustom lsp-bridge-code-action-enable-popup-menu t
-  "Enable code action menu and changes preview popup,
-Set it `nil' to improve performance."
+  "Whether to show the code-action menu and the change-preview popup.
+Set it to nil to improve performance."
   :type 'boolean
   :group 'lsp-bridge)
 
 (defcustom lsp-bridge-code-action-command-handlers
   '(java.apply.workspaceEdit lsp-bridge-jdtls-apply-workspace-edit
                              java.action.overrideMethodsPrompt lsp-bridge-jdtls-override-methods-prompt)
-  "LSP extra command handlers"
+  "Alist of extra command handlers the JDTLS server understands."
   :type 'cons
   :group 'lsp-bridge)
 
@@ -135,7 +135,7 @@ cons of point and point."
 
 Default request all kind code-action.
 
-You can send special kind of code-action, parameter `action-kind' can use one of below:
+You can send special kind of code-action, ACTION-KIND can be one of the kinds below:
 
 'quickfix'
 'refactor'
@@ -146,8 +146,7 @@ You can send special kind of code-action, parameter `action-kind' can use one of
 'source.organizeImports'
 'source.fixAll'
 
-Please read https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#codeActionKind for detail explain.
-"
+Please read https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#codeActionKind for detail explain."
   (interactive)
   (when (lsp-bridge-has-lsp-server-p)
     (let ((range (lsp-bridge-code-action-get-range)))

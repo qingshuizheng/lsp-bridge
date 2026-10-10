@@ -81,12 +81,12 @@
   :group 'lsp-bridge-ref)
 
 (defcustom lsp-bridge-ref-temp-buffer " *lsp-bridge-ref temp* "
-  "The buffer name of clone temp buffer"
+  "The buffer name of the clone temp buffer."
   :type 'string
   :group 'lsp-bridge-ref)
 
 (defcustom lsp-bridge-ref-mode-hook '()
-  "lsp-bridge-ref mode hook."
+  "The `lsp-bridge-ref-mode' hook."
   :type 'hook
   :group 'lsp-bridge-ref)
 
@@ -196,19 +196,19 @@ Default is `lsp-bridge-ref-popup-window-default-handler'."
   "The temp visit buffers use to kill temp buffer after quit lsp-bridge-ref.")
 
 (defvar lsp-bridge-ref-window-configuration-before-search nil
-  "Save window configuration before search,
-used to restore window configuration after finish search.")
+  "Window configuration saved before the search.
+It is restored once the search finishes.")
 
 (defvar lsp-bridge-ref-buffer-point-before-search nil
-  "Save buffer point before search,
-used to restore buffer point after finish search.")
+  "Buffer point saved before the search.
+It is restored once the search finishes.")
 
 (defvar lsp-bridge-ref-request-search-window nil
-  "Save the window which requested to find reference")
+  "The window that requested the reference search.")
 
 (defvar lsp-bridge-ref-window-configuration-before-apply nil
-  "Save window configuration before apply changed,
-used to restore window configuration after apply changed.")
+  "Window configuration saved before the changes are applied.
+It is restored once the changes have been applied.")
 
 (defvar lsp-bridge-ref-hit-count 0
   "Search keyword hit counter.")
@@ -377,8 +377,9 @@ Becomes buffer local in `lsp-bridge-ref-mode' buffers.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Utils functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun lsp-bridge-ref-popup (references-content references-counter)
-  "Rerun rg with customized arguments. This function will give
-user more freedom to use rg with special arguments."
+  "Show REFERENCES-CONTENT (REFERENCES-COUNTER matches) in the ref buffer.
+Reruns rg with the customized arguments, which gives the user more freedom
+to run rg with special arguments."
   ;; Save window configuration before do search.
   ;; Just save when `lsp-bridge-ref-window-configuration-before-search' is nil
   ;; Or current buffer is not `lsp-bridge-ref-buffer' (that mean user not quit lsp-bridge-ref and search again in other place).
@@ -1043,10 +1044,10 @@ Do nothing when the current line is empty."
     (lsp-bridge-ref-jump-to-column column)))
 
 (defun lsp-bridge-ref-jump-to-column (column)
-  "This function use for jump to correct column positions in multi-byte strings.
-Such as, mixed string of Chinese and English.
-
-Function `move-to-column' can't handle mixed string of Chinese and English correctly."
+  "Move forward COLUMN bytes in a line of mixed-width characters.
+`move-to-column' counts characters, but the reference buffer stores the
+column reported by rg as a byte offset, so the position is found by adding
+up `string-bytes' one character at a time."
   (let ((scan-column 0)
         (first-char-point (point)))
 

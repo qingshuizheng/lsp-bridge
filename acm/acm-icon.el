@@ -176,7 +176,7 @@ argument; it is used by `acm-icon-fetch-all'.")
 Each element has the form (TYPE COLLECTION NAME COLOR), where
 COLLECTION is a key of `acm-icon-collections', NAME is the icon name
 inside that collection and COLOR is a foreground color name.  The
-final `t' element is the fallback for unknown candidate types.")
+final t element is the fallback for unknown candidate types.")
 
 (defvar acm-icon-cache (make-hash-table :test 'equal)
   "Hash table caching rendered icons, keyed by \"COLLECTION_NAME\".")

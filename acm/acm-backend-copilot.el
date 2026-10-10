@@ -65,11 +65,10 @@ Format: '(:host \"127.0.0.1\" :port 80 :username \"username\" :password \"passwo
 Username and password are optional.
 
 If you are using a MITM proxy which intercepts TLS connections, you may need to disable
-TLS verification. This can be done by setting a pair ':rejectUnauthorized :json-false'
-in the proxy plist. For example:
+TLS verification.  This can be done by setting a pair ':rejectUnauthorized :json-false'
+in the proxy plist.  For example:
 
-  (:host \"127.0.0.1\" :port 80 :rejectUnauthorized :json-false)
-"
+  (:host \"127.0.0.1\" :port 80 :rejectUnauthorized :json-false)"
   :type '(plist :tag "Uncheck all to disable proxy" :key-type symbol)
   :options '((:host string) (:port integer) (:username string) (:password string))
   :group 'acm-backend-copilot)

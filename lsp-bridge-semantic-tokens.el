@@ -1,5 +1,9 @@
 ;;; lsp-bridge-semantic-tokens.el --- LSP bridge  -*- lexical-binding: t -*-
 
+;;; Commentary:
+
+;;; Code:
+
 (defgroup lsp-bridge-semantic-tokens nil
   "Semantic tokens support."
   :prefix "lsp-bridge-semantic-tokens-"
@@ -13,15 +17,14 @@
           (const :tag "hook" hook)))
 
 (defcustom lsp-bridge-semantic-tokens-timer-update-interval 1
-  "Value is a number specifying how many seconds to request semantic tokens in
-timer auto update method."
+  "Seconds between automatic semantic-token requests.
+The timer update method re-requests the tokens that often."
   :group 'lsp-bridge-semantic-tokens
   :type 'number)
 
 (defcustom lsp-bridge-semantic-tokens-delay 0.5
-  "Value is a number specifying how many seconds to wait after a
-window has been (re)scrolled or buffer has been changed before
-requesting new semantic tokens."
+  "Seconds to wait before requesting semantic tokens again.
+The wait starts when a window is scrolled or the buffer is changed."
   :group 'lsp-bridge-semantic-tokens
   :type 'number)
 
@@ -202,7 +205,7 @@ Faces to use for semantic token modifiers.")
   "Names of the face attributes handled when combining faces.")
 
 (defun lsp-bridge-semantic-tokens--combine-faces (faces)
-  "Combine attributes of faces to one face."
+  "Combine the face attributes of every face in FACES into one face."
   (let ((attributes (list)))
     (dolist (face faces)
       (dolist (attr-name lsp-bridge-semantic-tokens--face-attribute-names)
@@ -212,7 +215,7 @@ Faces to use for semantic token modifiers.")
     `((t ,@attributes))))
 
 (defun lsp-bridge-semantic-tokens--delete-overlays (keys)
-  "Delete semantic tokens overlays."
+  "Delete the semantic-token overlays of every key in KEYS."
   (dolist (key keys)
     (when-let* ((ov (gethash key lsp-bridge-semantic-tokens--overlays)))
       (delete-overlay ov)
@@ -222,7 +225,8 @@ Faces to use for semantic token modifiers.")
   "Mutex that serializes semantic token overlay rendering.")
 
 (defun lsp-bridge-semantic-tokens--render (buffer-name old-tokens new-tokens)
-  "Update semantic tokens."
+  "Update the semantic-token overlays of BUFFER-NAME.
+OLD-TOKENS is replaced by NEW-TOKENS in that buffer."
   ;; lsp-bridge is too fast, use locks to avoid interface disorder issues caused by multi-threaded rendering of overlays
   (with-mutex lsp-bridge-semantic-tokens-lock
     (with-current-buffer buffer-name
@@ -285,7 +289,8 @@ Faces to use for semantic token modifiers.")
 
 
 (defun lsp-bridge-semantic-tokens--request-1 (from to use-cache)
-  "Try request semantic tokens between FROM to TO."
+  "Request semantic tokens between FROM and TO.
+USE-CACHE non-nil lets the Python side answer from its cache."
   (lsp-bridge-call-file-api "semantic_tokens"
                             (buffer-name)
                             (lsp-bridge--point-position from)
@@ -295,7 +300,8 @@ Faces to use for semantic token modifiers.")
                               0)))
 
 (defun lsp-bridge-semantic-tokens--after-window-scroll (window display-start)
-  "Try request semantic tokens after window scroll."
+  "Request semantic tokens after DISPLAY-START scrolled WINDOW.
+The request is skipped when the window shows the same region as before."
   (cl-macrolet ((wsetq (sym val) `(set-window-parameter window ',sym ,val))
                 (wgetq (sym) `(window-parameter window ',sym)))
     (let ((buf (window-buffer window))

@@ -1,4 +1,8 @@
-;;; acm-backend-org-roam.el -*- lexical-binding: t; no-byte-compile: t; -*-
+;;; acm-backend-org-roam.el --- acm org-roam support -*- lexical-binding: t; no-byte-compile: t; -*-
+
+;;; Commentary:
+
+;;; Code:
 
 (defgroup acm-backend-org-roam nil
   "Org roam backend for acm."
@@ -55,4 +59,4 @@ non-blank.  Do nothing when the regexp does not match."
 
 (provide 'acm-backend-org-roam)
 
-;;;acm-backend-org-roam.el ends here
+;;; acm-backend-org-roam.el ends here

@@ -1,4 +1,8 @@
-;;; acm-backend-tempel.el -*- lexical-binding: t; no-byte-compile: t; -*-
+;;; acm-backend-tempel.el --- acm tempel support -*- lexical-binding: t; no-byte-compile: t; -*-
+
+;;; Commentary:
+
+;;; Code:
 
 (defgroup acm-backend-tempel nil
   "Tempel backend for acm."
@@ -56,4 +60,4 @@ template named by the candidate label."
 
 (provide 'acm-backend-tempel)
 
-;;;acm-backend-tempel.el ends here
+;;; acm-backend-tempel.el ends here
