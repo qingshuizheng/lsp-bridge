@@ -109,6 +109,25 @@
   :type 'integer
   :group 'acm)
 
+(defcustom acm-menu-cycle nil
+  "If non-nil, selecting past the ends of the candidate list wraps around.
+With this on, `acm-select-next' on the last candidate selects the first one
+and `acm-select-prev' on the first selects the last, instead of stopping.
+Only those two commands wrap; the page commands still stop at the ends."
+  :type 'boolean
+  :group 'acm)
+
+(defcustom acm-hide-on-blank nil
+  "If non-nil, hide the menu when point ends up at a blank position.
+A blank position is the start of a line or right after whitespace.  It is
+checked after every command that runs while the menu is up,
+because a deletion can uncover whitespace or the beginning of a line without
+any command that `acm-continue-commands' would hide the menu for.  The
+`lsp-bridge-completion-popup-predicates' decide whether completion may start
+at such a position; this option only hides a menu that is already shown."
+  :type 'boolean
+  :group 'acm)
+
 (defcustom acm-continue-commands
   ;; nil is undefined command
   '(nil ignore universal-argument universal-argument-more digit-argument
@@ -349,6 +368,7 @@ backend of the current candidate to clean its cache."
 
     ;; Remove hook of `acm--pre-command'.
     (remove-hook 'pre-command-hook #'acm--pre-command 'local)
+    (remove-hook 'post-command-hook #'acm--post-command 'local)
 
     ;; If completion menu is show, clean backend cache.
     ;; Don't clean backend cache if menu is hide, to make sure completion menu have candidate when call command `lsp-bridge-popup-complete-menu'.
@@ -636,6 +656,10 @@ the menu or renders it.  Return nil."
 
         ;; Use `pre-command-hook' to hide completion menu when command match `acm-continue-commands'.
         (add-hook 'pre-command-hook #'acm--pre-command nil 'local)
+        ;; An option, because the pre command hook above cannot see a deletion that
+        ;; uncovers whitespace: those commands are in `acm-continue-commands'.
+        (when acm-hide-on-blank
+          (add-hook 'post-command-hook #'acm--post-command nil 'local))
 
         ;; Adjust candidates.
         (setq-local acm-menu-offset 0)  ;init offset to 0
@@ -747,6 +771,22 @@ Cancel the pending markdown render and forget the rendered text."
   (acm-cancel-timer (acm-popup markdown-timer))
 
   (acm-popup-set 'markdown-doc nil))
+
+(defun acm--at-blank-position-p ()
+  "Return non-nil when point is at the start of a line or after whitespace.
+Whitespace is decided by the syntax table, where `char-syntax' yields ?\s only
+for whitespace syntax, so tabs count and no other syntax class is mixed in."
+  (or (bolp)
+      (eq (char-syntax (or (char-before) 0)) ?\s)))
+
+(defun acm--post-command ()
+  "Hide the menu when `acm-hide-on-blank' is set and point is at blank.
+Installed on the buffer-local `post-command-hook' while the menu is up, so a
+deletion that uncovers whitespace or the start of a line hides it too."
+  (when (and acm-hide-on-blank
+             (acm-frame-visible-p (acm-popup menu-frame))
+             (acm--at-blank-position-p))
+    (acm-hide)))
 
 (defun acm--pre-command ()
   "Hide the completion menu for commands outside `acm-continue-commands'.
@@ -1215,6 +1255,22 @@ map binds `completion-at-point'."
       (and (minibufferp)
            (where-is-internal #'completion-at-point (list (current-local-map))))))
 
+(defun acm--cycle-next-p ()
+  "Return non-nil when `acm-select-next' has to wrap to the first candidate.
+That is the case when `acm-menu-cycle' is set and the selected candidate is
+the last one of the whole list, not only of the visible page."
+  (and acm-menu-cycle
+       (= acm-menu-index (1- (length acm-menu-candidates)))
+       (= (+ acm-menu-offset acm-menu-index) (1- (length acm-candidates)))))
+
+(defun acm--cycle-prev-p ()
+  "Return non-nil when `acm-select-prev' has to wrap to the last candidate.
+That is the case when `acm-menu-cycle' is set and the first candidate of the
+whole list is selected."
+  (and acm-menu-cycle
+       (= acm-menu-index 0)
+       (= acm-menu-offset 0)))
+
 (defun acm-select-first ()
   "Select first candidate."
   (interactive)
@@ -1232,22 +1288,28 @@ map binds `completion-at-point'."
      )))
 
 (defun acm-select-next ()
-  "Select next candidate."
+  "Select next candidate.
+With `acm-menu-cycle' non-nil, the last candidate wraps to the first."
   (interactive)
-  (acm-menu-update
-   (cond ((< acm-menu-index (1- (length acm-menu-candidates)))
-          (setq-local acm-menu-index (1+ acm-menu-index)))
-         ((< (+ acm-menu-offset acm-menu-index) (1- (length acm-candidates)))
-          (setq-local acm-menu-offset (1+ acm-menu-offset))))))
+  (if (acm--cycle-next-p)
+      (acm-select-first)
+    (acm-menu-update
+     (cond ((< acm-menu-index (1- (length acm-menu-candidates)))
+            (setq-local acm-menu-index (1+ acm-menu-index)))
+           ((< (+ acm-menu-offset acm-menu-index) (1- (length acm-candidates)))
+            (setq-local acm-menu-offset (1+ acm-menu-offset)))))))
 
 (defun acm-select-prev ()
-  "Select previous candidate."
+  "Select previous candidate.
+With `acm-menu-cycle' non-nil, the first candidate wraps to the last."
   (interactive)
-  (acm-menu-update
-   (cond ((> acm-menu-index 0)
-          (setq-local acm-menu-index (1- acm-menu-index)))
-         ((> acm-menu-offset 0)
-          (setq-local acm-menu-offset (1- acm-menu-offset))))))
+  (if (acm--cycle-prev-p)
+      (acm-select-last)
+    (acm-menu-update
+     (cond ((> acm-menu-index 0)
+            (setq-local acm-menu-index (1- acm-menu-index)))
+           ((> acm-menu-offset 0)
+            (setq-local acm-menu-offset (1- acm-menu-offset)))))))
 
 (defun acm-select-next-page ()
   "Select next page candidate."

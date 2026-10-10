@@ -257,6 +257,23 @@ ruff check core lsp_bridge.py          # S2 起接入
 断言 **EPC 对外方法集合与 HEAD 完全一致**（52 = 19 类内 + 33 继承）、 mixin 不重叠、
 模块级 helper 仍可从 =lsp_bridge= 导入；docstring 1591/1591 = 100%。
 
+**S7 后续 3：acm 的两个行为选项**（都由配置里的 advice/钩子下沉而来，**默认关闭**）：
+
+- =acm-menu-cycle=：=acm-select-next= 在末候选、=acm-select-prev= 在首候选时环绕 ✓
+  （只有这两个命令环绕，翻页命令仍停在两端 ✓）。判断抽成 =acm--cycle-next-p=／
+  =acm--cycle-prev-p= —— 因为 =acm-menu-update= 是 **=cl-defmacro=**，内联展开，
+  函数级 stub 拦不住命令本体 ✗（我第一版测试就是这么失败的 ✓），所以改成
+  "测判断 + 用可 stub 的 =acm-select-first/last= 测分支" ✓。
+- =acm-hide-on-blank=：point 落在行首或空白之后时隐藏菜单 ✓。acm 在**显示菜单时**
+  随 =pre-command-hook= 一起挂一个 **buffer-local** =post-command-hook= ✓
+  ⇒ 用户不再需要"遍历所有 buffer 安装钩子"的 installer ✓。判断抽成
+  =acm--at-blank-position-p=（行首 / =char-syntax= 为 =?\s= ✓）。
+
+测试 +6 例（=test/acm-test.el= 共 20 ✓）。踩坑两处记录在案：=insert= 之后 point 在**文末**
+而非行首 ✗（探查脚本与测试都曾因此把"行首"误判为"词中" ✓）；Python 里写 =?\s= 多转义了一层 ✗。
+验收：=check-elisp.sh= 退出码 0 且告警 **146 = 基线** ✓；ERT **72**（+6）✓；checkdoc 0 ✓；
+docstring **1619/1619 = 100%** ✓。
+
 **S7 后续 2：把 `this-command` 的卡死隐患修进包内**：上游有 8 处把命令对象
 字符串化（=lsp-bridge-core.el= 4 处、=lsp-bridge-completion.el= 3 处（含 =last-command=）、
 =lsp-bridge-diagnostic.el= 1 处）。=this-command=/=last-command= 有可能不是符号

@@ -220,5 +220,100 @@ sit inside the string for this test."
       (should (= acm-menu-index 1))
       (should (equal (plist-get (acm-menu-current-candidate) :label) "abcde")))))
 
+
+;;; The two behaviour options
+
+(ert-deftest acm-test-cycle-next-p ()
+  "The wrap decision of `acm-select-next' is off without the option."
+  (with-temp-buffer
+    (setq-local acm-candidates '(a b c)
+                acm-menu-candidates '(a b c)
+                acm-menu-offset 0
+                acm-menu-index 2)
+    (setq-local acm-menu-cycle nil)
+    (should-not (acm--cycle-next-p))
+    (setq-local acm-menu-cycle t)
+    (should (acm--cycle-next-p))
+    ;; only the last candidate of the whole list wraps, not the last of a page
+    (setq-local acm-candidates '(a b c d e) acm-menu-candidates '(a b c))
+    (should-not (acm--cycle-next-p))))
+
+(ert-deftest acm-test-cycle-prev-p ()
+  "The wrap decision of `acm-select-prev' is off without the option."
+  (with-temp-buffer
+    (setq-local acm-candidates '(a b c)
+                acm-menu-candidates '(a b c)
+                acm-menu-offset 0
+                acm-menu-index 0)
+    (setq-local acm-menu-cycle nil)
+    (should-not (acm--cycle-prev-p))
+    (setq-local acm-menu-cycle t)
+    (should (acm--cycle-prev-p))
+    (setq-local acm-menu-index 1)
+    (should-not (acm--cycle-prev-p))))
+
+(ert-deftest acm-test-select-next-uses-the-wrap-decision ()
+  "`acm-select-next' wraps through `acm-select-first' when the decision says so."
+  (with-temp-buffer
+    (setq-local acm-candidates '(a b c)
+                acm-menu-candidates '(a b c)
+                acm-menu-offset 0
+                acm-menu-index 2
+                acm-menu-cycle t)
+    (let (wrapped)
+      (cl-letf (((symbol-function 'acm-select-first) (lambda () (setq wrapped t))))
+        (acm-select-next))
+      (should wrapped))))
+
+(ert-deftest acm-test-select-prev-uses-the-wrap-decision ()
+  "`acm-select-prev' wraps through `acm-select-last' when the decision says so."
+  (with-temp-buffer
+    (setq-local acm-candidates '(a b c)
+                acm-menu-candidates '(a b c)
+                acm-menu-offset 0
+                acm-menu-index 0
+                acm-menu-cycle t)
+    (let (wrapped)
+      (cl-letf (((symbol-function 'acm-select-last) (lambda () (setq wrapped t))))
+        (acm-select-prev))
+      (should wrapped))))
+
+(ert-deftest acm-test-at-blank-position ()
+  "The blank check covers the start of a line and whitespace before point."
+  (with-temp-buffer
+    (insert "foo\n\nbar baz")
+    ;; note that `insert' leaves point at the end of the text, so the first
+    ;; position has to be chosen explicitly
+    (goto-char (point-min))
+    (should (acm--at-blank-position-p))          ; beginning of a line
+    (forward-char 1)
+    (should-not (acm--at-blank-position-p))      ; inside a word
+    (forward-line 1)
+    (should (acm--at-blank-position-p))          ; beginning of an empty line
+    (forward-line 1)
+    (search-forward "baz")
+    (should-not (acm--at-blank-position-p))      ; inside a word
+    (goto-char (point-max))
+    (insert " ")
+    (should (acm--at-blank-position-p))          ; right after a space
+    (insert "\t")
+    (should (acm--at-blank-position-p))))        ; and after a tab
+
+(ert-deftest acm-test-post-command-hides-on-blank ()
+  "`acm--post-command' hides the menu only when the option is on."
+  (with-temp-buffer
+    (insert "foo")
+    (goto-char (point-min))              ; the menu is up while point is at blank
+    (let (hidden)
+      (cl-letf (((symbol-function 'acm-frame-visible-p) (lambda (&rest _) t))
+                ((symbol-function 'acm-hide) (lambda () (setq hidden t))))
+        (setq-local acm-hide-on-blank t)
+        (acm--post-command)
+        (should hidden)
+        (setq hidden nil)
+        (setq-local acm-hide-on-blank nil)
+        (acm--post-command)
+        (should-not hidden)))))
+
 (provide 'acm-test)
 ;;; acm-test.el ends here
