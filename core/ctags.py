@@ -45,6 +45,7 @@ class Ctags:
     answers jump-to-definition.  A result is dropped when the cursor has moved
     on, which is what the lock and `current_cursor_offset` guard.
     """
+
     def __init__(self) -> None:
         """Create the backend with no cursor offset recorded yet."""
         self.current_cursor_offset = 0

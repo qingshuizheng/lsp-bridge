@@ -32,11 +32,13 @@ from contextlib import contextmanager
 
 class SendMessageException(Exception):
     """Raised when a remote message cannot be delivered to its peer."""
+
     pass
 
 
 class ContainerConnectionException(Exception):
     """Raised when a Docker container socket cannot be reached."""
+
     pass
 
 

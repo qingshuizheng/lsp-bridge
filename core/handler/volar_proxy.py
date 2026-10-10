@@ -12,6 +12,7 @@ from core.handler import Handler
 
 class TsserverRequestHandler(Handler):
     """Minimal handler to receive tsserverRequest responses from TS LSP server."""
+
     name = "tsserver_request_proxy"
     method = "typescript.tsserverRequest"
     cancel_on_change = False

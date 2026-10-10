@@ -35,6 +35,7 @@ class SearchFileWords:
     word sets in `files`, and `search` matches the prefix at point against the
     union of those sets.
     """
+
     def __init__(self):
         """Read the Emacs options and start the indexing dispatcher thread.
 

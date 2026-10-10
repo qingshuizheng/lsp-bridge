@@ -596,7 +596,6 @@ class LspBridge:
             ssh_port: Port from the TRAMP file name, may be empty.
             path: Path of the file inside the remote host.
         """
-
         # tramp_file_name format example:
         #   /ssh:user@ip#port:/path/to/file
         #   /docker:user@container:/path/to/file

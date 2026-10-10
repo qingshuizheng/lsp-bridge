@@ -16,6 +16,7 @@ class Strategy(Enum):
     have different types and merge otherwise; TYPESAFE is an alias of
     TYPESAFE_REPLACE.
     """
+
     # Replace `destination` item with one from `source` (default).
     REPLACE = 0
     # Combine `list`, `tuple`, `set`, or `Counter` types into one collection.
