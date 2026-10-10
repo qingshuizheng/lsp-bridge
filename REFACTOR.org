@@ -234,6 +234,17 @@ ruff check core lsp_bridge.py          # S2 起接入
    （无值的 defvar = 声明 ✓，docstring 门禁已能识别）；只对**包外**库用 =require=（=cl-lib=／=tramp=／=subr-x=）。
    对包内文件 =require=（例如 =(require 'lsp-bridge-epc)=）会把整个 =lsp-bridge.el= 提前加载，
    从而**改变后续文件的告警画像** ⇒ 一律声明，不 require 包内文件。
+**进度 3**：第 3 步（=documentation/signature= 层）已完成 —— =lsp-bridge-document.el=
+（206 行、19 个定义：=show-documentation= 与两个回调、=popup-documentation= 系列的 frame 与滚动、
+HTML 实体替换、=signature-*= 的展示函数/变量/更新入口），=lsp-bridge.el= 3761 → 3589 行。
+这一步与 jump 簇在文件里**交错**，所以我把工具升级为**按定义名集合**搬家
+（=reader= 取每个 form 的精确 span，1-based → 0-based 转换、可连带上方的注释块、
+移除后校验括号平衡）；后续 =jump=／=workspace=／=completion=／=transport=／=core= 都可直接复用。
+另外把符号扫描从 =lsp-bridge-*=／=acm-backend-lsp-*= 扩展到 =acm-*=，
+并且**刻意不声明**树里根本没有定义的被调用符号（当前是 =acm-frame-new=）——
+声明会掩盖这个既有 bug 的告警，所以让它继续可见（记为待修）。
+本步验收：归一化 warning 多重集**完全一致**（152 = 152，空 diff）。
+
 3. **编译顺序必须确定**：=check-elisp.sh= 之前用 =git ls-files --cached --others=，
    未跟踪的新文件被 git 排在最前面编译 ⇒ 同样的代码得到不同的告警集合（假象）。
    现在输出 =| sort=，并在对比时对两侧都用同一脚本＋同一文件集合。
