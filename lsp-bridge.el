@@ -527,8 +527,7 @@ content."
   "Log level used for the messages printed to the `*lsp-bridge*' buffer.
 Accepted values are `default' (INFO), `debug', `warning', `error' and
 `critical'; they select the minimum Python logging level, see
-https://docs.python.org/3/library/logging.html#levels.
-"
+https://docs.python.org/3/library/logging.html#levels."
   :type '(choice
           (const :tag "default log level, which is INFO level" default)
           (const :tag "only for debug purpose" debug)
@@ -1142,8 +1141,10 @@ by path for local hosts or by host and path for remote ones."
          ,@body))))
 
 (cl-defmacro lsp-bridge-save-position (&rest body)
-  "`save-excursion' not enough for LSP code format.
-So we build this macro to restore postion after code format."
+  "Evaluate BODY and restore point afterwards.
+`save-excursion' is not enough for LSP code format, so the line, the
+column and the indentation column are recorded before BODY runs and
+restored after it."
   `(let* ((current-buf (current-buffer))
           (current-line (line-number-at-pos nil t))
           (current-column (lsp-bridge--calculate-column))
@@ -1173,8 +1174,8 @@ when the buffer itself is not visiting a file."
 
 (defun lsp-bridge-buffer-file-name (name)
   "Return NAME without text properties when it is a string.
-`buffer-file-name' may carry face properties, which are removed here;
-return nil when NAME is not a string."
+The variable `buffer-file-name' may carry face properties, which are
+removed here; return nil when NAME is not a string."
   ;; `buffer-file-name' may contain face property, we need use `substring-no-properties' remove those face from buffer name.
   (when (stringp name)
     (substring-no-properties name)))
@@ -1228,7 +1229,7 @@ sensitive everywhere else."
         (t (string-equal path-a path-b))))
 
 (defun lsp-bridge--get-project-path-func (filename)
-  "Get project root path, search order:
+  "Return the project root path of FILENAME, search order:
 
 1. Follow the rule of `lsp-bridge-get-project-path-by-filepath'
 2. Search up `.dir-locals.el'
@@ -1265,14 +1266,18 @@ that option is unset."
     (funcall lsp-bridge-get-workspace-folder project-path)))
 
 (defun lsp-bridge--get-multi-lang-server-func (project-path filename)
-  "Get lang server with project path, file path or file extension."
+  "Return the multi lang server name for FILENAME in PROJECT-PATH.
+The project function wins when set, then the extension and the file
+mode rules are tried."
   (or (when lsp-bridge-get-multi-lang-server-by-project
         (funcall lsp-bridge-get-multi-lang-server-by-project project-path filename))
       (lsp-bridge-get-multi-lang-server-by-extension filename)
       (lsp-bridge-get-multi-lang-server-by-file-mode filename)))
 
 (defun lsp-bridge--get-single-lang-server-func (project-path filename)
-  "Get lang server with project path, file path or file extension."
+  "Return the single lang server name for FILENAME in PROJECT-PATH.
+The project function wins when set, then the extension and the file
+mode rules are tried."
   (or (when lsp-bridge-get-single-lang-server-by-project
         (funcall lsp-bridge-get-single-lang-server-by-project project-path filename))
       (lsp-bridge-get-single-lang-server-by-extension filename)
@@ -1292,7 +1297,11 @@ that option is unset."
   (or lsp-bridge-tsdk-path ""))
 
 (defun lsp-bridge--get-buffer-content-func (buffer-name &optional no-org-babel)
-  "Get buffer content for lsp. BUFFER-NAME is name eval from (buffer-name)."
+  "Return the content of BUFFER-NAME for the language server.
+BUFFER-NAME is the name returned by `buffer-name'.  When
+`lsp-bridge-enable-org-babel' is enabled and the buffer is an org
+buffer, the current src block content is returned unless
+NO-ORG-BABEL is non-nil."
   (when-let* ((buf (get-buffer buffer-name)))
     (if (and lsp-bridge-enable-org-babel
              (eq major-mode 'org-mode) (not no-org-babel))
@@ -1436,8 +1445,8 @@ The major mode of the file is looked up in
 
 (defun lsp-bridge-get-single-lang-server-by-file-mode (filename)
   "Return the single lang server name for FILENAME.
-For .org files, scan all buffers for an active C-c ' (org-src-mode)
-sub-buffer editing this file and use its major-mode (e.g.
+For .org files, scan all buffers for an active org src edit buffer
+\(`org-src-mode') editing this file and use its major-mode (e.g.
 groovy-mode) for server lookup.  This avoids depending on the
 calling buffer's local variables, which may not be set when
 Python queries get-single-lang-server.
@@ -1976,7 +1985,9 @@ The last change command and `last-command' are both checked against
            (member (format "%s" last-command) lsp-bridge-completion-stop-commands))))
 
 (defun lsp-bridge-string-interpolation-p (string-interpolation-open-chars-alist)
-  "Check if the cursor position is subject to string interpolation"
+  "Return non-nil if point is inside a string interpolation.
+STRING-INTERPOLATION-OPEN-CHARS-ALIST maps the major mode to the
+regexp that opens an interpolation."
   (when-let* ((search-char (cdr (assoc (buffer-local-value 'major-mode (current-buffer))
                                        string-interpolation-open-chars-alist)))
               (open-pos (save-excursion (search-backward-regexp search-char nil t))))
@@ -2077,7 +2088,7 @@ the menu unless it is a trigger character of the language server."
             mind-wave-is-response-p)))
 
 (defvar-local lsp-bridge-manual-complete-flag nil
-  "Whether the next completion must popup because the user asked for it.
+  "Non-nil means the next completion pops up on user request.
 Set by `lsp-bridge-popup-complete-menu' and reset once the menu is
 shown.")
 
@@ -2354,7 +2365,8 @@ it."
       (setq-local acm-backend-path-items nil))))
 
 (defun lsp-bridge-elisp-get-filepath ()
-  " Supports obtaining paths with spaces "
+  "Return the file path at point.
+Paths that contain spaces are supported."
   (let* ((file-end (point))
          (filepath (save-excursion
                      (catch 'break
@@ -2459,10 +2471,9 @@ buffer name."
   :group 'lsp-bridge)
 
 (defcustom lsp-bridge-find-def-select-in-open-windows nil
-  "If this option is turned on, when searching for function definitions,
-already open windows will be selected instead of switching buffers.
-
-Off by default."
+  "Whether to open definitions in already open windows.
+When non-nil, an already open window showing the definition is
+selected instead of switching buffers; off by default."
   :type 'boolean
   :group 'lsp-bridge)
 
@@ -2781,7 +2792,7 @@ target and `lsp-bridge-flash-line' highlights it."
 
 (defun lsp-bridge-switch-to-documentation-buffer (norecord)
   "Show the documentation buffer in another window.
-NOREREC is passed to `switch-to-buffer-other-window'."
+NORECORD is passed to `switch-to-buffer-other-window'."
   (interactive)
   (switch-to-buffer-other-window
    (get-buffer-create lsp-bridge-buffer-documentation-buffer) norecord))
@@ -2811,7 +2822,7 @@ reused, filled with the markdown rendered VALUE and displayed."
     (display-buffer buffer 'display-buffer-reuse-window)))
 
 (defvar lsp-bridge-popup-documentation-frame nil
-  "acm frame used to show hover documentation near point.")
+  "Popup frame used to show hover documentation near point.")
 
 (defun lsp-bridge-popup-documentation-scroll-up (&optional arg)
   "Scroll the hover documentation frame up by ARG lines.
@@ -2877,7 +2888,7 @@ Accepted values are `bottom-right' (the default), `top-left',
   :group 'lsp-bridge)
 
 (defvar lsp-bridge-signature-frame nil
-  "acm frame used to show the signature help popup.")
+  "Popup frame used to show the signature help.")
 
 (defun lsp-bridge-hide-signature-tooltip ()
   "Hide the signature help popup frame."
@@ -3524,7 +3535,7 @@ the mode line, with a timer that clears it after a while."
         (force-mode-line-update)))))
 
 (defun lsp-bridge--format-progress-message (progress)
-  "Format progress message for mode-line display."
+  "Return the mode line text for the work done PROGRESS message."
   (let* (;; Extract percentage like (96%%)
          (percent-match (string-match "\\(([0-9]+%%)\\)" progress))
          (percent (if percent-match
@@ -3580,7 +3591,7 @@ the mode line, with a timer that clears it after a while."
                `(lsp-bridge-mode ("" lsp-bridge--mode-line-format " "))))
 
 (defvar-local lsp-bridge-remote-file-flag nil
-  "Non-nil when this buffer was opened by lsp-bridge for a remote file.")
+  "Non-nil means this buffer was opened for a remote file.")
 
 (defvar-local lsp-bridge-remote-file-tramp-method nil
   "Tramp method of the remote file of this buffer.")
@@ -3613,7 +3624,7 @@ Used to detect that a minibuffer input names a remote file; the
 TODO notes that tramp docker patterns are not covered yet.")
 
 (defun lsp-bridge-open-or-create-file (filepath)
-  "Open FILEPATH, if it exists. If not, create it and its parent directories."
+  "Open FILEPATH, if it exists.  If not, create it and its parents."
   (if (file-exists-p filepath)
       (with-temp-buffer
         (insert-file-contents filepath)
@@ -3624,7 +3635,7 @@ TODO notes that tramp docker patterns are not covered yet.")
 
 (defun lsp-bridge-open-remote-file ()
   "Ask for a remote `ip:path' file and open it on the server.
-Recent entries are offered from the ip.txt file in the user emacs
+Recent entries are offered from the ip.txt file in the user Emacs
 directory, which is created when missing."
   (interactive)
   (let* ((ip-file (concat (lsp-bridge--user-emacs-directory-func)
@@ -3734,7 +3745,9 @@ SSH tramp file name is like /ssh:user@host#port:path"
           ":" path))
 
 (defun lsp-bridge-remote-reconnect (remote-file-host force)
-  "Restore TRAMP connection infomation of REMOTE-FILE-HOST."
+  "Reconnect the buffer of REMOTE-FILE-HOST to its tramp connection.
+FORCE is passed to `lsp-bridge-sync-tramp-remote'; the call only runs
+when `lsp-bridge-remote-start-automatically' is non-nil."
   (when lsp-bridge-remote-start-automatically
     (with-current-buffer (lsp-bridge-get-match-buffer-by-filehost remote-file-host)
       ;; unify handling logic for buffer created by `lsp-bridge-open-remote-file' or open by tramp
