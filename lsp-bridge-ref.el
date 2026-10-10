@@ -225,7 +225,8 @@ used to restore window configuration after apply changed.")
 (defvar lsp-bridge-ref-changed-lines nil
   "The list that record the changed lines.")
 
-(defvar lsp-bridge-ref-read-input-history nil)
+(defvar lsp-bridge-ref-read-input-history nil
+  "Minibuffer history for the input of lsp-bridge-ref searches.")
 
 (defvar lsp-bridge-ref-files-history nil "History for files args.")
 
@@ -284,6 +285,10 @@ used to restore window configuration after apply changed.")
   "Edit keymap used by `lsp-bridge-ref-mode'.")
 
 (define-derived-mode lsp-bridge-ref-mode text-mode "lsp-bridge-ref"
+  "Major mode for viewing lsp-bridge search results.
+
+The buffer is read-only; keys of `lsp-bridge-ref-mode-map' navigate
+and open the listed matches."
   (kill-all-local-variables)
   (setq major-mode 'lsp-bridge-ref-mode)
   (setq mode-name "lsp-bridge-ref")
@@ -314,6 +319,10 @@ used to restore window configuration after apply changed.")
   (font-lock-mode 1))
 
 (defun lsp-bridge-ref-update-header-line ()
+  "Update `header-line-format' from the current search state.
+
+Show the search mode, `lsp-bridge-ref-hit-count' and the key
+bindings of `lsp-bridge-ref-mode-map' in the header line."
   (setq header-line-format (concat
                             (propertize (format "%s mode" (lsp-bridge-ref-search-mode lsp-bridge-ref-cur-search)) 'font-lock-face 'lsp-bridge-ref-font-lock-match)
                             (propertize (format " %s matches" lsp-bridge-ref-hit-count) 'font-lock-face 'lsp-bridge-ref-font-lock-header-line-text)
@@ -434,24 +443,36 @@ user more freedom to use rg with special arguments."
   (funcall lsp-bridge-ref-popup-window-handler))
 
 (defun lsp-bridge-ref-find-next-position (regexp)
+  "Search forward from end of line for REGEXP.
+Return the position after the first match, or nil if the rest of
+the buffer does not match."
   (save-excursion
     (end-of-line)
     (search-forward-regexp regexp nil t)))
 
 (defun lsp-bridge-ref-get-match-file ()
+  "Return the file name of the match around point.
+Search backward for `lsp-bridge-ref-regexp-file' and return the
+matching line without its text properties or trailing newline."
   (save-excursion
     (search-backward-regexp lsp-bridge-ref-regexp-file nil t)
     (substring-no-properties (string-remove-suffix "\n" (thing-at-point 'line)))))
 
 (defun lsp-bridge-ref-get-match-line ()
+  "Return the line number of the match at point as a number.
+Move point to the beginning of the line first."
   (beginning-of-line)
   (string-to-number (thing-at-point 'symbol)))
 
 (defun lsp-bridge-ref-get-match-column ()
+  "Return the column number of the match at point as a number.
+Move point forward to the colon that follows the line number."
   (search-forward ":")
   (string-to-number (thing-at-point 'symbol)))
 
 (defun lsp-bridge-ref-get-match-buffer (filepath)
+  "Return the visiting buffer of FILEPATH, or nil if it is not open.
+FILEPATH is compared with the buffer's file name."
   (cl-dolist (buffer (buffer-list))
     (let* ((buf-file-name (buffer-file-name buffer))
            (file-name (if (stringp buf-file-name) (substring-no-properties buf-file-name) buf-file-name)))
@@ -460,11 +481,15 @@ user more freedom to use rg with special arguments."
         ))))
 
 (defun lsp-bridge-ref-current-line-empty-p ()
+  "Return non-nil if the current line contains only whitespace."
   (save-excursion
     (beginning-of-line)
     (looking-at "[[:space:]]*$")))
 
 (defun lsp-bridge-ref-get-line-content (buffer line)
+  "Return the code text of LINE from BUFFER.
+The result starts after the line:column prefix matched by
+`lsp-bridge-ref-regexp-position' and runs to the end of the line."
   (with-current-buffer buffer
     (save-excursion
       (goto-line line)
@@ -477,6 +502,8 @@ user more freedom to use rg with special arguments."
     ))
 
 (defun lsp-bridge-ref-get-row-column-position ()
+  "Return the position where the line:column prefix of the current line starts.
+Return nil when the line has no such prefix."
   (let* ((search-bound
           (save-excursion
             (end-of-line)
@@ -488,6 +515,11 @@ user more freedom to use rg with special arguments."
     row-column-position))
 
 (defun lsp-bridge-ref-after-change-function (beg end leng-before)
+  "Track a buffer change made in edit mode.
+BEG and END delimit the change and LENG-BEFORE is its old length.
+Compare the changed line with the same line in the temp buffer,
+record it in `lsp-bridge-ref-changed-lines' and mark it with an
+overlay as changed or, when the line is now empty, as deleted."
   ;; NOTE:
   ;; We should use `save-match-data' wrap function that hook in `after-change-functions'.
   ;; Otherwise will got error: "replace-match-maybe-edit: Match data clobbered by buffer modification hooks"
@@ -510,6 +542,8 @@ user more freedom to use rg with special arguments."
       )))
 
 (defun lsp-bridge-ref-mark-position-clear (line)
+  "Delete the change overlays on LINE.
+Only overlays of type \"changed\" or \"deleted\" are removed."
   (save-excursion
     (goto-line line)
     (beginning-of-line)
@@ -521,6 +555,8 @@ user more freedom to use rg with special arguments."
         ))))
 
 (defun lsp-bridge-ref-mark-position (line type face)
+  "Mark LINE with an overlay of TYPE and FACE.
+Any previous change overlay on LINE is removed first."
   (save-excursion
     (lsp-bridge-ref-mark-position-clear line)
     ;; Create mark changed overlay if not exists.
@@ -536,17 +572,24 @@ user more freedom to use rg with special arguments."
         ))))
 
 (defun lsp-bridge-ref-mark-position-changed (line)
+  "Mark LINE as changed by the user, using the changed face."
   (lsp-bridge-ref-mark-position line "changed" 'lsp-bridge-ref-font-lock-mark-changed))
 
 (defun lsp-bridge-ref-mark-position-deleted (line)
+  "Mark LINE as deleted by the user, using the deleted face."
   (lsp-bridge-ref-mark-position line "deleted" 'lsp-bridge-ref-font-lock-mark-deleted))
 
 (defun lsp-bridge-ref-kill-temp-buffer ()
+  "Kill the reference temp buffer and forget the changed lines."
   (when (get-buffer lsp-bridge-ref-temp-buffer)
     (kill-buffer lsp-bridge-ref-temp-buffer)
     (setq lsp-bridge-ref-changed-lines nil)))
 
 (defun lsp-bridge-ref-clone-to-temp-buffer ()
+  "Clone the reference buffer content into the reference temp buffer.
+The temp buffer keeps the original results so changes can be
+compared and recovered.  It is killed when the reference buffer
+is killed."
   (lsp-bridge-ref-kill-temp-buffer)
   (with-current-buffer lsp-bridge-ref-buffer
     (add-hook 'kill-buffer-hook 'lsp-bridge-ref-kill-temp-buffer nil t)
@@ -555,6 +598,9 @@ user more freedom to use rg with special arguments."
     ))
 
 (defun lsp-bridge-ref-switch-to-view-mode ()
+  "Switch the reference buffer back to view mode.
+Discard the change markers and the temp buffer, remove the
+change hook and make the buffer read-only again."
   (interactive)
   (with-current-buffer lsp-bridge-ref-buffer
     ;; Do clean work.
@@ -572,6 +618,10 @@ user more freedom to use rg with special arguments."
     ))
 
 (defun lsp-bridge-ref-filter-results (match-regexp)
+  "Remove result lines selected by a regexp read from the minibuffer.
+With MATCH-REGEXP non-nil keep the lines that match the regexp and
+remove the others; otherwise remove the lines that match.  Report
+how many lines were removed and refresh the header line."
   (let ((filter-regexp (read-string
                         (format (if match-regexp
                                     "Filter result match regexp: "
@@ -599,9 +649,17 @@ user more freedom to use rg with special arguments."
   (lsp-bridge-ref-update-header-line-hits))
 
 (defun lsp-bridge-ref-file-extension (file)
+  "Return the extension of FILE as a string.
+The extension is everything after the last dot of the file name."
   (string-join (cdr (split-string (file-name-nondirectory file) "\\.")) "."))
 
 (defun lsp-bridge-ref-filter-files (match-files)
+  "Remove result files selected by a file extension.
+Read the extension with `ido-completing-read' among the extensions
+present in the results.  With MATCH-FILES non-nil keep the files
+that have it and remove the others; otherwise remove the files
+that have it.  Do nothing when the results hold only one
+extension, then refresh the header line."
   (let (file-extensions start end)
     (save-excursion
       (goto-char (point-min))
@@ -637,6 +695,9 @@ user more freedom to use rg with special arguments."
   (lsp-bridge-ref-update-header-line-hits))
 
 (defun lsp-bridge-ref-remove-lines-under-file ()
+  "Remove the file line at point and all result lines that follow it.
+The lines are removed up to the next empty line, which separates
+two files in the results buffer."
   (let (start end)
     (save-excursion
       (with-current-buffer lsp-bridge-ref-buffer
@@ -649,10 +710,14 @@ user more freedom to use rg with special arguments."
         (read-only-mode 1)))))
 
 (defun lsp-bridge-ref-update-header-line-hits ()
+  "Recount the matches in the reference buffer and update the header line."
   (setq lsp-bridge-ref-hit-count (lsp-bridge-ref-stat-hits))
   (lsp-bridge-ref-update-header-line))
 
 (defun lsp-bridge-ref-stat-hits ()
+  "Return the number of match highlights in the reference buffer.
+Count the text regions whose properties include the
+`lsp-bridge-ref-font-lock-match' face."
   (let ((hit-count 0))
     (save-excursion
       (goto-char (point-min))
@@ -684,6 +749,11 @@ user more freedom to use rg with special arguments."
 (defalias 'lsp-bridge-ref-search-input-in-project 'lsp-bridge-ref-search-project)
 
 (defun lsp-bridge-ref-replace-all-matches ()
+  "Replace all matches in the reference buffer with user input.
+Read the replacement text from the minibuffer, replace every
+occurrence of the search keyword, then apply the changes to the
+source files.  The keyword of `lsp-bridge-ref-cur-search' becomes
+the replacement text, and the number of edited lines is reported."
   (interactive)
   (save-excursion
     (let (changed-line-number)
@@ -703,22 +773,29 @@ user more freedom to use rg with special arguments."
       (message "[LSP-Bridge] Replace %s lines" changed-line-number))))
 
 (defun lsp-bridge-ref-filter-match-results ()
+  "Keep only the result lines that match a regexp read from the minibuffer."
   (interactive)
   (lsp-bridge-ref-filter-results t))
 
 (defun lsp-bridge-ref-filter-mismatch-results ()
+  "Remove the result lines that match a regexp read from the minibuffer."
   (interactive)
   (lsp-bridge-ref-filter-results nil))
 
 (defun lsp-bridge-ref-filter-match-files ()
+  "Keep only the result files whose extension is read from the minibuffer."
   (interactive)
   (lsp-bridge-ref-filter-files t))
 
 (defun lsp-bridge-ref-filter-mismatch-files ()
+  "Remove the result files whose extension is read from the minibuffer."
   (interactive)
   (lsp-bridge-ref-filter-files nil))
 
 (defun lsp-bridge-ref-unfilter ()
+  "Restore the unfiltered results from the reference temp buffer.
+Erase the reference buffer, insert the original content of the
+temp buffer and refresh the header line."
   (interactive)
   (save-excursion
     (with-current-buffer lsp-bridge-ref-buffer
@@ -734,6 +811,8 @@ user more freedom to use rg with special arguments."
       (lsp-bridge-ref-update-header-line-hits))))
 
 (defun lsp-bridge-ref-remove-line-from-results ()
+  "Remove the current result line from the results buffer.
+Do nothing when the current line has no line:column prefix."
   (interactive)
   (save-excursion
     (with-current-buffer lsp-bridge-ref-buffer
@@ -746,6 +825,7 @@ user more freedom to use rg with special arguments."
         ))))
 
 (defun lsp-bridge-ref-jump-next-keyword ()
+  "Move to the next match line and open its source location."
   (interactive)
   (let* ((next-position (lsp-bridge-ref-find-next-position lsp-bridge-ref-regexp-position)))
     (if next-position
@@ -755,6 +835,7 @@ user more freedom to use rg with special arguments."
       (message "[LSP-Bridge] Reach to last line."))))
 
 (defun lsp-bridge-ref-jump-prev-keyword ()
+  "Move to the previous match line and open its source location."
   (interactive)
   (let ((prev-match-pos
          (if (save-excursion (search-backward-regexp lsp-bridge-ref-regexp-position nil t))
@@ -777,6 +858,7 @@ user more freedom to use rg with special arguments."
       (message "[LSP-Bridge] Reach to first line."))))
 
 (defun lsp-bridge-ref-jump-next-file ()
+  "Move to the next file line in the results and open its first match."
   (interactive)
   (let*  ((next-position (lsp-bridge-ref-find-next-position lsp-bridge-ref-regexp-file)))
     (if next-position
@@ -787,6 +869,7 @@ user more freedom to use rg with special arguments."
       (message "[LSP-Bridge] Reach to last file."))))
 
 (defun lsp-bridge-ref-jump-prev-file ()
+  "Move to the previous file line in the results and open its first match."
   (interactive)
   (let ((prev-match-pos
          (if (save-excursion
@@ -817,6 +900,9 @@ user more freedom to use rg with special arguments."
       (message "[LSP-Bridge] Reach to first file."))))
 
 (defun lsp-bridge-ref-insert-current-line ()
+  "Insert the code of the current result line at the original point.
+Quit the reference buffer and restore its window configuration
+first, so the code goes back where the search started."
   (interactive)
   (let ((current-line (save-excursion
                         (beginning-of-line)
@@ -830,8 +916,15 @@ user more freedom to use rg with special arguments."
     (lsp-bridge-ref-quit t)
     (insert current-line)))
 
-(defvar lsp-bridge-ref-open-remote-file-go-back-to-ref-window nil)
+(defvar lsp-bridge-ref-open-remote-file-go-back-to-ref-window nil
+  "Whether to go back to the reference window after opening a remote file.
+Set by `lsp-bridge-ref-open-file' and cleared by lsp-bridge when
+the remote file has been opened.")
 (defun lsp-bridge-switch-to-ref-window ()
+  "Select the window that shows the reference buffer.
+Create a new reference window with
+`lsp-bridge-ref-popup-window-handler' when the buffer is not
+displayed in any window."
   ;; Keep cursor in search buffer's window.
   (setq ref-buffer-window (get-buffer-window lsp-bridge-ref-buffer))
   (if ref-buffer-window
@@ -840,6 +933,10 @@ user more freedom to use rg with special arguments."
     (funcall lsp-bridge-ref-popup-window-handler)))
 
 (defun lsp-bridge-ref-open-file (&optional stay)
+  "Open the file of the result line at point and jump to its match.
+Move point to the matched line and column, reveal the match in an
+org file when needed, and flash the target line.  Unless STAY is
+non-nil, select the reference window again afterwards."
   (interactive)
   (let* ((match-file (lsp-bridge-ref-get-match-file))
          (match-line (lsp-bridge-ref-get-match-line))
@@ -894,10 +991,15 @@ user more freedom to use rg with special arguments."
     ))
 
 (defun lsp-bridge-ref-open-file-and-stay ()
+  "Open the file of the result line at point and stay in the results.
+Like `lsp-bridge-ref-open-file' with STAY non-nil."
   (interactive)
   (lsp-bridge-ref-open-file t))
 
 (defun lsp-bridge-ref-flash-line ()
+  "Flash the current match line.
+Also show the name of the enclosing function in the echo area when
+`lsp-bridge-ref-show-function-name-p' is non-nil."
   ;; Flash match line.
   (lsp-bridge-flash-line)
   ;; View the function name when navigate in match line.
@@ -911,14 +1013,19 @@ user more freedom to use rg with special arguments."
                 )))))
 
 (defun lsp-bridge-ref-in-org-link-content-p ()
+  "Return non-nil if point is inside the content of an org link.
+That is the text between the link target and the closing
+brackets."
   (and (looking-back "\\[\\[.*" (line-beginning-position))
        (looking-at ".*\\]\\[")
        (looking-at ".*\\]\\]")))
 
 (defun lsp-bridge-ref-is-org-file (file)
+  "Return non-nil if FILE has the org file extension."
   (string-equal (lsp-bridge-ref-file-extension file) "org"))
 
 (defun lsp-bridge-ref-move-to-point (line column)
+  "Move point to COLUMN on LINE in the current buffer."
   ;; Jump to match position.
   (goto-line line)
   (beginning-of-line)
@@ -926,6 +1033,8 @@ user more freedom to use rg with special arguments."
   (lsp-bridge-ref-jump-to-column column))
 
 (defun lsp-bridge-ref-move-to-column (column)
+  "Move point to COLUMN inside the code of the current result line.
+Do nothing when the current line is empty."
   (beginning-of-line)
   (search-forward-regexp lsp-bridge-ref-regexp-position)
 
@@ -946,6 +1055,10 @@ Function `move-to-column' can't handle mixed string of Chinese and English corre
       (setq scan-column (string-bytes (buffer-substring first-char-point (point)))))))
 
 (defun lsp-bridge-ref-switch-to-edit-mode ()
+  "Switch the reference buffer to edit mode.
+Clone the results into the reference temp buffer, keep the file
+and position lines read-only, make the code lines editable, and
+install `lsp-bridge-ref-after-change-function' to track changes."
   (interactive)
   ;; Clone content to temp buffer.
   (lsp-bridge-ref-clone-to-temp-buffer)
@@ -983,6 +1096,12 @@ Function `move-to-column' can't handle mixed string of Chinese and English corre
   (message "[LSP-Bridge] Switch to edit mode: press C-c C-c to apply change, press C-c C-q cancel edit"))
 
 (defun lsp-bridge-ref-quit (&optional restore)
+  "Quit the reference buffer and restore the previous window layout.
+Kill the buffers that were opened by lsp-bridge-ref when
+`lsp-bridge-ref-kill-temp-buffer-p' is non-nil.  Restore the saved
+window configuration when `lsp-bridge-ref-delete-other-windows'
+or RESTORE is non-nil, otherwise only delete the reference window
+and select the window that requested the search."
   (interactive)
   ;; Kill temp buffer open by lsp-bridge-ref.
   (when lsp-bridge-ref-kill-temp-buffer-p
@@ -1009,6 +1128,9 @@ Function `move-to-column' can't handle mixed string of Chinese and English corre
   (setq lsp-bridge-ref-request-search-window nil))
 
 (defun lsp-bridge-ref-beginning-of-line ()
+  "Move to the start of the line:column prefix, or to the line start.
+When the current line has no such prefix, move to the beginning of
+the line instead."
   (interactive)
   (let* ((row-column-position (lsp-bridge-ref-get-row-column-position)))
     (if row-column-position
@@ -1016,6 +1138,8 @@ Function `move-to-column' can't handle mixed string of Chinese and English corre
       (move-beginning-of-line 1))))
 
 (defun lsp-bridge-ref-delete-line ()
+  "Kill the code of the current result line.
+Do nothing when the current line has no line:column prefix."
   (interactive)
   (let* ((row-column-position (lsp-bridge-ref-get-row-column-position)))
     (when row-column-position
@@ -1026,6 +1150,7 @@ Function `move-to-column' can't handle mixed string of Chinese and English corre
       )))
 
 (defun lsp-bridge-ref-delete-all-lines ()
+  "Kill the code of every result line in the reference buffer."
   (interactive)
   (save-excursion
     (with-current-buffer lsp-bridge-ref-buffer
@@ -1034,11 +1159,15 @@ Function `move-to-column' can't handle mixed string of Chinese and English corre
         (lsp-bridge-ref-delete-line)))))
 
 (defun lsp-bridge-ref-recover-line ()
+  "Restore the original code of the current result line.
+The original is taken from the reference temp buffer."
   (interactive)
   (lsp-bridge-ref-delete-line)
   (insert (lsp-bridge-ref-get-line-content lsp-bridge-ref-temp-buffer (line-number-at-pos))))
 
 (defun lsp-bridge-ref-recover-buffer ()
+  "Restore the whole reference buffer from the reference temp buffer.
+Discard every pending change and switch back to edit mode."
   (interactive)
   (save-excursion
     (with-current-buffer lsp-bridge-ref-buffer
@@ -1054,6 +1183,10 @@ Function `move-to-column' can't handle mixed string of Chinese and English corre
         ))))
 
 (defun lsp-bridge-ref-apply-changed ()
+  "Write the edited result lines back to their source files.
+Each changed line replaces the matched line in its file.  Report
+that nothing needs to be changed when no line was edited, then
+switch the reference buffer back to view mode."
   (interactive)
   (if (equal (length lsp-bridge-ref-changed-lines) 0)
       (message "Nothing need change.")
