@@ -1,0 +1,136 @@
+* lsp-bridge 重构计划（分支 =refactor/full=）
+
+基线：上游 =4d48fea=（2026-10-11）。允许破坏兼容，**不做兼容 shim**。
+本文件是路线图 + 验收标准；每个阶段对应一个（或一组）可 review 的提交。
+
+** 目标
+
+1. **docstring 完整**：所有 =defun=/=defmacro=/=defsubst=/=defvar=/=defconst=/=defcustom=/
+   =defface=、以及 Python 的 function/class 都有 docstring，并且是"能读"的：
+   首行是完整句子（以句号结尾）、函数参数在正文里被提到、不超过 80 列。
+2. **结构性重构**：见「目标结构」；重点是 popup 生命周期、candidate 协议、
+   backend 注册、以及把两个 god file（=lsp-bridge.el=、=lsp_bridge.py=）拆开。
+3. **可验证**：每个阶段都有机器判据（见「验收」），并且不破坏现有测试。
+
+** 基线（2026-10-11，重构开始前）
+
+*** docstring（=scripts/docstring-report.py=）
+
+| 范围 | definitions | missing |
+|------+-------------+---------|
+| 全仓库（不含 vendored、=test/=） | 1533 | **962**（documented 37.2%）|
+| =lsp-bridge.el= | 325 | 165 |
+| =core/lspserver.py= | 68 | 66 |
+| =lsp_bridge.py= | 63 | 62 |
+| =acm/acm.el= | 108 | 59 |
+| =core/utils.py= | 64 | 54 |
+| =lsp-bridge-ref.el= | 92 | 54 |
+| =core/remote_file.py= | 47 | 40 |
+| =core/fileaction.py= | 39 | 33 |
+| 其余 30 多个文件 | — | 其余 ~370 |
+
+*** byte-compile（=scripts/check-elisp.sh=）
+
+207 条 warning（0 error）：
+
+| 类别 | 条数 | 说明 |
+|------+------+------|
+| reference to free variable | 50 | 多数是真正的潜在 bug（下同） |
+| assignment to free variable | 29 | =peek=/=ref= 里大量 =setq= 只有动态绑定的意图，lexical-binding 下会漏 |
+| function not known to be defined | 29 | 可选依赖（evil / org / treesit …）缺 =declare-function= |
+| docstring wider than 80 characters | 47 | 写 docstring 时顺手解决 |
+| defcustom: missing :type / bad type / no group | 23 | 10 + 9 + 4 |
+| Unused lexical variable / argument | 14 | 死代码或漏写 =ignore= |
+| obsolete function | 4 | =point-at-bol= / =delete-backward-char= … |
+
+文件分布：=lsp-bridge.el= 77、=lsp-bridge-ref.el= 40、=acm/acm.el= 24、
+=lsp-bridge-peek.el= 21。
+
+** 目标结构
+
+*** elisp
+
+| 新文件 | 内容 | 来源 |
+|--------+------+------|
+| =acm/acm-popup.el= | 子 frame 工具层：create / hide / show / reposition / delete + "隐藏即脱父子" 契约 | =acm-frame.el= 改名扩写 |
+| =acm/acm-session.el= | =cl-defstruct acm-session=：按**父 frame** 归位的 popup 状态（frame + 候选 + index/offset），取代全局单例 =acm-frame--emacs-frame= 与"切 frame 就删 frame"的补丁 | 新 |
+| =acm/acm-menu.el= | 菜单渲染：buffer、图标、quick-access、faces | 从 =acm.el= 拆 |
+| =acm/acm-doc.el= | 文档 frame + markdown 渲染 | 从 =acm.el= 拆 |
+| =acm/acm-backend.el= | candidate 协议（=cl-defstruct acm-candidate= + 校验）+ backend registry + 派发 | 新 |
+| =acm/acm-backend-*.el= | 每个后端只剩"取候选 + 声明选项" | 瘦身 |
+| =acm/acm.el= | 对外 API/命令/键图：=acm-update=、选择、补全、隐藏 | 瘦身后的入口 |
+| =lsp-bridge-completion.el= | =monitor-post-command=、=try-completion=、popup predicates | 从 =lsp-bridge.el= 拆 |
+| =lsp-bridge-file.el= | 打开/变更/保存/revert、workspace edit 应用 | 从 =lsp-bridge.el= 拆 |
+| =lsp-bridge-diagnose.el= | =lsp-bridge-diagnose= 命令 + 协议握手 | 新 |
+| =lsp-bridge.el= | mode、键图、进程生命周期、对外命令 | 瘦身后 |
+
+*** Python
+
+| 动作 | 内容 |
+|------+------|
+| 拆 =core/handler/find_define_base.py= | 纯文本工具 → =core/handler/textpos.py=；Solidity 专用（remapping/import 解析）→ =core/handler/solidity/=；剩下的才是通用符号定位 |
+| 拆 =lsp_bridge.py= | EPC 导出表、请求分发、各后端方法分成模块；它现在是 63 个定义、62 个没 docstring |
+| 统一错误处理 | =except:= → =except Exception as e: logger.exception(...)=；ruff =E722= 作为门 |
+| 类型与文档 | 公共函数补 docstring + 基本类型标注；=pyproject.toml= 里开 ruff 的 =D=（pydocstyle）与 =E722= |
+| vendored 文件 | =lsp-bridge-epc.el=、=core/pystardict.py= 保持逐字不动（见「非目标」），在 README 里标明来源与版本 |
+
+** 阶段（每阶段一个或多个提交，均可单独 review）
+
+| 阶段 | 内容 | 验收 |
+|------+------+------|
+| **S0** 已完成 | 移除死后端 tabnine / codeium / sdcv；建 =scripts/docstring-report.py=、=scripts/check-elisp.sh=；本文件 | 全仓库 0 处引用；=py_compile= / parse 通过 |
+| **S1** | elisp docstring 补全（≈500 处），**只加文档、不搬代码**，按文件切片 | =docstring-report.py --check= 对 =*.el= 通过；=check-elisp.sh= 无 warning 回归 |
+| **S2** | Python docstring 补全（≈450 处）+ =except:= 清理 + ruff 配置 | 同上（Python 部分）；=python3 -m test.test= 通过 |
+| **S3** | popup 层重构：=acm-popup/acm-session/acm-menu/acm-doc=，popup 状态按父 frame 归位 | 新增 =test/acm-test.el=（ERT，frame 层打桩）覆盖：候选合并顺序、expand、predicates、wrap-around、多 frame 切换 |
+| **S4** | =acm-backend.el=：candidate 协议 + registry；=lsp-bridge.el= 拆分；协议握手 + =lsp-bridge-diagnose= | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
+| **S5** | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
+| **S6** | 测试与 CI：acm 冒烟测试、docstring 门、ruff、Emacs 版本矩阵（现在只跑 Ubuntu + Emacs 28.1，而代码用 30+ 的 child frame 特性） | CI 全绿；本地 =scripts/check-elisp.sh= + =docstring-report.py --check= 全绿 |
+| **S7** | 文档（README/架构说明）+ 同步 emacs-config（5 处 advice、选项改名、删除已移除后端的 setup 块） | 用户日常使用回归；=emacs-config= 单独提交 |
+
+** 验收命令
+
+#+begin_src sh
+scripts/docstring-report.py            # 进度看板
+scripts/docstring-report.py --check    # docstring 门（全绿才过）
+scripts/check-elisp.sh                 # byte-compile（.elc 落 /tmp，不脏工作区）
+CHECKDOC=1 scripts/check-elisp.sh      # 额外打印 checkdoc 风格问题
+python3 -m py_compile lsp_bridge.py core/*.py
+python3 -m test.test                   # 上游既有测试（需要 quelpa 下载依赖）
+ruff check core lsp_bridge.py          # S2 起接入
+#+end_src
+
+** 已做的决定（S0）
+
+- 移除三个后端：=tabnine=（需另下专有二进制、吃 CPU、实际默认关闭）、
+  =codeium=、=acm-backend-search-sdcv-words=（外部 =sdcv= 词典程序）。
+- =core/copilot.py= 原本借用 =acm-backend-codeium-candidate-max-length=，
+  已改为自己的 =acm-backend-copilot-candidate-max-length=（默认同为 50）。
+- =acm/acm-backend-jupyter.el= 的文件头与 defcustom docstring 原来写的都是
+  "codeium"（复制粘贴遗留），已改正。
+- =acm-update-candidates= 里包住整个候选收集过程的
+  =(if acm-enable-search-sdcv-words THEN ELSE)= 已被拉平（去掉 if、else 体
+  整体提级），该函数在 S3 会进一步重写。
+
+** 非目标（明确不做）
+
+- 不改 LSP 协议语义；=langserver/*.json=、=multiserver/*.json= 只补注释，不改内容。
+- 不动 vendored 文件的 docstring（=lsp-bridge-epc.el=、=core/pystardict.py=），
+  它们不在 docstring 门内；要动先决定 vendor 策略（subtree + 上游版本记录）。
+- 不引入新的 Python 依赖（不加 pydantic/attrs 之类），只用标准库 + 现有依赖。
+- 不重写 =lsp-bridge-epc.el= 的 RPC 协议（只在 S4 加版本握手）。
+
+** 风险与取舍
+
+- 962 个 docstring 是体力活：按文件切片、每片跑门；S1/S2 严格"只加文档"，
+  避免把行为改动混进文档提交里，便于 review。
+- S3/S4 是破坏性的：=emacs-config= 里的 5 处 =define-advice=
+  （=acm-select-next=、=acm-select-prev=、=acm-backend-capf-candidate-expand=、
+  =lsp-bridge--not-match-hide-characters=、=lsp-bridge--not-in-string=）
+  与若干 =add-to-list= 需要一起改；放到 S7 统一做。
+- ⚠️ 部署新 rev 时必须同时处理 =emacs-config= 里的
+  =(setup acm-backend-tabnine/codeium/search-sdcv-words …)= 三个块：
+  文件被删后 =setup= 会去 =require= 不存在的 feature；而在**当前部署的= 4d48fea
+  上又不能提前删（=acm-enable-tabnine= 默认是 =t=，删了反而会打开它）。
+- =test/test.py= 依赖 quelpa 联网拉依赖；本机有 Nix 构建的 Emacs（已带
+  markdown-mode/yasnippet/tempel/compat），因此本地用 =scripts/check-elisp.sh=
+  就够，CI 里再决定是否保留 quelpa 路径。
