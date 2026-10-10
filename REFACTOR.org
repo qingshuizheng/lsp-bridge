@@ -80,7 +80,7 @@
 |------+------+------|
 | **S0** 已完成 | 移除死后端 tabnine / codeium / sdcv；建 =scripts/docstring-report.py=、=scripts/check-elisp.sh=；本文件 | 全仓库 0 处引用；=py_compile= / parse 通过 |
 | **S1** | elisp docstring 补全（≈500 处），**只加文档、不搬代码**，按文件切片 | =docstring-report.py --check= 对 =*.el= 通过；=check-elisp.sh= 无 warning 回归 |
-| **S2** | Python docstring 补全（≈450 处）+ =except:= 清理 + ruff 配置 | 同上（Python 部分）；=python3 -m test.test= 通过 |
+| **S2** | Python docstring 补全 + =except:= 清理 + ruff 配置与门禁（=scripts/check-python.sh=） | 进行中：docstring 已 100%、=E722= 29 处与空白 60 处已清、硬门禁全绿；剩余 =D= 风格重整（~400，多为既有 docstring 的句号/换行/首行摘要）与 =F403/F405= star-import（421，需与 =core/utils.py= 的导出面一起改） |
 | **S3** | popup 层重构：=acm-popup/acm-session/acm-menu/acm-doc=，popup 状态按父 frame 归位 | 新增 =test/acm-test.el=（ERT，frame 层打桩）覆盖：候选合并顺序、expand、predicates、wrap-around、多 frame 切换 |
 | **S4** | =acm-backend.el=：candidate 协议 + registry；=lsp-bridge.el= 拆分；协议握手 + =lsp-bridge-diagnose= | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
 | **S5** | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
@@ -110,6 +110,35 @@ ruff check core lsp_bridge.py          # S2 起接入
 - =acm-update-candidates= 里包住整个候选收集过程的
   =(if acm-enable-search-sdcv-words THEN ELSE)= 已被拉平（去掉 if、else 体
   整体提级），该函数在 S3 会进一步重写。
+
+** 文献化过程中发现的真问题（S3/S5 的输入）
+
+写 docstring 时必须"照实描述"，于是把这些年久失修的地方一条条照出来了。
+下面每一条都是**已确认的代码事实**（不是猜测），但都**没有**在文档提交里改，
+因为每一条都需要一个行为决策：
+
+| 位置 | 事实 | 可疑之处 |
+|------+------+----------|
+| =lsp-bridge-diagnostic.el= | =lsp-bridge-diagnostic-frame= 被 =defvar= 两次，第二次又把它重置为 nil；=lsp-bridge-diagnostic-message= 用 =setq-local= 写但全仓库没有定义 | 变量被静默重置 / 写入不存在的变量 |
+| =lsp-bridge-diagnostic.el= | =diagnostic--list= 算了 =end-column= 却没用；用字符下标切 =line-content=，而 start/end 是 LSP 的字符偏移 | 诊断渲染在非 ASCII 行上会错位 |
+| =lsp-bridge-peek.el= | =file-content= /=filename= /=line= /=char= 当全局变量用，而调用方用 =let*= 遮蔽 | 旧动态作用域残留，byte-compile 的 free variable 警告来源 |
+| =lsp-bridge-peek.el= | =peek-tree-previous-branch= 传 +1、=next-branch= 传 -1（名字与方向相反）；兄弟节点环绕不对称（越过末尾回 0，越过开头回最后一个） | 名字/符号反了，环绕行为不一致 |
+| =lsp-bridge-inlay-hint.el= | 与 =lsp-bridge-inlay-hint-cache-time= 比较，但本文件从未声明它；label plist 之间用空串拼接（注释却说是分隔符） | 缓存判断可能永远为真 / 提示粘连 |
+| =lsp-bridge-breadcrumb.el= | =--last-header-line= 声明为 buffer-local，实际按 window parameter 读写 | 两套语义混用 |
+| =lsp-bridge-code-action.el= | 复用 diff buffer 时无条件在 point-min 处 =(kill-line 3)= | 会删掉用户缓冲内容 |
+| =lsp-bridge-jdtls.el= | =init-config= 体内有一个裸字符串当 no-op form | 掉队的 docstring 或漏写的 =message= |
+| =lsp-bridge-rust.el= | =rust-expand-macro--update= 无视当前模式直接调 =rust-ts-mode= | 与文件里的 TODO 注释一致，属未完成 |
+| =lsp-bridge-ref.el= | 6 处函数用未声明的自由变量；=-after-change-function= 算了一个永不使用的 =change-line-content=；=lsp-bridge-ref-popup= 的旧 docstring 与实现不符 | 同 peek：动态作用域残留 |
+| =core/semantic_tokens.py= | =__init__= 设的 =type_face_names_dict= /=pre_last_change= 全文件无人读 | 死状态 |
+| =core/volar_proxy.py= | =TsserverRequestHandler.process_request= 返回 ={}= 但本文件内不可达（只有 =process_response= 被调） | 死方法 |
+| =core/remote_file.py= | =self.sock.fileno == -1= 从未调用 =fileno()=，重连分支是死的；=RemoteFileServer.send_message= 的 =raise= 落在 =else:= 里，"没连接"时反而什么都不抛；=completion_item_resolve= 对未知 server 也写入 resolve key | 远程文件的重连/报错路径可能从未生效 |
+| =core/search_list.py= | =update= 只在首次见到 backend 时存 =max_number=，之后改限制无效；=sort_symbols= 返回 bool 而非三值比较 | 选项静默失效 / 排序语义偏弱 |
+| =core/lsp_bridge.py= | =lsp_client_dict= 初始化后无人读；=close_all_files= 全仓库无调用者；=close_client= 只杀暴露 =kill_lsp_bridge_process= 的客户端，Docker 客户端被静默跳过 | 死代码 + 远程客户端退出不干净 |
+| =core/handler/find_define_base.py= | =jar://=（Clojure）走 =NotImplementedError=；另有 12 处既有 docstring 风格问题（有的行宽 146 列） | 需要专门的一轮整理（文件本身 1799 行、含 Solidity 专用逻辑，见 S5） |
+
+跨仓库的一条：=acm-frame.el= 的契约里写着"macOS 上隐藏子 frame 会断开父子关系"，
+而 Emacs 的 =ns_make_frame_visible= 原本在 =orderFront= **之后**才补父子关系 ——
+这就是 nix-config 补丁 08 修掉的全屏切 space bug。改 popup 层（S3）时这条契约要保留。
 
 ** 非目标（明确不做）
 
