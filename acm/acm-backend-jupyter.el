@@ -1,4 +1,4 @@
-;;; acm-backend-jupyter.el --- acm codeium support -*- lexical-binding: t; no-byte-compile: t; -*-
+;;; acm-backend-jupyter.el --- acm jupyter support -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;;; Commentary:
 
@@ -9,7 +9,7 @@
   :group 'acm)
 
 (defcustom acm-enable-jupyter nil
-  "Enable codeium support."
+  "Enable jupyter support."
   :type 'boolean
   :group 'acm-backend-jupyter)
 

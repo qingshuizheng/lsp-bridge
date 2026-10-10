@@ -390,7 +390,7 @@ class Copilot:
         ) = get_emacs_vars(
             [
                 "emacs-version",
-                "acm-backend-codeium-candidate-max-length",
+                "acm-backend-copilot-candidate-max-length",
                 "acm-backend-copilot-network-proxy",
             ]
         )

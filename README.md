@@ -93,7 +93,7 @@ and run `doom sync` to install it.
 Please note:
 
 1. When using lsp-bridge, please first disable other completion plugins, such as lsp-mode, eglot, company, corfu, etc. lsp-bridge provides a complete solution from the completion backend, completion frontend to multi-backend integration
-2. In addition to providing LSP completion, lsp-bridge also provides many non-LSP completion backends, including capf, file words, paths, Yas/Tempel, TabNine, Codeium, Copilot, Tabby, Citre, Ctags, Org roam and other completion backends. If you expect to provide these completions in a certain mode, please add the corresponding mode to `lsp-bridge-default-mode-hooks`. Customize the order of backend, please check `acm-backend-order`.
+2. In addition to providing LSP completion, lsp-bridge also provides many non-LSP completion backends, including capf, file words, paths, Yas/Tempel, Copilot, Tabby, Citre, Ctags, Org roam and other completion backends. If you expect to provide these completions in a certain mode, please add the corresponding mode to `lsp-bridge-default-mode-hooks`. Customize the order of backend, please check `acm-backend-order`.
 3. Please do not perform ```byte compilation``` or ```native compilation``` for lsp-bridge as it will result in a difference in API and the latest version after upgrading compiling afterwards, Lsp-bridge is designed with multi-threading that does not require compilation to speed it up
 
 ## Local Usage
@@ -240,7 +240,6 @@ more detail about using lsp-bridge in devcontainer please refer to [emacs-devcon
 - `lsp-bridge-signature-help-fetch`: show signature help in minibuffer manually (move cursor to parameters area will show signature help automatically)
 - `lsp-bridge-popup-complete-menu`: Manually popup the completion menu, you only need this command when turn on option `lsp-bridge-complete-manually`
 - `lsp-bridge-restart-process`: restart lsp-bridge process (only used for development)
-- `lsp-bridge-toggle-sdcv-helper`: Switch dictionary completion assistant
 - `lsp-bridge-peek-abort`: Close peek window (default binding to `C-g`)
 - `lsp-bridge-peek-list-next-line`: Select the next definition or reference (default binding to `M-S-n`)
 - `lsp-bridge-peek-list-prev-line`: Select the previous definition or reference (default binding to `M-S-p`)
@@ -330,8 +329,6 @@ lsp-bridge provides support for more than two language servers for many language
 - `acm-enable-doc`: Whether the complete menu display the help document
 - `acm-enable-doc-markdown-render`: Richly render Markdown for completion popups, you can choose `'async`, `t` or `nil`. When set to `'async`, styles are applied asynchronously, choose `t`, styles are applied synchronously and will slow down the completion speed, default is `'async`
 - `acm-enable-icon`: Whether the completion menu displays icons (Many macOS users have reported that emacs-plus28 cannot display icons properly, showing colored squares instead. There are two ways to solve this: install Emacs Mac Port or add the `--with-rsvg` option to the brew command when compiling Emacs yourself)
-- `acm-enable-tabnine`: Enable tabnine support， enable by default， when enable need execute `lsp-bridge-install-tabnine` command to install TabNine, and it can be used. TabNine will consume huge CPUs, causing your entire computer to be slow. If the computer performance is not good, it is not recommended to enable this option
-- `acm-enable-codeium`: Enable Codeium support, when enable need execute `lsp-bridge-install-update-codeium` command to install Codeium, then execute `lsp-bridge-codeium-auth` command to get auth token and execute `lsp-bridge-codeium-input-auth-token` command to get API Key, and it can be used.
 - `acm-enable-copilot`: Enable copilot support. First, purchase the Copilot service at [https://github.com/features/copilot](https://github.com/features/copilot). When enabling, you can run Copilot in two ways: either by installing via Node.js (`npm install -g @github/copilot-language-server`) or by using the copilot-language-server binary/package. The method used is controlled by the `acm-backend-copilot-launch-mode` variable, which can be set to `auto`, `node`, or `binary`. The default is `auto`, which first attempts Node.js and then falls back to the binary. You can specify the Node.js path with `acm-backend-copilot-node-path` (default: `node`), and the binary path with `acm-backend-copilot-binary-path` (default: `copilot-language-server`). To complete login, execute `lsp-bridge-copilot-login`; lsp-bridge will display a User Code in the Minibuffer, which you should copy into the Copilot page to finish authentication.
 - `acm-enable-search-file-words`: Whether the complete menu display the word of the file, enable by default
 - `acm-enable-quick-access`: Whether to display an index after the icon, quickly select candidate words using Alt + Number, default is off
@@ -351,12 +348,10 @@ lsp-bridge provides support for more than two language servers for many language
 - `acm-backend-search-file-words-max-number`: Search Words completion candidate limit, default is 10
 - `acm-backend-search-file-words-enable-fuzzy-match`: Search Words completion candidate fuzzy match, disable by default
 - `acm-backend-search-file-words-enable-fuzzy-match-threshold`: Search Words completion candidate fuzzy match threshold, Filter out words with a ratio lower than the threshold, default is 50
-- `acm-backend-codeium-candidate-min-length`: The minimum characters to trigger codeium completion, default is 0
 - `acm-backend-lsp-enable-auto-import`: Automatic insert import code, enable by default
 - `acm-backend-lsp-candidate-max-length`: Maximum length of LSP candidate, some language, such as Java, argument list is very long, you can increase the value of this option to see clear argument list
 - `acm-backend-yas-candidates-number`: yasnippet display number， 2 by default
 - `acm-backend-citre-keyword-complete`: Completion is performed according to the keywords of each mode defined by `acm-backend-citre-keywords-alist`, which takes effect only after citre is enabled.
-- `acm-backend-search-sdcv-words-dictionary`: StarDict dictionary for word completion, default is `kdic-ec-11w`, you can replace it with StarDict dictionary path, example, if you have dictionary `/usr/share/stardict/dic/stardict-oxford-gb-formated-2.4.2/oxford-gb-formated.ifo`, you need set this value to `/usr/share/stardict/dic/stardict-oxford-gb-formated-2.4.2/oxford-gb-formated`, not include `.ifo` extension.
 - `acm-backend-lsp-match-mode`: The filtering mode for candidates in LSP backend, there are six options: "prefix", "prefixCaseSensitive", "substring" and "fuzzy". By default it is "fuzzy"
 - `acm-backend-lsp-case-mode`: The case sensitive mode for filtering candidates in LSP backend, there are three options: "ignore", "sensitive" and "smart". By default it is "ignore"
 - `acm-backend-lsp-frontend-filter-p`: Since LSP candidates have been filtered in the Python backend, it's not necessary to perform an additional filter on the frontend (refer to option `acm-candidate-match-function`), disable by default, when set to `t`, this option will call the `acm-candidate-match-function` function on the frontend to filter LSP candidates again
@@ -622,7 +617,7 @@ The following is the directory structure of the lsp-bridge project:
 | lsp-bridge-dart.el                    | Dart-specific protocol support                                                                                      |
 | lsp-bridge-org-babel.el               | LSP support for source blocks in Org Babel                                                                          |
 | lsp-bridge-rust.el                    | Rust-specific integration helpers                                                                                   |
-| lsp-bridge-lsp-installer.el           | Helpers for installing TabNine and OmniSharp                                                                        |
+| lsp-bridge-lsp-installer.el           | Helpers for installing OmniSharp                                                                        |
 | lsp_bridge.py                         | Main Python backend, including the event loop, request scheduling, and state management                             |
 | python-lsp-bridge                     | Shell launcher that runs the Python backend through `uv`                                                            |
 | acm/                                  | Async completion menu frontend and completion UI used by lsp-bridge                                                 |
@@ -631,8 +626,8 @@ The following is the directory structure of the lsp-bridge project:
 | core/handler/                         | Concrete handlers for LSP methods and editor actions                                                                |
 | core/remote_file.py                   | Remote file synchronization and remote editing support                                                              |
 | core/utils.py, core/mergedeep.py      | Shared helpers and deep-merge utilities for settings and protocol data                                              |
-| core/search_*.py                      | Async search backends for file words, paths, and dictionary lookups                                                 |
-| core/tabnine.py, core/codeium.py, core/copilot.py | AI completion backends                                                                                   |
+| core/search_*.py                      | Async search backends for file words and paths                                                 |
+| core/copilot.py | AI completion backends                                                                                   |
 | langserver/                           | Single-server JSON configs: executable, language ID, startup args, and settings                                     |
 | multiserver/                          | Multi-server composition configs, such as combining completion and diagnostics servers                              |
 | resources/                            | Dictionary and auxiliary data files                                                                                 |

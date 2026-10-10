@@ -53,6 +53,11 @@
   :type 'boolean
   :group 'acm-backend-copilot)
 
+(defcustom acm-backend-copilot-candidate-max-length 50
+  "Maximum length of the label displayed for a Copilot candidate."
+  :type 'integer
+  :group 'acm-backend-copilot)
+
 (defcustom acm-backend-copilot-network-proxy nil
   " from `copilot.el'
  Network proxy to use for Copilot. Nil means no proxy.

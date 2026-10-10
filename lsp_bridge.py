@@ -51,11 +51,8 @@ from core.fileaction import (create_file_action_with_single_server,
                              FILE_ACTION_DICT, LSP_SERVER_DICT)
 from core.lspserver import LspServer
 from core.search_file_words import SearchFileWords
-from core.search_sdcv_words import SearchSdcvWords
 from core.search_list import SearchList
 from core.search_paths import SearchPaths
-from core.tabnine import TabNine
-from core.codeium import Codeium
 from core.copilot import Copilot
 from core.utils import *
 from core.handler import *
@@ -134,18 +131,11 @@ class LspBridge:
 
     # Functions for initialization
     def init_search_backends(self):
-        # Init tabnine.
-        self.tabnine = TabNine()
-
-        # Init codeium
-        self.codeium = Codeium()
-
         # Init copilot
         self.copilot = Copilot()
 
         # Init search backends.
         self.search_file_words = SearchFileWords()
-        self.search_sdcv_words = SearchSdcvWords()
         self.search_list = SearchList()
         self.search_paths = SearchPaths()
         self.ctags = Ctags()
@@ -162,7 +152,6 @@ class LspBridge:
 
         search_backend_export_functions = {
             "search_file_words": ["index_files", "change_buffer", "load_file", "close_file", "search"],
-            "search_sdcv_words": ["search"],
             "search_list": ["search", "update"],
             "search_paths": ["search"]
         }
@@ -1035,9 +1024,6 @@ class LspBridge:
 
         setattr(self, "{}_{}".format(prefix, name), _do)
 
-    def tabnine_complete(self, before, after, filename, region_includes_beginning, region_includes_end, max_num_results):
-        self.tabnine.complete(before, after, filename, region_includes_beginning, region_includes_end, max_num_results)
-
     @threaded
     def ctags_complete(self, symbol, filename, max_lines, cursor_offset):
         self.ctags.make_complete(symbol, filename, max_lines, cursor_offset)
@@ -1048,16 +1034,6 @@ class LspBridge:
 
     def copilot_complete(self, position, editor_mode, file_path, relative_path, tab_size, text, insert_spaces):
         self.copilot.complete(position, editor_mode, file_path, relative_path, tab_size, text, insert_spaces)
-
-    @threaded
-    def codeium_complete(self, cursor_offset, editor_language, tab_size, text, insert_spaces, prefix, language, file_path):
-        self.codeium.complete(cursor_offset, editor_language, tab_size, text, insert_spaces, prefix, language, file_path)
-
-    def codeium_completion_accept(self, id):
-        self.codeium.accept(id)
-
-    def codeium_auth(self):
-        self.codeium.auth()
 
     def copilot_login(self):
         self.copilot.login()
@@ -1070,9 +1046,6 @@ class LspBridge:
 
     def copilot_completion_accept(self, id):
         self.copilot.accept(id)
-
-    def codeium_get_api_key(self, auth_token):
-        self.codeium.get_api_key(auth_token)
 
     def handle_server_process_exit(self, server_name):
         if server_name in LSP_SERVER_DICT:

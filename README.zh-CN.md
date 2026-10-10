@@ -90,7 +90,7 @@ lsp-bridge 的优势：
 请注意:
 
 1. 使用 lsp-bridge 时， 请先关闭其他补全插件， 比如 lsp-mode, eglot, company, corfu 等等， lsp-bridge 提供从补全后端、 补全前端到多后端融合的全套解决方案。
-2. lsp-bridge 除了提供 LSP 补全以外， 也提供了很多非 LSP 的补全后端， 包括 capf、 文件单词、 路径、 Yas/Tempel、 TabNine、 Codeium、 Copilot、 Tabby, Citre、 Ctags, Org roam 等补全后端， 如果你期望在某个模式提供这些补全， 请把对应的模式添加到 `lsp-bridge-default-mode-hooks`, 定义补全顺序请查看 `acm-backend-order`
+2. lsp-bridge 除了提供 LSP 补全以外， 也提供了很多非 LSP 的补全后端， 包括 capf、 文件单词、 路径、 Yas/Tempel、 Copilot、 Tabby, Citre、 Ctags, Org roam 等补全后端， 如果你期望在某个模式提供这些补全， 请把对应的模式添加到 `lsp-bridge-default-mode-hooks`, 定义补全顺序请查看 `acm-backend-order`
 3. 请不要对 lsp-bridge 执行 ```byte compile``` 或者 ```native comp```， 会导致升级后， compile 后的版本 API 和最新版不一样， lsp-bridge 多线程设计， 不需要 compile 来加速
 
 ## 本地使用
@@ -239,7 +239,6 @@ lsp-bridge 开箱即用， 安装好语言对应的 [LSP 服务器](https://gith
 - `lsp-bridge-signature-help-fetch`: 在 minibuffer 显示参数信息
 - `lsp-bridge-popup-complete-menu`: 手动弹出补全菜单， 只有当打开 `lsp-bridge-complete-manually` 选项才需要使用这个命令
 - `lsp-bridge-restart-process`: 重启 lsp-bridge 进程 (一般只有开发者才需要这个功能)
-- `lsp-bridge-toggle-sdcv-helper`: 切换字典助手补全
 - `lsp-bridge-peek`: 在 peek window 中展示光标处的定义和引用
 - `lsp-bridge-peek-abort`: 关闭 peek window (默认绑定到 `C-g`)
 - `lsp-bridge-peek-list-next-line`: 选择下一个定义或引用 (默认绑定到 `M-S-n` )
@@ -331,8 +330,6 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 - `acm-enable-icon`: 补全菜单是否显示图标 (有很多 macOS 用户反馈 emacs-plus28 无法正常显示图标， 显示的是彩色方块， 有两种方法可以解决， 安装 Emacs Mac Port 或者自己编译 Emacs 的时候给 brew 命令增加选项 `--with-rsvg` )
 ， 重新编译了之后好像也没有用， 后来重新装了 emacs mac port
 - `acm-enable-doc-markdown-render`: 对补全文档中的 Markdown 内容进行语法着色， 你可以选择`'async`, `t` 或者 `nil`. 当选择`'async` 时, lsp-bridge 会采用异步渲， 当选择 `t` 时, lsp-bridge 会采用同步渲染， 同步渲染会降低补全速度， 默认是 `async` 选项
-- `acm-enable-tabnine`: 是否打开 tabnine 补全支持， 默认打开， 打开后需要运行命令 `lsp-bridge-install-tabnine` 来安装 tabnine 后就可以使用了。 TabNine 会消耗巨大的 CPU， 导致你整个电脑都卡顿， 如果电脑性能不好， 不建议开启此选项
-- `acm-enable-codeium`: 是否打开 Codeium 补全支持， 打开后需要运行命令 `lsp-bridge-install-update-codeium` 来安装 Codeium， 再运行命令 `lsp-bridge-codeium-auth` 来获取 auth token 再运行命令 `lsp-bridge-codeium-input-auth-token` 获取 API Key 后就可以使用了。
 - `acm-enable-copilot`: 启用 Copilot 支持。首先，需要在 [https://github.com/features/copilot](https://github.com/features/copilot) 购买 Copilot 服务。启用时，Copilot 可以通过两种方式运行：一种是通过 Node.js 安装（`npm install -g @github/copilot-language-server`），另一种是使用 copilot-language-server 的二进制文件/安装包。使用哪种方式由变量 `acm-backend-copilot-launch-mode` 控制，可以设置为 `auto`、`node` 或 `binary`。默认值为 `auto`，它会先尝试使用 Node.js，如果失败则尝试二进制文件。`acm-backend-copilot-node-path` 可以用来指定 Node.js 的路径（默认值：`node`），`acm-backend-copilot-binary-path` 用来指定二进制文件的路径（默认值：`copilot-language-server`）。完成安装后，执行 `lsp-bridge-copilot-login`，lsp-bridge 会在 Minibuffer 中显示一个用户代码，将其复制到 Copilot 页面以完成登录。（中国用户要确认代理配置好才能正常登录 Copilot ）
 - `acm-enable-search-file-words`: 补全菜单是否显示打开文件的单词， 默认打开
 - `acm-enable-quick-access`: 是否在图标后面显示索引， 通过 Alt + Number 来快速选择候选词， 默认关闭
@@ -352,12 +349,10 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 - `acm-backend-search-file-words-max-number`: Search Words 补全候选词限制， 默认是 10
 - `acm-backend-search-file-words-enable-fuzzy-match`: Search Words 补全候选词启用模糊匹配, 默认关闭
 - `acm-backend-search-file-words-enable-fuzzy-match-threshold`: Search Words 补全候选词过滤, 过滤掉相似度小于阈值的候选词, 默认是 50
-- `acm-backend-codeium-candidate-min-length`: Codeium 补全最小的触发字符数, 默认是 0
 - `acm-backend-lsp-enable-auto-import`: 支持自动导入， 默认打开
 - `acm-backend-lsp-candidate-max-length`: LSP 候选词最大长度， 一些语言参数较长， 可以适当增加这个选项的值以看清楚参数列表
 - `acm-backend-yas-candidates-number`: yasnippet 显示个数， 默认 2 个
 - `acm-backend-citre-keyword-complete`: 根据`acm-backend-citre-keywords-alist`定义的各个模式的关键字进行补全， 需要使能 citre 后才生效
-- `acm-backend-search-sdcv-words-dictionary`: 用于单词补全的 StarDict 词典， 默认是 `kdic-ec-11w`, 可以自定义为其他 StarDict 词典， 如果你的系统存在词典 `/usr/share/stardict/dic/stardict-oxford-gb-formated-2.4.2/oxford-gb-formated.ifo`, 你需要设置这个选项为 `/usr/share/stardict/dic/stardict-oxford-gb-formated-2.4.2/oxford-gb-formated`, 不需要包括 `.ifo` 扩展
 - `acm-backend-lsp-match-mode`: lsp-bridge 后端对补全候选词的过滤算法， 选项有 "prefix", "prefixCaseSensitive", "substring" 和 "fuzzy"， 默认是 "fuzzy"
 - `acm-backend-lsp-case-mode`: lsp-bridge 后端中对补全候选词的过滤算法的大小写处理方式， 选项有 "ignore", "sensitive" 和 "smart"， 默认是 "ignore"
 - `acm-backend-lsp-frontend-filter-p`: 因为 LSP 候选词已经在 Python 后端进行了过滤， 所以没有必要在前端再进行一次过滤（参考选项 acm-candidate-match-function）, 默认为 nil, 该选项设置为 t 的时候会调用 `acm-candidate-match-function` 函数在前端对 LSP 候选词进行二次过滤
@@ -619,7 +614,7 @@ lsp-bridge 每种语言的服务器配置存储在 [lsp-bridge/langserver](https
 | lsp-bridge-dart.el                  | Dart 私有协议支持                                                                                                    |
 | lsp-bridge-org-babel.el             | Org Babel 代码块的 LSP 支持                                                                                          |
 | lsp-bridge-rust.el                  | Rust 相关集成辅助                                                                                                    |
-| lsp-bridge-lsp-installer.el         | TabNine 和 OmniSharp 的安装辅助                                                                                      |
+| lsp-bridge-lsp-installer.el         | OmniSharp 的安装辅助                                                                                      |
 | lsp_bridge.py                       | Python 主后端， 负责事件循环、请求调度和状态管理                                                                     |
 | python-lsp-bridge                   | 通过 `uv` 启动 Python 后端的 shell 启动脚本                                                                          |
 | acm/                                | lsp-bridge 使用的异步补全菜单前端和补全界面                                                                          |
@@ -628,8 +623,8 @@ lsp-bridge 每种语言的服务器配置存储在 [lsp-bridge/langserver](https
 | core/handler/                       | 各类 LSP 方法和编辑器动作的具体处理实现                                                                              |
 | core/remote_file.py                 | 远程文件同步和远程编辑支持                                                                                           |
 | core/utils.py, core/mergedeep.py    | 通用工具函数以及设置项、协议数据用到的深度合并工具                                                                   |
-| core/search_*.py                    | 文件单词、路径和词典查询等异步搜索后端                                                                               |
-| core/tabnine.py, core/codeium.py, core/copilot.py | AI 补全后端                                                                                           |
+| core/search_*.py                    | 文件单词、路径等异步搜索后端                                                                               |
+| core/copilot.py | AI 补全后端                                                                                           |
 | langserver/                         | 单服务器 JSON 配置， 包含可执行命令、语言 ID、启动参数和设置项                                                       |
 | multiserver/                        | 多服务器组合配置， 用于把补全、诊断等能力组合在一起                                                                  |
 | resources/                          | 词典和其他辅助数据文件                                                                                               |

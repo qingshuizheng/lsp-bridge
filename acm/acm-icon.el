@@ -163,8 +163,6 @@
     ("array" . ("material" "sigma" "#0085c3"))
     ("object" . ("material" "zodiac-taurus" "#0085c3"))
     ("null" . ("material" "spider" "##98c807"))
-    ("tabnine" . ("material" "alpha-t-box-outline" "#954a97"))
-    ("codeium" . ("material" "alpha-c-box-outline" "#09b6a2"))
     ("note" . ("material" "note" "#77aa99"))
     ("capf" . ("material" "infinity" "#f47b7b"))
     ("jupyter" . ("material" "exponent" "#f47b7b"))

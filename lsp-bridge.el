@@ -1766,8 +1766,6 @@ If no sub-buffer is active, use the Org buffer for inline Babel lookup."
   (or
    ;; Allow completion in string.
    lsp-bridge-enable-completion-in-string
-   ;; Allow sdcv completion in string area
-   acm-enable-search-sdcv-words
    ;; For some languages, allow popup completion menu in string.
    (and (boundp 'acm-backend-lsp-filepath)
         acm-backend-lsp-filepath
@@ -2023,11 +2021,6 @@ The line number is relative to the beginning of the source block."
   (let* ((this-command-string (format "%s" this-command))
          (current-word (thing-at-point 'word t))
          (current-symbol (thing-at-point 'symbol t)))
-    ;; TabNine search.
-    (when (and acm-enable-tabnine
-               (lsp-bridge-process-live-p))
-      (lsp-bridge-tabnine-complete))
-
     ;; Copilot search.
     (when (and acm-enable-copilot
                (lsp-bridge-process-live-p)
@@ -2039,18 +2032,6 @@ The line number is relative to the beginning of the source block."
                         (derived-mode-p 'inferior-emacs-lisp-mode)
                         (minibufferp))))
       (lsp-bridge-copilot-complete))
-
-    ;; Codeium search.
-    (when (and acm-enable-codeium
-               (lsp-bridge-process-live-p)
-               ;; Codeium backend not support remote file now, disable it temporary.
-               (or (not (lsp-bridge-is-remote-file)) lsp-bridge-use-local-codeium)
-               ;; Don't enable codeium on Markdown mode, Org mode, ielm and minibuffer, very disruptive to writing.
-               (not (or (derived-mode-p 'markdown-mode)
-                        (eq major-mode 'org-mode)
-                        (derived-mode-p 'inferior-emacs-lisp-mode)
-                        (minibufferp))))
-      (lsp-bridge-codeium-complete))
 
     ;; emacs jupyter
     (when (and acm-enable-jupyter
@@ -2083,12 +2064,6 @@ The line number is relative to the beginning of the source block."
                                                     acm-backend-ctags-max-candidates
                                                     (1- (point)))))
           (lsp-bridge-call-async "ctags_complete" current-word (buffer-file-name) acm-backend-ctags-max-candidates (1- (point))))))
-
-    ;; Search sdcv dictionary.
-    (when acm-enable-search-sdcv-words
-      ;; Search words if current prefix is not empty.
-      (unless (or (string-equal current-word "") (null current-word))
-        (lsp-bridge-call-async "search_sdcv_words_search" current-word)))
 
     ;; Search elisp symbol.
     (lsp-bridge-elisp-symbols-search current-symbol)
@@ -2879,8 +2854,6 @@ SymbolKind (defined in the LSP)."
      (message "[LSP-BRIDGE] Complete code formatting.")
      )))
 
-(defvar lsp-bridge-sdcv-helper-dict nil)
-
 (defun lsp-bridge-workspace-apply-edit (info &optional temp-buffer)
   (lsp-bridge-save-position
    (cond ((plist-get info :documentChanges)
@@ -2928,28 +2901,6 @@ SymbolKind (defined in the LSP)."
             ;; Hide doc frame immediately.
             (acm-doc-hide))
           ))))
-
-(defun lsp-bridge-toggle-sdcv-helper ()
-  "Toggle sdcv helper."
-  (interactive)
-  (unless lsp-bridge-sdcv-helper-dict
-    (setq lsp-bridge-sdcv-helper-dict (make-hash-table :test 'equal)))
-
-  (if acm-enable-search-sdcv-words
-      (progn
-        ;; Disable `lsp-bridge-mode' if it is enable temporality.
-        (when (gethash (buffer-name) lsp-bridge-sdcv-helper-dict)
-          (lsp-bridge-mode -1)
-          (remhash (buffer-name) lsp-bridge-sdcv-helper-dict))
-
-        (message "Turn off SDCV helper."))
-    ;; We enable `lsp-bridge-mode' temporality if current-mode not enable `lsp-bridge-mode' yet.
-    (unless lsp-bridge-mode
-      (puthash (buffer-name) t lsp-bridge-sdcv-helper-dict)
-      (lsp-bridge-mode 1))
-
-    (message "Turn on SDCV helper."))
-  (setq-local acm-enable-search-sdcv-words (not acm-enable-search-sdcv-words)))
 
 (defun lsp-bridge--not-acm-doc-markdown-buffer ()
   "`markdown-code-fontification:*' buffer will create when we render markdown code in acm doc buffer.
@@ -3031,64 +2982,6 @@ We need exclude `markdown-code-fontification:*' buffer in `lsp-bridge-monitor-be
   (when lsp-bridge-mode
     ;; Clean LSP backend completion tick.
     (setq-local acm-backend-lsp-fetch-completion-item-ticker nil)))
-
-(defun lsp-bridge-tabnine-complete ()
-  (interactive)
-  (let* ((buffer-min 1)
-         (buffer-max (1+ (buffer-size)))
-         (chars-number-before-point 3000) ; the number of chars before point to send for completion.
-         (chars-number-after-point 1000) ; the number of chars after point to send for completion.
-         (max-num-results 10)     ; maximum number of results to show.
-         (before-point (max (point-min) (- (point) chars-number-before-point)))
-         (after-point (min (point-max) (+ (point) chars-number-after-point))))
-    (if (lsp-bridge-is-remote-file)
-        (lsp-bridge-remote-send-func-request "tabnine_complete"
-                                             (list (buffer-substring-no-properties before-point (point))
-                                                   (buffer-substring-no-properties (point) after-point)
-                                                   (or lsp-bridge-remote-file-path nil)
-                                                   (= before-point buffer-min)
-                                                   (= after-point buffer-max)
-                                                   max-num-results))
-      (lsp-bridge-call-async "tabnine_complete"
-                             (buffer-substring-no-properties before-point (point))
-                             (buffer-substring-no-properties (point) after-point)
-                             (or (buffer-file-name) nil)
-                             (= before-point buffer-min)
-                             (= after-point buffer-max)
-                             max-num-results))))
-
-(defvar lsp-bridge-use-local-codeium nil
-  "Whether use local codeium when editing remote file.")
-
-(defun lsp-bridge-codeium-complete ()
-  (interactive)
-  (let ((all-text (buffer-substring-no-properties (point-min) (point-max)))
-        (language
-         ;; https://github.com/Exafunction/codeium.el/blob/0240805690c685de9b75c953af2867b6fcc61208/codeium.el#L306
-         (let ((mode major-mode))
-           (while (not (alist-get mode acm-backend-codeium-language-alist))
-             (setq mode (get mode 'derived-mode-parent)))
-           (alist-get mode acm-backend-codeium-language-alist))))
-    (if (and (lsp-bridge-is-remote-file) (not lsp-bridge-use-local-codeium))
-        (lsp-bridge-remote-send-func-request "codeium_complete"
-                                             (list
-                                              (1- (point))
-                                              (symbol-name major-mode)
-                                              tab-width
-                                              all-text
-                                              (not indent-tabs-mode)
-                                              (acm-get-input-prefix)
-                                              language
-                                              (buffer-file-name)))
-      (lsp-bridge-call-async "codeium_complete"
-                             (1- (point))
-                             (symbol-name major-mode)
-                             tab-width
-                             all-text
-                             (not indent-tabs-mode)
-                             (acm-get-input-prefix)
-                             language
-                             (buffer-file-name)))))
 
 (defun lsp-bridge-copilot-complete ()
   (interactive)

@@ -98,13 +98,10 @@
 (require 'acm-backend-lsp-workspace-symbol)
 (require 'acm-backend-path)
 (require 'acm-backend-search-file-words)
-(require 'acm-backend-search-sdcv-words)
 (require 'acm-backend-tempel)
 (require 'acm-backend-telega)
-(require 'acm-backend-tabnine)
 (require 'acm-backend-citre)
 (require 'acm-backend-ctags)
-(require 'acm-backend-codeium)
 (require 'acm-backend-copilot)
 (require 'acm-backend-org-roam)
 (require 'acm-backend-jupyter)
@@ -197,9 +194,7 @@
 
 (defcustom acm-backend-order '("mode-first-part-candidates"
                                "template-first-part-candidates"
-                               "tabnine-candidates"
                                "copilot-candidates"
-                               "codeium-candidates"
                                "template-second-part-candidates"
                                "mode-second-part-candidates")
   "The order for completion backend."
@@ -492,8 +487,6 @@ Only calculate template candidate when type last character."
          capf-candidates
          path-candidates
          yas-candidates
-         tabnine-candidates
-         codeium-candidates
          copilot-candidates
          jupyter-candidates
          tabby-candidates
@@ -511,12 +504,6 @@ Only calculate template candidate when type last character."
     (when (acm-in-roam-bracket-p)
       (setq org-roam-candidates (acm-backend-org-roam-candidates keyword)))
 
-    (when acm-enable-tabnine
-      (setq tabnine-candidates (acm-backend-tabnine-candidates keyword)))
-
-    (when acm-enable-codeium
-      (setq codeium-candidates (acm-backend-codeium-candidates keyword)))
-
     (when acm-enable-copilot
       (setq copilot-candidates (acm-backend-copilot-candidates keyword)))
 
@@ -529,111 +516,106 @@ Only calculate template candidate when type last character."
     (when acm-enable-capf
       (setq capf-candidates (acm-backend-capf-candiates keyword)))
 
-    (if acm-enable-search-sdcv-words
-        ;; Completion SDCV if option `acm-enable-search-sdcv-words' is enable.
-        (setq candidates (acm-backend-search-sdcv-words-candidates keyword))
+    (setq path-candidates (acm-backend-path-candidates keyword))
+    (if (> (length path-candidates) 0)
+        ;; Only show path candidates if prefix is valid path.
+        (setq candidates path-candidates)
 
-      (setq path-candidates (acm-backend-path-candidates keyword))
-      (if (> (length path-candidates) 0)
-          ;; Only show path candidates if prefix is valid path.
-          (setq candidates path-candidates)
+      (when acm-enable-citre
+        (setq citre-candidates (unless (acm-in-comment-p) (acm-backend-citre-candidates keyword))))
+      (when acm-enable-ctags
+        (setq ctags-candidates (unless (acm-in-comment-p) (acm-backend-ctags-candidates keyword))))
+      ;; Fetch syntax completion candidates.
+      (setq lsp-candidates (unless (acm-in-comment-p) (acm-backend-lsp-candidates keyword)))
+      (setq file-words-candidates (acm-backend-search-file-words-candidates keyword))
+      (when acm-enable-lsp-workspace-symbol
+        (setq lsp-workspace-symbol-candidates (unless (acm-in-comment-p) (acm-backend-lsp-workspace-symbol-candidates keyword))))
 
-        (when acm-enable-citre
-          (setq citre-candidates (unless (acm-in-comment-p) (acm-backend-citre-candidates keyword))))
-        (when acm-enable-ctags
-          (setq ctags-candidates (unless (acm-in-comment-p) (acm-backend-ctags-candidates keyword))))
-        ;; Fetch syntax completion candidates.
-        (setq lsp-candidates (unless (acm-in-comment-p) (acm-backend-lsp-candidates keyword)))
-        (setq file-words-candidates (acm-backend-search-file-words-candidates keyword))
-        (when acm-enable-lsp-workspace-symbol
-          (setq lsp-workspace-symbol-candidates (unless (acm-in-comment-p) (acm-backend-lsp-workspace-symbol-candidates keyword))))
-
-        (let ((lsp-labels (mapcar (lambda (candidate) (plist-get candidate :label)) lsp-candidates)))
-          ;; Remove duplicates from both `lsp-workspace-symbol-candidates` and `file-words-candidates`
-          (setq lsp-workspace-symbol-candidates (acm-remove-duplicate-candidates lsp-workspace-symbol-candidates lsp-labels))
-          (setq file-words-candidates (acm-remove-duplicate-candidates file-words-candidates lsp-labels)))
+      (let ((lsp-labels (mapcar (lambda (candidate) (plist-get candidate :label)) lsp-candidates)))
+        ;; Remove duplicates from both `lsp-workspace-symbol-candidates` and `file-words-candidates`
+        (setq lsp-workspace-symbol-candidates (acm-remove-duplicate-candidates lsp-workspace-symbol-candidates lsp-labels))
+        (setq file-words-candidates (acm-remove-duplicate-candidates file-words-candidates lsp-labels)))
 
 
 
-        (setq mode-candidates
-              (apply #'append (mapcar (lambda (mode-candidate-name)
-                                        (pcase mode-candidate-name
-                                          ("elisp-candidates" (unless (acm-in-comment-p) (acm-backend-elisp-candidates keyword)))
-                                          ("lsp-candidates" lsp-candidates)
-                                          ("lsp-workspace-symbol-candidates" lsp-workspace-symbol-candidates)
-                                          ("capf-candidates" capf-candidates)
-                                          ("jupyter-candidates" jupyter-candidates)
-                                          ("tabby-candidates" tabby-candidates)
-                                          ("ctags-candidates" ctags-candidates)
-                                          ("citre-candidates" citre-candidates)
-                                          ("org-roam-candidates" org-roam-candidates)
-                                          ("file-words-candidates" file-words-candidates)
-                                          ("telega-candidates" (acm-backend-telega-candidates keyword))
-                                          ))
-                                      acm-completion-mode-candidates-merge-order)))
+      (setq mode-candidates
+            (apply #'append (mapcar (lambda (mode-candidate-name)
+                                      (pcase mode-candidate-name
+                                        ("elisp-candidates" (unless (acm-in-comment-p) (acm-backend-elisp-candidates keyword)))
+                                        ("lsp-candidates" lsp-candidates)
+                                        ("lsp-workspace-symbol-candidates" lsp-workspace-symbol-candidates)
+                                        ("capf-candidates" capf-candidates)
+                                        ("jupyter-candidates" jupyter-candidates)
+                                        ("tabby-candidates" tabby-candidates)
+                                        ("ctags-candidates" ctags-candidates)
+                                        ("citre-candidates" citre-candidates)
+                                        ("org-roam-candidates" org-roam-candidates)
+                                        ("file-words-candidates" file-words-candidates)
+                                        ("telega-candidates" (acm-backend-telega-candidates keyword))
+                                        ))
+                                    acm-completion-mode-candidates-merge-order)))
 
-        (when (and (or
-                    ;; Show snippet candidates if lsp-candidates length is zero.
-                    (zerop (length lsp-candidates))
-                    ;; Don't search snippet if char before keyword is not in `acm-backend-lsp-completion-trigger-characters'.
-                    (and (boundp 'acm-backend-lsp-completion-trigger-characters)
-                         (not (member char-before-keyword acm-backend-lsp-completion-trigger-characters))))
-                   (not (acm-in-comment-p)))
+      (when (and (or
+                  ;; Show snippet candidates if lsp-candidates length is zero.
+                  (zerop (length lsp-candidates))
+                  ;; Don't search snippet if char before keyword is not in `acm-backend-lsp-completion-trigger-characters'.
+                  (and (boundp 'acm-backend-lsp-completion-trigger-characters)
+                       (not (member char-before-keyword acm-backend-lsp-completion-trigger-characters))))
+                 (not (acm-in-comment-p)))
 
-          ;; Only calculate template candidate when type last character.
-          (cond
-           ;; Show template candidates when flag `acm-template-candidate-show-p' is t.
-           (acm-template-candidate-show-p
-            (setq yas-candidates (acm-backend-yas-candidates keyword))
-            (setq tempel-candidates (acm-backend-tempel-candidates keyword))
-            (setq-local acm-template-candidate-show-p nil)
-            (setq-local acm-template-candidate-show-ticker acm-template-candidate-ticker))
-           ;; Don't hide template candidates if just shown in last time, avoid menu flick by template candiates.
-           ((= (- acm-template-candidate-ticker acm-template-candidate-show-ticker) 1)
-            (setq yas-candidates (acm-backend-yas-candidates keyword))
-            (setq tempel-candidates (acm-backend-tempel-candidates keyword)))
-           ;; Try show template candidates after 200ms later.
-           ;; Cancel timer if last timer haven't executed when user type new character.
-           (t
-            (acm-cancel-timer acm-template-candidate-timer)
-            (setq acm-template-candidate-timer (run-with-timer 0.2 nil #'acm-template-candidate-update)))))
+        ;; Only calculate template candidate when type last character.
+        (cond
+         ;; Show template candidates when flag `acm-template-candidate-show-p' is t.
+         (acm-template-candidate-show-p
+          (setq yas-candidates (acm-backend-yas-candidates keyword))
+          (setq tempel-candidates (acm-backend-tempel-candidates keyword))
+          (setq-local acm-template-candidate-show-p nil)
+          (setq-local acm-template-candidate-show-ticker acm-template-candidate-ticker))
+         ;; Don't hide template candidates if just shown in last time, avoid menu flick by template candiates.
+         ((= (- acm-template-candidate-ticker acm-template-candidate-show-ticker) 1)
+          (setq yas-candidates (acm-backend-yas-candidates keyword))
+          (setq tempel-candidates (acm-backend-tempel-candidates keyword)))
+         ;; Try show template candidates after 200ms later.
+         ;; Cancel timer if last timer haven't executed when user type new character.
+         (t
+          (acm-cancel-timer acm-template-candidate-timer)
+          (setq acm-template-candidate-timer (run-with-timer 0.2 nil #'acm-template-candidate-update)))))
 
-        ;; Build template candidates.
-        ;; And make sure show part of template candidates in first completion menu.
-        (setq template-candidates (append yas-candidates tempel-candidates))
-        (if (> (length template-candidates) template-candidates-min-index)
-            (progn
-              (setq template-first-part-candidates (cl-subseq template-candidates 0 template-candidates-min-index))
-              (setq template-second-part-candidates (cl-subseq template-candidates template-candidates-min-index)))
-          (setq template-first-part-candidates template-candidates)
-          (setq template-second-part-candidates nil))
+      ;; Build template candidates.
+      ;; And make sure show part of template candidates in first completion menu.
+      (setq template-candidates (append yas-candidates tempel-candidates))
+      (if (> (length template-candidates) template-candidates-min-index)
+          (progn
+            (setq template-first-part-candidates (cl-subseq template-candidates 0 template-candidates-min-index))
+            (setq template-second-part-candidates (cl-subseq template-candidates template-candidates-min-index)))
+        (setq template-first-part-candidates template-candidates)
+        (setq template-second-part-candidates nil))
 
-        ;; Make sure show part of TabNine candidates in first completion menu.
-        (setq mode-candidates-split-index
-              (max (- acm-menu-length (+ (length template-first-part-candidates) (length tabnine-candidates)))
-                   mode-candidates-min-index))
+      ;; Keep the first menu page long enough for the templates that go into
+      ;; it, so the mode candidates which follow are visible as well.
+      (setq mode-candidates-split-index
+            (max (- acm-menu-length (length template-first-part-candidates))
+                 mode-candidates-min-index))
 
-        ;; Build mode candidates.
-        (if (> (length mode-candidates) mode-candidates-split-index)
-            (progn
-              (setq mode-first-part-candidates (cl-subseq mode-candidates 0 mode-candidates-split-index))
-              (setq mode-second-part-candidates (cl-subseq mode-candidates mode-candidates-split-index)))
-          (setq mode-first-part-candidates mode-candidates)
-          (setq mode-second-part-candidates nil))
+      ;; Build mode candidates.
+      (if (> (length mode-candidates) mode-candidates-split-index)
+          (progn
+            (setq mode-first-part-candidates (cl-subseq mode-candidates 0 mode-candidates-split-index))
+            (setq mode-second-part-candidates (cl-subseq mode-candidates mode-candidates-split-index)))
+        (setq mode-first-part-candidates mode-candidates)
+        (setq mode-second-part-candidates nil))
 
-        ;; Build all backend candidates.
-        (setq candidates (apply #'append (mapcar (lambda (backend-name)
-                                                   (pcase backend-name
-                                                     ("mode-first-part-candidates" mode-first-part-candidates)
-                                                     ("template-first-part-candidates" template-first-part-candidates)
-                                                     ("tabnine-candidates" tabnine-candidates)
-                                                     ("codeium-candidates" codeium-candidates)
-                                                     ("copilot-candidates" copilot-candidates)
-                                                     ("template-second-part-candidates" template-second-part-candidates)
-                                                     ("mode-second-part-candidates" mode-second-part-candidates)
-                                                     ))
-                                                 acm-backend-order))
-              )))
+      ;; Build all backend candidates.
+      (setq candidates (apply #'append (mapcar (lambda (backend-name)
+                                                 (pcase backend-name
+                                                   ("mode-first-part-candidates" mode-first-part-candidates)
+                                                   ("template-first-part-candidates" template-first-part-candidates)
+                                                   ("copilot-candidates" copilot-candidates)
+                                                   ("template-second-part-candidates" template-second-part-candidates)
+                                                   ("mode-second-part-candidates" mode-second-part-candidates)
+                                                   ))
+                                               acm-backend-order))
+            ))
 
     ;; Return candidates.
     (if acm-filter-overlay
@@ -998,7 +980,7 @@ The key of candidate will change between two LSP results."
               (visual-line-mode 1))
 
             ;; Only render markdown styling when idle 200ms, because markdown render is expensive.
-            (when (member backend '("lsp" "codeium" "copilot"))
+            (when (member backend '("lsp" "copilot"))
               (acm-cancel-timer acm-markdown-render-timer)
               (cl-case acm-enable-doc-markdown-render
                 (async (setq acm-markdown-render-timer
