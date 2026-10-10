@@ -149,7 +149,7 @@
 | **S2** ✅ 基本完成 | Python docstring 补全 + =except:= 清理 + ruff/pydocstyle 配置与门禁 | =scripts/check-python.sh --strict= 全绿（py_compile / docstring 存在性 / 硬门禁 / D 门禁）；剩余：=F403/F405= star-import 421 条（需与 =core/utils.py= 的导出面一起决定，见「已做的决定」）与 =E501=（旧行宽） |
 | **S3** ✅ 完成 | popup 层重构：popup 状态按父 frame 归位（=acm/acm-session.el=）+ registry + candidate 协议（=acm/acm-backend.el=） | =test/acm-test.el= 14 例已就位并通过（=scripts/check-test.sh=）：候选 helper、输入前缀、popup predicates、quick-access 键、update/hide 周期、选择保持；S3 需继续覆盖多父 frame 切换 |
 | **S4** | =acm-backend.el=：candidate 协议 + registry（S3 已完成）；协议握手 + =lsp-bridge-diagnose=（**已完成**）；剩余：=lsp-bridge.el= 拆分 | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
-| **S5** 🔄 第一步完成 | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
+| **S5** ✅ 完成 | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
 | **S6** | 测试与 CI：acm 冒烟测试、docstring 门、ruff、Emacs 版本矩阵（现在只跑 Ubuntu + Emacs 28.1，而代码用 30+ 的 child frame 特性） | 进行中：=test/acm-test.el=（14 例，headless）+ =test/lsp-bridge-org-babel-test.el=（9 例）由 =scripts/check-test.sh= 跑通；=--all= 追加 langserver/byte-compile/语言服务器驱动的 Python 测试；剩余：CI 里的 Emacs 版本矩阵 |
 | **S7** | 文档（README/架构说明）+ 同步 emacs-config（5 处 advice、选项改名、删除已移除后端的 setup 块；若想要笔记补全需新增 =acm-enable-vulpea t=，目前 config 未开） | 用户日常使用回归；=emacs-config= 单独提交 |
 
@@ -234,6 +234,29 @@ ruff check core lsp_bridge.py          # S2 起接入
    （无值的 defvar = 声明 ✓，docstring 门禁已能识别）；只对**包外**库用 =require=（=cl-lib=／=tramp=／=subr-x=）。
    对包内文件 =require=（例如 =(require 'lsp-bridge-epc)=）会把整个 =lsp-bridge.el= 提前加载，
    从而**改变后续文件的告警画像** ⇒ 一律声明，不 require 包内文件。
+**S5 第二步：=lsp_bridge.py= 按职责拆成三个 mixin**：
+=LspBridge= 原本是一个单类（1841 行的文件、 56 个方法、 约 1580 行在类内）。
+现在它由三个 mixin 组成（方法整块搬迁、 不改写）：
+
+| 文件 | 行数 | 方法 | 职责 |
+|------+------+------+------|
+| =core/bridge_remote.py= | 593 | 15 | socket 客户端、 远程/容器文件客户端、 消息收发、 tramp 同步与远程文件操作 |
+| =core/bridge_server.py= | 394 | 11 + 3 个模块函数 | 选服务器、 检查命令、 加载单服务器信息、 创建/关闭语言服务器 |
+| =core/bridge_search.py= | 214 | 9 | search backend、 ctags、 copilot 的 EPC 入口 |
+| =lsp_bridge.py= | 720 | 19 | 进程与事件循环、 EPC 调度、 =handshake=/=diagnose= 、 文件 action 桥接 |
+
+三个共享项随之搬到 =core/utils.py=（否则 mixin 只能反向 import 主文件形成**循环**）：
+=threaded= 装饰器、 三个 =REMOTE_FILE_*_CHANNEL= 常量。
+这一步让我反复踩到“搬完才发现少了东西”：生成器第一版把 =core.fileaction= 与
+=core.remote_file= 的导入名混在一起、 =wraps= 与 =threading= 漏掉。
+现在的做法是：**用 ast 解析原文件的 import 块**得到 name→module 映射后按需输出，
+写盘前先 =ast.parse= 校验每个新模块，并用 ruff =F821= 与一个“模块级名字解析”脚本
+扫描未定义名字（star import 会让 ruff 看不到，必须自己扫）。
+
+验收：=check-python.sh --strict= 全部 "All checks passed"；新增 =test/test_bridge_surface.py=（7 例）
+断言 **EPC 对外方法集合与 HEAD 完全一致**（52 = 19 类内 + 33 继承）、 mixin 不重叠、
+模块级 helper 仍可从 =lsp_bridge= 导入；docstring 1591/1591 = 100%。
+
 **S5 第一步：Solidity fallback 拆分 + 通用文本工具独立**：
 =core/handler/find_define_base.py=（1835 行、 37 个模块级函数）按调用图与语言相关性拆成三个模块：
 
