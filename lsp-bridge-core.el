@@ -12,6 +12,50 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+
+;;; The macros every other file of the package uses
+;;
+;; They live here, in the one file that requires nothing else of the
+;; package, because a macro that a file cannot load without a cycle is
+;; silently compiled as a function call (see the autoloads this used to
+;; need).  A file that uses them requires this one.
+
+(cl-defmacro lsp-bridge--with-file-buffer (filename filehost &rest body)
+  "Evaluate BODY in the buffer visiting FILENAME on FILEHOST.
+FILEHOST is resolved to a known host first and the buffer is looked up
+by path for local hosts or by host and path for remote ones."
+  (declare (indent 1))
+  `(let ((resolved-host (lsp-bridge--resolve-remote-host ,filehost)))
+     (when-let* ((buffer (pcase resolved-host
+                           ("" (lsp-bridge-get-match-buffer-by-filepath ,filename))
+                           (_ (lsp-bridge-get-match-buffer-by-remote-file resolved-host ,filename)))))
+       (with-current-buffer buffer
+         ,@body))))
+
+(cl-defmacro lsp-bridge-save-position (&rest body)
+  "Evaluate BODY and restore point afterwards.
+`save-excursion' is not enough for LSP code format, so the line, the
+column and the indentation column are recorded before BODY runs and
+restored after it."
+  `(let* ((current-buf (current-buffer))
+          (current-line (line-number-at-pos nil t))
+          (current-column (lsp-bridge--calculate-column))
+          (indent-column (save-excursion
+                           (back-to-indentation)
+                           (lsp-bridge--calculate-column))))
+     ,@body
+     (switch-to-buffer current-buf)
+     (goto-line current-line)
+     (back-to-indentation)
+     (forward-char (max (- current-column indent-column) 0))))
+
+;; The macros above expand into calls to these, so every file that uses them
+;; needs them declared as well.
+(declare-function lsp-bridge--resolve-remote-host "lsp-bridge-remote")
+(declare-function lsp-bridge-get-match-buffer-by-filepath "lsp-bridge")
+(declare-function lsp-bridge-get-match-buffer-by-remote-file "lsp-bridge")
+
 (defvar acm-backend-capf-mode-hooks)
 (declare-function acm-backend-elisp-get-symbols "acm-backend-elisp")
 (defvar acm-backend-elisp-search-max-number)
@@ -34,7 +78,6 @@
 (defvar acm-preview-overlay)
 (autoload 'acm-run-idle-func "acm" nil nil 'macro)
 (declare-function acm-session-popup-buffer-p "acm-session")
-(autoload 'lsp-bridge--with-file-buffer "lsp-bridge" nil nil 'macro)
 (declare-function lsp-bridge-auto-format-code "lsp-bridge-workspace")
 (defvar lsp-bridge-auto-format-code-idle)
 (declare-function lsp-bridge-buffer-file-name "lsp-bridge")

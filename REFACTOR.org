@@ -234,6 +234,24 @@ ruff check core lsp_bridge.py          # S2 起接入
    （无值的 defvar = 声明 ✓，docstring 门禁已能识别）；只对**包外**库用 =require=（=cl-lib=／=tramp=／=subr-x=）。
    对包内文件 =require=（例如 =(require 'lsp-bridge-epc)=）会把整个 =lsp-bridge.el= 提前加载，
    从而**改变后续文件的告警画像** ⇒ 一律声明，不 require 包内文件。
+**分包收口：共享宏搬进叶子文件 core（修掉一个上游潜伏 bug）**：
+=lsp-bridge--with-file-buffer=（以及 =lsp-bridge-save-position=）被 **11 个文件**使用，
+但它住在会被子模块 require 的 =lsp-bridge.el= 里 ⇒ 使用方只有两条路，都错：
+=(autoload 'x "lsp-bridge")=（上游写法）让编译器把宏当**函数调用**编出去，运行时报 =invalid-function=；
+`(autoload 'x "lsp-bridge" nil nil 'macro)= 则让编译器**加载 lsp-bridge.el 去展开宏**，
+而 =lsp-bridge.el= 又 require 这些子模块 ⇒ **循环加载**（实测报
+"Eager macro-expansion skipped due to cycle"）。
+正确解法：把两个宏搬进 **=lsp-bridge-core.el=**（它是唯一不 require 任何兄弟文件的叶子），
+所有使用方 =(require 'lsp-bridge-core)=；=cl-defmacro= 需要 =(require 'cl-lib)=（生成器只为搬动文本里
+检测到的库发 require，手工后加的宏要自己补，否则整段宏被当函数调用 ✗）。
+宏展开会用到的三个 helper（=--resolve-remote-host=、=get-match-buffer-by-filepath=、
+=-remote-file=）在每个使用方各自声明——声明**不跨文件继承**（实测：写在 core 里对别的文件无效）。
+
+**这类"改变编译期加载顺序"的步骤，聚合对比不再适用**：新增 =require 'lsp-bridge-core=
+会让编译器提前加载 core，从而改变后续所有文件的告警画像（我最初被这个假象骗过一次）。
+改用**逐文件隔离编译**对比（=/tmp/per-file-warnings.sh=：对每个文件单独跑 =check-elisp.sh=），
+它给出的结论干净：本步 **198 vs HEAD 201，仅 3 条移除**（breadcrumb 的宏告警消失 = bug 修好）。
+
 **进度 8（拆分完成）**：第 8 步（=core= 层）已完成 —— =lsp-bridge-core.el=（684 行、44 个定义：
 光标/变更监控与 =--position= 系列、=monitor-*= 六个钩子、elisp 符号同步与 search words 索引、
 =lsp-bridge-mode=／=global-lsp-bridge-mode=／=--enable=／=--disable=／=--turn-off-lsp-feature=、

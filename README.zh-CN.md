@@ -726,7 +726,7 @@ lsp-bridge 每种语言的服务器配置存储在 [lsp-bridge/langserver](https
 | lsp-bridge-workspace.el             | workspace symbol、 代码格式化、 应用编辑、 缩进与 document highlight                                                  |
 | lsp-bridge-completion.el            | 补全请求与候选： record 回调、 补全谓词、 search backend                                                              |
 | lsp-bridge-transport.el             | EPC 传输： 服务端、 调用封装、 进程、 协议握手与 `lsp-bridge-diagnose'                                               |
-| lsp-bridge-core.el                  | 共享缓冲状态、 变更监控、 minor mode 与 advisor                                                                      |
+| lsp-bridge-core.el                  | 共享缓冲状态、 变更监控、 minor mode、 advisor， 以及所有文件共用的宏                                               |
 | acm/                                | lsp-bridge 使用的异步补全菜单前端和补全界面                                                                          |
 | core/fileaction.py                  | 每个文件的状态机， 负责路由请求、处理响应以及协调编辑器状态                                                         |
 | core/lspserver.py                   | 每个语言服务器进程的 LSP 传输层， 负责请求和响应顺序控制                                                             |

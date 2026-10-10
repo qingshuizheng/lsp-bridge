@@ -19,7 +19,13 @@
 (declare-function acm-is-elisp-mode-p "acm")
 (declare-function lsp-bridge--position "lsp-bridge")
 (declare-function lsp-bridge--resolve-remote-host "lsp-bridge")
-(autoload 'lsp-bridge--with-file-buffer "lsp-bridge" nil nil 'macro)
+(require 'lsp-bridge-core)
+
+;; The macros of `lsp-bridge-core' expand into calls to these, which this
+;; file does not define.
+(declare-function lsp-bridge--resolve-remote-host "lsp-bridge")
+(declare-function lsp-bridge-get-match-buffer-by-filepath "lsp-bridge")
+(declare-function lsp-bridge-get-match-buffer-by-remote-file "lsp-bridge")
 (declare-function lsp-bridge-call-async "lsp-bridge")
 (declare-function lsp-bridge-call-file-api "lsp-bridge")
 (defvar lsp-bridge-enable-with-tramp)

@@ -731,7 +731,7 @@ The following is the directory structure of the lsp-bridge project:
 | lsp-bridge-workspace.el               | Workspace symbols, code format, applying edits, indent and document highlight                                        |
 | lsp-bridge-completion.el              | Completion requests and candidates: the record callbacks, the predicates and the search backends                     |
 | lsp-bridge-transport.el               | The EPC transport: the server, the call wrappers, the process, the protocol handshake and `lsp-bridge-diagnose'    |
-| lsp-bridge-core.el                    | Shared buffer state, the change monitors, the minor mode and the advisors                                           |
+| lsp-bridge-core.el                    | Shared buffer state, the change monitors, the minor mode, the advisors and the macros every file uses              |
 | core/fileaction.py                    | Per-file state machine that routes requests, handles responses, and coordinates editor state                        |
 | core/lspserver.py                     | LSP transport layer for each server process, including request/response ordering                                    |
 | core/handler/                         | Concrete handlers for LSP methods and editor actions                                                                |

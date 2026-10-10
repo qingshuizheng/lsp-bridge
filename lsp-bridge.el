@@ -133,6 +133,8 @@
 (declare-function lsp-bridge-signature-help-fetch "lsp-bridge")
 (defvar lsp-bridge-signature-help-timer)
 
+(require 'lsp-bridge-core)
+
 (defvar acm-library-path (expand-file-name "acm" (if load-file-name
                                                      (file-name-directory load-file-name)
                                                    default-directory))
@@ -1109,35 +1111,6 @@ Runs in `find-file-hook' and does nothing when
   (or (alist-get mode lsp-bridge-formatting-indent-alist)
       (lsp-bridge--get-indent-width (or (get mode 'derived-mode-parent) 'default))))
 
-(cl-defmacro lsp-bridge--with-file-buffer (filename filehost &rest body)
-  "Evaluate BODY in the buffer visiting FILENAME on FILEHOST.
-FILEHOST is resolved to a known host first and the buffer is looked up
-by path for local hosts or by host and path for remote ones."
-  (declare (indent 1))
-  `(let ((resolved-host (lsp-bridge--resolve-remote-host ,filehost)))
-     (when-let* ((buffer (pcase resolved-host
-                           ("" (lsp-bridge-get-match-buffer-by-filepath ,filename))
-                           (_ (lsp-bridge-get-match-buffer-by-remote-file resolved-host ,filename)))))
-       (with-current-buffer buffer
-         ,@body))))
-
-(cl-defmacro lsp-bridge-save-position (&rest body)
-  "Evaluate BODY and restore point afterwards.
-`save-excursion' is not enough for LSP code format, so the line, the
-column and the indentation column are recorded before BODY runs and
-restored after it."
-  `(let* ((current-buf (current-buffer))
-          (current-line (line-number-at-pos nil t))
-          (current-column (lsp-bridge--calculate-column))
-          (indent-column (save-excursion
-                           (back-to-indentation)
-                           (lsp-bridge--calculate-column))))
-     ,@body
-     (switch-to-buffer current-buf)
-     (goto-line current-line)
-     (back-to-indentation)
-     (forward-char (max (- current-column indent-column) 0))))
-
 (defun lsp-bridge-is-remote-file ()
   "Return non-nil if the current buffer visits a remote file.
 Remote files are opened by lsp-bridge itself and mark the buffer with
@@ -1454,7 +1427,6 @@ SymbolKind (defined in the LSP)."
 ;; The Emacs side UI glue of lsp-bridge lives in its own file, which declares
 ;; what it needs from this one instead of requiring it.
 (require 'lsp-bridge-ui)
-(require 'lsp-bridge-core)
 (require 'lsp-bridge-transport)
 (require 'lsp-bridge-completion)
 (require 'lsp-bridge-workspace)

@@ -84,6 +84,12 @@
 
 ;;; Code:
 
+;; The macro `lsp-bridge--with-file-buffer' lives in lsp-bridge-core.el,
+;; the one file of the package that requires nothing else of it: a macro
+;; that cannot be loaded without a cycle is compiled as a function call,
+;; which fails with "invalid-function" at run time.
+(require 'lsp-bridge-core)
+
 (defcustom lsp-bridge-enable-inlay-hint nil
   "Whether to enable inlay hint."
   :type 'boolean

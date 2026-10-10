@@ -85,6 +85,12 @@
 
 ;;; Code:
 
+;; The macro `lsp-bridge--with-file-buffer' lives in lsp-bridge-core.el,
+;; the one file of the package that requires nothing else of it: a macro
+;; that cannot be loaded without a cycle is compiled as a function call,
+;; which fails with "invalid-function" at run time.
+(require 'lsp-bridge-core)
+
 (defcustom lsp-bridge-diagnostic-fetch-idle 0.5
   "The idle seconds to fetch diagnostics."
   :type 'float
@@ -174,8 +180,6 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
 
 (defvar lsp-bridge-diagnostic-display-error-at-point-timer nil
   "Timer that delays showing the diagnostic tooltip at point.")
-
-(autoload 'lsp-bridge--with-file-buffer "lsp-bridge")
 
 (defun lsp-bridge-diagnostic-hide-tooltip ()
   "Hide the diagnostic tooltip frame."

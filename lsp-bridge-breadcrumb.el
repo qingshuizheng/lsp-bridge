@@ -26,6 +26,18 @@
 
 (require 'acm-icon)
 
+;; The macro `lsp-bridge--with-file-buffer' lives in lsp-bridge-core.el,
+;; the one file of the package that requires nothing else of it: a macro
+;; that cannot be loaded without a cycle is compiled as a function call,
+;; which fails with "invalid-function" at run time.
+(require 'lsp-bridge-core)
+
+;; The macros of `lsp-bridge-core' expand into calls to these, which this
+;; file does not define.
+(declare-function lsp-bridge--resolve-remote-host "lsp-bridge")
+(declare-function lsp-bridge-get-match-buffer-by-filepath "lsp-bridge")
+(declare-function lsp-bridge-get-match-buffer-by-remote-file "lsp-bridge")
+
 (defgroup lsp-bridge-breadcrumb nil
   "Show breadcrumb on headerline."
   :prefix "lsp-bridge-breadcrumb-"
