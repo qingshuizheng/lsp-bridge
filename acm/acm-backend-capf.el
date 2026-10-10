@@ -155,14 +155,14 @@ inserting it."
       (when exit-fn
         (funcall exit-fn label 'finished)))))
 
-(defun acm-backend-capf-candidates (keyword)
+(defun acm-backend-capf-candidates (_keyword)
   "Return CAPF completion candidates matching KEYWORD.
 Ask `completion-at-point-functions' through
 `completion--capf-wrapper' and turn each completion into a candidate
 plist.  Return nil unless the major mode is a member of
-`acm-backend-capf-mode-list'.  When CAPF leaves the text before point
-out of its candidates, that prefix is prepended back to every
-candidate."
+`acm-backend-capf-mode-list'.  KEYWORD itself is not used, because a CAPF
+candidate already is the complete text that replaces the region its entry
+returned."
   (when (member major-mode acm-backend-capf-mode-list)
     (let ((res (run-hook-wrapped 'completion-at-point-functions
                                  #'completion--capf-wrapper 'all))
@@ -189,17 +189,17 @@ candidate."
                              (and newstart (= newstart start)))))
                         (initial (buffer-substring-no-properties start end))
                         (candidates (completion-all-completions initial collection nil (length initial)))
-                        prefix)
+                        )
                    (when-let* ((z (last candidates)))
                      (setcdr z nil))
-                   ;; Sometime CAPF excludes the prefix from the candidates.
-                   ;; Adding it back based on the `keyword' and `initial'.
-                   (when (> (length keyword) (length initial))
-                     (setq prefix (substring keyword 0  (- (length keyword)
-                                                           (length initial))))
-                     (setq candidates (mapcar (lambda (candidate)
-                                                (concat prefix candidate))
-                                              candidates)))
+                   ;; The CAPF contract is that every candidate is the complete
+                   ;; text that replaces the region the CAPF returned, so nothing
+                   ;; is prepended here.  Upstream used to prepend the part of
+                   ;; KEYWORD before that region, which doubles it in the buffer
+                   ;; (a candidate with the prefix in front is inserted after a
+                   ;; region that already starts inside that prefix) and hands
+                   ;; the `:exit-function' a string that its own tables do not
+                   ;; know - it is what broke ekg's transclusion completion.
                    candidates)))))))
 
 (provide 'acm-backend-capf)

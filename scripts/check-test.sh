@@ -44,6 +44,9 @@ run_ert test/acm-session-test.el
 echo "== ERT: backend registry (test/acm-backend-test.el)"
 run_ert test/acm-backend-test.el
 
+echo "== ERT: CAPF backend and exit function (test/acm-backend-capf-test.el)"
+run_ert test/acm-backend-capf-test.el
+
 echo "== ERT: telega backend logic (test/acm-backend-telega-test.el)"
 run_ert test/acm-backend-telega-test.el
 
