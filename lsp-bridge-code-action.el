@@ -106,13 +106,22 @@ Set it `nil' to improve performance."
   :type 'cons
   :group 'lsp-bridge)
 
-(defvar lsp-bridge-code-action--current-buffer nil)
-(defvar lsp-bridge-code-action-popup-maybe-preview-timer nil)
-(defvar lsp-bridge-code-action--oldfile nil)
-(defvar lsp-bridge-code-action--preview-alist nil)
-(defvar lsp-bridge-code-action--preview-index nil)
+(defvar lsp-bridge-code-action--current-buffer nil
+  "The buffer the code action popup was opened from.")
+(defvar lsp-bridge-code-action-popup-maybe-preview-timer nil
+  "Idle timer that delays the code action preview update.")
+(defvar lsp-bridge-code-action--oldfile nil
+  "Temporary file holding the buffer content before the code action.")
+(defvar lsp-bridge-code-action--preview-alist nil
+  "Alist of menu index and preview text for the code action popup.")
+(defvar lsp-bridge-code-action--preview-index nil
+  "Index of the menu item whose preview is currently computed.")
 
 (defun lsp-bridge-code-action-get-range ()
+  "Return the buffer range the code action applies to.
+Return the active region when there is one, otherwise the range of
+the diagnostic overlay at point, otherwise the point alone as a
+cons of point and point."
   (cond ((region-active-p)
          (cons (region-beginning) (region-end)))
         (t
@@ -149,12 +158,19 @@ Please read https://microsoft.github.io/language-server-protocol/specifications/
       )))
 
 (defun lsp-bridge-code-action-popup-select ()
+  "Apply the code action selected in the code action popup.
+This quits the popup and applies the action of the entry at
+`lsp-bridge-call-hierarchy--index'."
   (interactive)
   (lsp-bridge-code-action-popup-quit)
   (lsp-bridge-code-action--fix-do
    (cdr (nth lsp-bridge-call-hierarchy--index lsp-bridge-call-hierarchy--popup-response))))
 
 (defun lsp-bridge-code-action-popup-quit ()
+  "Quit the code action popup.
+This cancels the preview timer, deletes the popup frame and
+buffer, removes the code action advices from the call hierarchy
+commands and reselects the buffer the action was requested from."
   (interactive)
   (acm-cancel-timer lsp-bridge-code-action-popup-maybe-preview-timer)
 
@@ -168,6 +184,10 @@ Please read https://microsoft.github.io/language-server-protocol/specifications/
     (select-window (get-buffer-window lsp-bridge-code-action--current-buffer))))
 
 (defun lsp-bridge-code-action-popup-maybe-preview-show (&optional buffer-content)
+  "Show the code action preview of the selected menu item.
+When BUFFER-CONTENT is non-nil it is inserted into the preview
+buffer directly, otherwise the previous diff output is reused.  If
+the buffer content is empty, only the menu window is kept."
   (when-let* ((pos (frame-position lsp-bridge-call-hierarchy--frame))
               (call-frame-height (frame-height lsp-bridge-call-hierarchy--frame))
               (call-frame-width (frame-width lsp-bridge-call-hierarchy--frame))
@@ -244,6 +264,11 @@ Please read https://microsoft.github.io/language-server-protocol/specifications/
         (set-window-text-height menu-window menu-window-height)))))
 
 (defun lsp-bridge-code-action-popup-maybe-preview-do ()
+  "Compute and show the preview for the selected code action.
+The preview is taken from `lsp-bridge-code-action--preview-alist'
+when it was computed before, otherwise a diff between the original
+buffer content and the result of applying the action to a
+temporary copy is produced."
   (let* ((buffer (buffer-name lsp-bridge-code-action--current-buffer))
          (buffer-content (with-current-buffer buffer (buffer-string)))
          (recentf-keep '(".*" . nil)) ;; not push temp file in recentf-list
@@ -273,11 +298,19 @@ Please read https://microsoft.github.io/language-server-protocol/specifications/
         (lsp-bridge-code-action-popup-maybe-preview-show)))))
 
 (defun lsp-bridge-code-action-popup-maybe-preview ()
+  "Schedule the code action preview after the preview delay.
+Any preview timer that is still pending is cancelled first."
   (acm-cancel-timer lsp-bridge-code-action-popup-maybe-preview-timer)
   (setq lsp-bridge-code-action-popup-maybe-preview-timer
         (run-with-idle-timer lsp-bridge-code-action-preview-delay nil #'lsp-bridge-code-action-popup-maybe-preview-do)))
 
 (defun lsp-bridge-code-action-popup-menu (menu-items default-action)
+  "Show the code action menu for MENU-ITEMS.
+MENU-ITEMS is an alist of title and action.  DEFAULT-ACTION is the
+title of the action to select by default.  The menu reuses the
+call hierarchy popup frame and mode and installs the code action
+preview and selection advices.  The frame is only repositioned
+when it is not already visible."
   (let ((recentf-keep '(".*" . nil)) ;; not push temp file in recentf-list
         (recentf-exclude '(".*"))
         (menu-length (length menu-items))
@@ -331,6 +364,12 @@ Please read https://microsoft.github.io/language-server-protocol/specifications/
     (lsp-bridge-code-action-popup-maybe-preview)))
 
 (defun lsp-bridge-code-action--fix-do (action &optional temp-buffer)
+  "Apply the code action ACTION.
+ACTION is the action plist, which may carry an :edit, a
+:command, :arguments and a :server-name.  When TEMP-BUFFER is
+non-nil it is the buffer the edit is applied to instead of the
+original file.  This also hides the diagnostic overlays of the
+current buffer."
   (let* ((command (plist-get action :command))
          (edit (plist-get action :edit))
          (server_name (plist-get action :server-name))
@@ -372,11 +411,20 @@ Please read https://microsoft.github.io/language-server-protocol/specifications/
     (and len (zerop (% len 2)))))
 
 (defun lsp-bridge-code-action--filter (action action-kind)
+  "Return a menu item for ACTION when it matches ACTION-KIND.
+Return nil when ACTION-KIND is non-nil and differs from the
+action's :kind.  The returned item is a cons of the action title
+and the action itself."
   (when (or (not action-kind)
             (equal action-kind (plist-get action :kind)))
     (cons (plist-get action :title) action)))
 
 (defun lsp-bridge-code-action--fix (actions action-kind)
+  "Apply or offer the code actions in ACTIONS.
+ACTION-KIND is the kind of action to filter on.  Signal an error
+when no action matches.  When ACTION-KIND is given and exactly one
+action remains it is applied directly, otherwise the user picks
+one from `lsp-bridge-code-action-popup-menu' or the minibuffer."
   (let* ((menu-items
           (or
            (cl-remove-if #'null

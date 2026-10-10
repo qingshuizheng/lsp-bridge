@@ -85,6 +85,10 @@
 ;;; Code:
 
 (defun lsp-bridge-rust-expand-macro--update (name expansion)
+  "Show the macro expansion of NAME in a separate buffer.
+NAME is the macro name and EXPANSION is its expanded text.  The
+buffer is named after NAME, put in `rust-ts-mode' and shown in
+another window."
   ;; The name is macro name, not project name, you maybe want to replace it
   (let ((buf (get-buffer-create (format "*rust macro expansion %s*" name))))
     (with-current-buffer buf
@@ -96,10 +100,12 @@
     (switch-to-buffer-other-window buf)))
 
 (defun lsp-bridge-rust-expand-macro ()
+  "Ask the LSP server to expand the macro at point."
   (interactive)
   (lsp-bridge-call-file-api "rust_expand_macro" (lsp-bridge--position)))
 
 (defun lsp-bridge-rust-reload-workspace ()
+  "Ask the LSP server to reload the Rust workspace."
   (interactive)
   (lsp-bridge-call-file-api "rust_reload_workspace"))
 

@@ -130,7 +130,10 @@ The first item in the list is the first definition or reference displayed,
 the second item is the definition or reference that will be selected, and
 the third item is the last definition or reference displayed.")
 
-(defvar lsp-bridge-peek-file-and-pos-before-jump nil)
+(defvar lsp-bridge-peek-file-and-pos-before-jump nil
+  "The file and position saved before `lsp-bridge-peek-jump'.
+It holds the buffer file name and the point of the original
+location, so `lsp-bridge-peek-jump-back' can return to it.")
 
 (defvar lsp-bridge-peek-symbol-tree nil
   "A tree structure for storing symbols, each element is a list. The first
@@ -150,8 +153,8 @@ stores how many lines the file content was moved.")
 
 (defvar lsp-bridge-peek-ace-list nil
   "A list that stores the related information used to recovery the status before ace peek.
-The first is the buffer which need killing. The second is the position before ace peek.
-The third is the buffer before ace peek. The fourth is the buffer where the symbol is.
+The first is the buffer which need killing.  The second is the position before ace peek.
+The third is the buffer before ace peek.  The fourth is the buffer where the symbol is.
 The fifth is the position where the symbol is.")
 
 (defface lsp-bridge-peek--highlight-symbol-face
@@ -181,7 +184,7 @@ height and background properties of the face."
 
 
 (defcustom lsp-bridge-peek-file-content-scroll-margin 1
-  "Set how much lsp-bridge-peek-file-content-next-line/-prev-line should scroll up and down."
+  "How far the content navigation commands scroll the peek window."
   :type 'integer
   :group 'lsp-bridge-peek)
 
@@ -370,6 +373,12 @@ not affected by its surroundings."
 	          'face 'lsp-bridge-peek-border-face))
 
 (defun lsp-bridge-peek--get-content (pos content-move)
+  "Return the file content to display around POS.
+CONTENT-MOVE is the number of lines to scroll the content window
+by, as stored in the symbol tree.  This moves point to POS,
+fontifies the displayed region and highlights the symbol at
+point.  The content is also stored in the buffer-local
+`file-content'."
   (setq file-content nil)
   (goto-char (acm-backend-lsp-position-to-point pos))
   (let* ((beg (save-excursion
@@ -392,11 +401,12 @@ not affected by its surroundings."
 (defun lsp-bridge--attach-ace-str (str sym-bounds bound-offset ace-seqs)
   "Return a copy of STR with ace strings attached.
 SYM-BOUNDS specifies the symbols in STR, as returned by
-`lsp-bridge-peek--search-symbols'.  BOUND-OFFSET is the starting point of
-STR in the buffer.  ACE-SEQS is the ace key sequences, as
-returned by `lsp-bridge-peek--ace-key-seqs' or `lsp-bridge-peek--pop-ace-key-seqs'.
-The beginnings of each symbol are replaced by ace strings with
-`lsp-bridge-peek-ace-string-face' attached."
+`lsp-bridge-peek--search-symbols'.  BOUND-OFFSET is the starting
+point of STR in the buffer.  ACE-SEQS is the ace key sequences, as
+returned by `lsp-bridge-peek--ace-key-seqs' or
+`lsp-bridge-peek--pop-ace-key-seqs'.  The beginnings of each symbol
+are replaced by ace strings with `lsp-bridge-peek-ace-str-face'
+attached."
   (let* ((nsyms (length sym-bounds))
          (new-str (copy-sequence str)))
     (dotimes (n nsyms)
@@ -528,6 +538,14 @@ The beginnings of each symbol are replaced by ace strings with
     history-string))
 
 (defun lsp-bridge-peek-define--return (filename filehost position)
+  "Store a definition for the peeked symbol and request its references.
+FILENAME and FILEHOST identify the file of the definition, and
+POSITION is the position of the definition in it.  The file name,
+position and a first content offset are pushed onto
+`lsp-bridge-peek-symbol-at-point', then a \"peek_find_references\"
+request is sent to the LSP server.  When an ace peek session is in
+progress the request is sent from the buffer stored in
+`lsp-bridge-peek-ace-list' instead."
   (setq filename (concat (cdr (assoc filehost lsp-bridge-tramp-alias-alist)) filename))
   (push filename (nth 1 lsp-bridge-peek-symbol-at-point))
   (push position (nth 2 lsp-bridge-peek-symbol-at-point))
@@ -539,6 +557,14 @@ The beginnings of each symbol are replaced by ace strings with
     (lsp-bridge-call-file-api "peek_find_references" (lsp-bridge--position) position)))
 
 (defun lsp-bridge-peek-references--return (references-content references-counter)
+  "Add the references from REFERENCES-CONTENT to the peek symbol tree.
+REFERENCES-CONTENT is a string holding three lines per reference
+\(line, character and file path), and REFERENCES-COUNTER is the
+number of references in it.  The parsed references are appended to
+`lsp-bridge-peek-symbol-at-point', the finished symbol is inserted
+into `lsp-bridge-peek-symbol-tree' and the selected symbol is
+updated.  Finally the peek mode is enabled or the peek window is
+refreshed."
   (if references-content
       (let ((buf (generate-new-buffer "*lsp-bridge-peek--temp-buffer*")))
 	    (with-current-buffer buf
@@ -633,6 +659,11 @@ When FORCE if non-nil, the content of the peek window is recalculated."
     (user-error "Not in a peek session.")))
 
 (defun lsp-bridge-peek-list-move-line (num)
+  "Select the definition/reference NUM entries from the current one.
+NUM is positive to move down the list and negative to move up.
+When the selection leaves the displayed range, the range is
+scrolled by the same amount.  This signals a user error when not
+peeking and sets `lsp-bridge-peek--content-update'."
   (lsp-bridge-peek--error-if-not-peeking)
   (cl-symbol-macrolet ((first-displayed-id (nth 0 lsp-bridge-peek-chosen-displaying-list))
 		               (selected-id (nth 1 lsp-bridge-peek-chosen-displaying-list))
@@ -664,6 +695,10 @@ When FORCE if non-nil, the content of the peek window is recalculated."
   (lsp-bridge-peek-list-move-line -1))
 
 (defun lsp-bridge-peek-file-content-move (num)
+  "Scroll the displayed file content by NUM lines.
+The offset is stored per displayed definition/reference in the
+selected symbol's content offset list.  This signals a user error
+when not peeking and sets `lsp-bridge-peek--content-update'."
   (lsp-bridge-peek--error-if-not-peeking)
   (cl-symbol-macrolet ((selected-id (nth 1 lsp-bridge-peek-chosen-displaying-list))
 		               (selected-symbol (nth lsp-bridge-peek-selected-symbol lsp-bridge-peek-symbol-tree))
@@ -884,6 +919,12 @@ The buffer and the point is returned in a cons cell."
 	  (setq lsp-bridge-peek--content-update t))))
 
 (defun lsp-bridge-peek-tree-change-branch (num)
+  "Change to another child branch of the current symbol's parent.
+NUM is added to the index of the selected child in its parent's
+child list, and the selection wraps around when the result is
+outside that list.  The displayed range is reset and
+`lsp-bridge-peek--content-update' is set.  This signals a user
+error when not peeking or when the current symbol has no parent."
   (lsp-bridge-peek--error-if-not-peeking)
   (setq lsp-bridge-peek-chosen-displaying-list (make-list 3 0))
   (setf (nth 2 lsp-bridge-peek-chosen-displaying-list) (1- lsp-bridge-peek-list-height))

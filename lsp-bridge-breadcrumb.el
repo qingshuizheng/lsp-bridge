@@ -56,14 +56,21 @@
   :type 'integer
   :group 'lsp-bridge-breadcrumb)
 
-(defvar-local lsp-bridge-breadcrumb--timer nil)
-(defvar-local lsp-bridge-breadcrumb--last-point nil)
-(defvar-local lsp-bridge-breadcrumb--last-update-tick nil)
-(defvar-local lsp-bridge-breadcrumb--last-response nil)
-(defvar-local lsp-bridge-breadcrumb--last-header-line nil)
-(defvar-local lsp-bridge-breadcrumb--in-process nil)
+(defvar-local lsp-bridge-breadcrumb--timer nil
+  "Idle timer that delays the next breadcrumb request.")
+(defvar-local lsp-bridge-breadcrumb--last-point nil
+  "Point at the last breadcrumb request, used to detect movement.")
+(defvar-local lsp-bridge-breadcrumb--last-update-tick nil
+  "Buffer modification tick at the last breadcrumb request.")
+(defvar-local lsp-bridge-breadcrumb--last-response nil
+  "The last breadcrumb response from the LSP server.")
+(defvar-local lsp-bridge-breadcrumb--last-header-line nil
+  "The last header line text built for the breadcrumb.")
+(defvar-local lsp-bridge-breadcrumb--in-process nil
+  "Non-nil while a breadcrumb request is waiting for its response.")
 
-(defvar lsp-bridge-breadcrumb--bar-img nil)
+(defvar lsp-bridge-breadcrumb--bar-img nil
+  "Cached image used to paint the breadcrumb bar.")
 (defun lsp-bridge-breadcrumb--bar-img ()
   "Based on `doom-modeline--create-bar-image'."
   (if lsp-bridge-breadcrumb--bar-img lsp-bridge-breadcrumb--bar-img
@@ -82,7 +89,8 @@
                   'pbm t :scale 1 :foreground color :ascent 'center)))))
       lsp-bridge-breadcrumb--bar-img)))
 
-(defvar lsp-bridge-breadcrumb--icon-cache (make-hash-table :test 'equal))
+(defvar lsp-bridge-breadcrumb--icon-cache (make-hash-table :test 'equal)
+  "Cache of icon strings keyed by kind and active state.")
 (defun lsp-bridge-breadcrumb--icon (kind active)
   "Get icon for KIND and ACTIVE."
   (if (and lsp-bridge-breadcrumb-show-icon

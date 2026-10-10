@@ -13,34 +13,50 @@
 (defvar lsp-bridge-call-hierarchy-preview-height 30
   "Height of the preview window. (set 0 to disable preview)")
 
-(defvar lsp-bridge-call-hierarchy--frame nil)
+(defvar lsp-bridge-call-hierarchy--frame nil
+  "The child frame that shows the call hierarchy popup.")
 
-(defvar lsp-bridge-call-hierarchy--index 0)
+(defvar lsp-bridge-call-hierarchy--index 0
+  "Index of the call selected in `lsp-bridge-call-hierarchy--popup-response'.")
 
-(defvar lsp-bridge-call-hierarchy--overlay nil)
+(defvar lsp-bridge-call-hierarchy--overlay nil
+  "Overlay that highlights the selected call in the popup buffer.")
 
-(defvar lsp-bridge-call-hierarchy--popup-response nil)
+(defvar lsp-bridge-call-hierarchy--popup-response nil
+  "List of calls currently shown in the call hierarchy popup.")
 
-(defvar lsp-bridge-call-hierarchy--temp-buffers nil)
+(defvar lsp-bridge-call-hierarchy--temp-buffers nil
+  "Buffers opened during preview that didn't exist before peeking.
+They are killed when the call hierarchy popup is quit.")
 
-(defvar lsp-bridge-call-hierarchy--local-modelines nil)
+(defvar lsp-bridge-call-hierarchy--local-modelines nil
+  "Alist of buffer and saved mode line for previewed buffers.
+It is used to restore `mode-line-format' when the popup is quit.")
 
-(defvar lsp-bridge-call-hierarchy--origin-window nil)
+(defvar lsp-bridge-call-hierarchy--origin-window nil
+  "Window that was selected before the call hierarchy popup opened.")
 
-(defvar lsp-bridge-call-hierarchy--preview-window nil)
+(defvar lsp-bridge-call-hierarchy--preview-window nil
+  "Window showing the preview of the selected call.")
 
 (defun lsp-bridge-incoming-call-hierarchy ()
+  "Show all symbols that call the symbol at point."
   (interactive)
   (lsp-bridge-call-file-api "prepare_call_hierarchy_incoming"
                             (lsp-bridge--position)))
 
 (defun lsp-bridge-outgoing-call-hierarchy ()
+  "Show all symbols called by the symbol at point."
   (interactive)
   (lsp-bridge-call-file-api "prepare_call_hierarchy_outgoing"
                             (lsp-bridge--position)))
 
 
 (defun lsp-bridge-call-hierarchy-make-frame (buffer)
+  "Create or reuse the call hierarchy frame showing BUFFER.
+The frame height is the preview height plus the number of calls
+capped at `lsp-bridge-call-hierarchy-call-max-height', and its
+width covers the icon and the name and path columns."
   (let* ((height (+ lsp-bridge-call-hierarchy-preview-height
                     (min (length lsp-bridge-call-hierarchy--popup-response)
                          lsp-bridge-call-hierarchy-call-max-height)))
@@ -54,11 +70,14 @@
     (acm-frame-set-frame-pos-center lsp-bridge-call-hierarchy--frame)))
 
 (defun lsp-bridge-call-hierarchy-format-call-string (s l)
+  "Return string S padded or truncated to width L."
   (if (> (length s) l)
       (format "%s%s" (substring s 0 (- l (length "..."))) "...")
     (concat s (make-string (- l (length s)) ?\s))))
 
 (defun lsp-bridge-call-hierarchy-format-call (call)
+  "Return the display string for the call plist CALL.
+CALL provides the keys :name, :rel_path and :icon."
   (let ((name (plist-get call :name))
         (path (plist-get call :rel_path))
         (icon (cdr (assoc (plist-get call :icon) acm-icon-alist))))
@@ -70,6 +89,10 @@
             (lsp-bridge-call-hierarchy-format-call-string path lsp-bridge-call-hierarchy-path-width))))
 
 (defun lsp-bridge-call-hierarchy-maybe-preview ()
+  "Preview the call selected in the call hierarchy popup.
+Do nothing when `lsp-bridge-call-hierarchy-preview-height' is 0.
+This switches to the preview window, shows the call and hides the
+mode line of the previewed buffer."
   (when (> lsp-bridge-call-hierarchy-preview-height 0)
     (other-window 1)
     (lsp-bridge-call-hierarchy-show)
@@ -84,6 +107,10 @@
     (other-window -1)))
 
 (defun lsp-bridge-call-hierarchy--popup (response)
+  "Show the call hierarchy popup for RESPONSE.
+RESPONSE is the list of call plists to display.  This creates the
+frame and its buffers, splits off the preview window when preview
+is enabled and enables `lsp-bridge-call-hierarchy-mode'."
   (interactive)
   (setq lsp-bridge-call-hierarchy--popup-response response)
   (setq lsp-bridge-call-hierarchy--origin-window (selected-window))
@@ -113,6 +140,10 @@
     (setq-local mode-line-format nil)))
 
 (defun lsp-bridge-call-hierarchy--move (next)
+  "Move the call selection NEXT lines down.
+Do nothing when the new index would fall outside
+`lsp-bridge-call-hierarchy--popup-response'.  This moves point and
+the highlight overlay and updates the preview."
   (when (and (>= (+ lsp-bridge-call-hierarchy--index next) 0)
              (< (+ lsp-bridge-call-hierarchy--index next)
                 (length lsp-bridge-call-hierarchy--popup-response)))
@@ -125,34 +156,44 @@
       ))
 
 (defun lsp-bridge-call-hierarchy-next ()
+  "Select the next call in the call hierarchy buffer."
   (interactive)
   (lsp-bridge-call-hierarchy--move 1))
 
 (defun lsp-bridge-call-hierarchy-prev ()
+  "Select the previous call in the call hierarchy buffer."
   (interactive)
   (lsp-bridge-call-hierarchy--move -1))
 
 (defun lsp-bridge-call-hierarchy-preview-next ()
+  "Scroll the call hierarchy preview window up five lines."
   (interactive)
   (with-selected-window (get-buffer-window "*lsp-bridge-code-action-preview*")
     (scroll-up-line 5)))
 
 (defun lsp-bridge-call-hierarchy-preview-prev ()
+  "Scroll the call hierarchy preview window down five lines."
   (interactive)
   (with-selected-window (get-buffer-window "*lsp-bridge-code-action-preview*")
     (scroll-down-line 5)))
 
 (defun lsp-bridge-call-hierarchy-scroll-left ()
+  "Scroll the call hierarchy preview window left five columns."
   (interactive)
   (with-selected-window (get-buffer-window "*lsp-bridge-code-action-preview*")
     (scroll-left 5)))
 
 (defun lsp-bridge-call-hierarchy-scroll-right ()
+  "Scroll the call hierarchy preview window right five columns."
   (interactive)
   (with-selected-window (get-buffer-window "*lsp-bridge-code-action-preview*")
     (scroll-right 5)))
 
 (defun lsp-bridge-call-hierarchy-quit ()
+  "Quit the call hierarchy popup and restore the previous window layout.
+This deletes the frame and its buffer, deletes the preview window,
+restores the saved mode lines, kills the temporary buffers opened
+for preview and forgets the saved origin and preview windows."
   (interactive)
   (let ((origin-window lsp-bridge-call-hierarchy--origin-window)
         (preview-window lsp-bridge-call-hierarchy--preview-window))
@@ -178,6 +219,11 @@
   (setq lsp-bridge-call-hierarchy--preview-window nil))
 
 (defun lsp-bridge-call-hierarchy-show ()
+  "Show the call selected in the call hierarchy buffer.
+This visits the file of the selected call, moves point to the
+start of its range and pulses the region of the call.  Files that
+didn't exist before are remembered in
+`lsp-bridge-call-hierarchy--temp-buffers'."
   (let* ((call  (nth lsp-bridge-call-hierarchy--index lsp-bridge-call-hierarchy--popup-response))
          (path (lsp-bridge-pick-file-path (plist-get call :path)))
          (range-start (plist-get (plist-get call :range) :start))
@@ -207,6 +253,7 @@
                                           (point))))))
 
 (defun lsp-bridge-call-hierarchy-select ()
+  "Jump to the selected call and quit the call hierarchy popup."
   (interactive)
   (lsp-bridge-call-hierarchy-quit)
   (lsp-bridge-call-hierarchy-show))
@@ -228,9 +275,15 @@
     (define-key map (kbd "<escape>") 'lsp-bridge-call-hierarchy-quit)
     (define-key map (kbd "q") 'lsp-bridge-call-hierarchy-quit)
     (define-key map (kbd "C-g") 'lsp-bridge-call-hierarchy-quit)
-  map))
+    map)
+  "Keymap used in `lsp-bridge-call-hierarchy-mode'.")
 
 (define-derived-mode lsp-bridge-call-hierarchy-mode text-mode "call hierarchy"
+  "Major mode for browsing the call hierarchy popup buffer.
+This is derived from `text-mode' and makes the buffer read-only.
+It highlights the selected call with
+`lsp-bridge-font-lock-flash' and installs
+`lsp-bridge-call-hierarchy-mode-map'."
   ;; Kill all local variables.
   (kill-all-local-variables)
   ;; Switch new mode.

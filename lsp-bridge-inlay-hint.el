@@ -95,12 +95,18 @@
   "Face for inlay hint."
   :group 'lsp-bridge-inlay-hint)
 
-(defvar-local lsp-bridge-inlay-hint-last-update-pos nil)
+(defvar-local lsp-bridge-inlay-hint-last-update-pos nil
+  "The window end position at the last inlay hint request.")
 (defvar-local lsp-bridge-inlay-hint-cache nil
   "We use `lsp-bridge-inlay-hint-cache' avoid screen flicker if two respond result is same.")
-(defvar-local lsp-bridge-inlay-hint-overlays '())
+(defvar-local lsp-bridge-inlay-hint-overlays '()
+  "The overlays that render inlay hints in this buffer.")
 
 (defun lsp-bridge-inlay-hint-monitor-window-scroll ()
+  "Request inlay hints when the window end position changed.
+Do nothing unless `lsp-bridge-enable-inlay-hint' is non-nil.  The
+last requested window end position is stored in
+`lsp-bridge-inlay-hint-last-update-pos'."
   (when lsp-bridge-enable-inlay-hint
     (let ((window-pos (window-end nil t)))
       (when (not (equal lsp-bridge-inlay-hint-last-update-pos window-pos))
@@ -108,10 +114,14 @@
         (setq-local lsp-bridge-inlay-hint-last-update-pos window-pos)))))
 
 (defun lsp-bridge-inlay-hint-try-send-request ()
+  "Request inlay hints when `lsp-bridge-enable-inlay-hint' is non-nil."
   (when lsp-bridge-enable-inlay-hint
     (lsp-bridge-inlay-hint)))
 
 (defun lsp-bridge-inlay-hint ()
+  "Request inlay hints for the whole buffer.
+The range from `point-min' to `point-max' is sent to the LSP
+server, so the request does not depend on the visible window."
   ;; `window-start' won't return valid value of window start position if we not call `redisplay' before 'window-start',
   ;; but call `redisplay' will cause current line scroll to window start postion, like issue https://github.com/manateelazycat/lsp-bridge/issues/1029
   ;;
@@ -121,6 +131,7 @@
                             (lsp-bridge--point-position (point-max))))
 
 (defun lsp-bridge-inlay-hint-hide-overlays ()
+  "Delete all inlay hint overlays in the current buffer."
   (when lsp-bridge-inlay-hint-overlays
     (dolist (inlay-hint-overlay lsp-bridge-inlay-hint-overlays)
       (delete-overlay inlay-hint-overlay)))
@@ -128,6 +139,12 @@
   (setq-local lsp-bridge-inlay-hint-overlays nil))
 
 (defun lsp-bridge-inlay-hint-padding-text (hint-padding is-left)
+  "Return the padding string for HINT-PADDING.
+HINT-PADDING is the :paddingLeft or :paddingRight value of the
+hint, which is nil, :json-false or non-nil.  IS-LEFT non-nil means
+the padding is inserted on the left side.  Return nil when no
+padding is needed or when the neighboring character already is a
+space or a tab."
   (and hint-padding
        (not (eq hint-padding :json-false))
        (not (memq (if is-left
@@ -137,6 +154,9 @@
        " "))
 
 (defun lsp-bridge-inlay-hint-label-text (label-info)
+  "Return the label text of LABEL-INFO as a string.
+LABEL-INFO is either a string or a list of plists with a :value
+key, which are concatenated without a separator."
   (format "%s"
           (if (listp label-info)
               ;; We concat value of list if label is list.
@@ -147,9 +167,17 @@
             ;; Otherwise label is string, just return itself.
             label-info)))
 
-(defvar lsp-bridge-inlay-hint-lock (make-mutex "lsp-bridge-inlay-hint-lock"))
+(defvar lsp-bridge-inlay-hint-lock (make-mutex "lsp-bridge-inlay-hint-lock")
+  "Mutex that serializes inlay hint overlay rendering.")
 
 (defun lsp-bridge-inlay-hint--render (filepath filehost inlay-hints)
+  "Render INLAY-HINTS for the file FILEPATH on FILEHOST.
+The hints are skipped when they equal
+`lsp-bridge-inlay-hint-cache' or were cached less than 0.5 seconds
+ago.  Otherwise the previous overlays are deleted and one overlay
+per hint is created, using a before-string for type hints and an
+after-string for parameter hints.  Rendering is serialized with
+`lsp-bridge-inlay-hint-lock'."
   ;; lsp-bridge is too fast, use locks to avoid interface disorder issues caused by multi-threaded rendering of overlays
   (with-mutex lsp-bridge-inlay-hint-lock
     (lsp-bridge--with-file-buffer

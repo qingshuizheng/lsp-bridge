@@ -160,31 +160,47 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
   :type 'list
   :group 'lsp-bridge)
 
-(defvar-local lsp-bridge-diagnostic-records nil)
+(defvar-local lsp-bridge-diagnostic-records nil
+  "The diagnostic records currently rendered in this buffer.")
 
-(defvar-local lsp-bridge-diagnostic-count nil)
+(defvar-local lsp-bridge-diagnostic-count nil
+  "The number of diagnostics currently reported for this buffer.")
 
-(defvar-local lsp-bridge-diagnostic-overlays '())
+(defvar-local lsp-bridge-diagnostic-overlays '()
+  "The overlays that render diagnostics in this buffer.")
 
-(defvar lsp-bridge-diagnostic-frame nil)
+(defvar lsp-bridge-diagnostic-frame nil
+  "The child frame used to show the diagnostic tooltip.")
 
-(defvar lsp-bridge-diagnostic-display-error-at-point-timer nil)
+(defvar lsp-bridge-diagnostic-display-error-at-point-timer nil
+  "Timer that delays showing the diagnostic tooltip at point.")
 
 (autoload 'lsp-bridge--with-file-buffer "lsp-bridge")
 
 (defun lsp-bridge-diagnostic-hide-tooltip ()
+  "Hide the diagnostic tooltip frame."
   (acm-frame-hide-frame lsp-bridge-diagnostic-frame))
 
 (defun lsp-bridge-diagnostic-hide-overlays ()
+  "Delete all diagnostic overlays in the current buffer."
   (when lsp-bridge-diagnostic-overlays
     (dolist (diagnostic-overlay lsp-bridge-diagnostic-overlays)
       (delete-overlay diagnostic-overlay)))
 
   (setq-local lsp-bridge-diagnostic-overlays nil))
 
-(defvar lsp-bridge-diagnostic-lock (make-mutex "lsp-bridge-diagnostic-lock"))
+(defvar lsp-bridge-diagnostic-lock (make-mutex "lsp-bridge-diagnostic-lock")
+  "Mutex that serializes diagnostic overlay rendering.")
 
 (defun lsp-bridge-diagnostic--render (filepath filehost diagnostics diagnostic-count)
+  "Render DIAGNOSTICS for the file FILEPATH on FILEHOST.
+DIAGNOSTIC-COUNT is the number of diagnostics.  This stores the
+records and count in the buffer, runs
+`lsp-bridge-diagnostic-update-hook' and, when
+`lsp-bridge-diagnostic-enable-overlays' is non-nil, replaces the
+buffer overlays with one overlay per diagnostic that is not hidden
+by `lsp-bridge-diagnostic-hide-severities'.  Rendering is
+serialized with `lsp-bridge-diagnostic-lock'."
   ;; lsp-bridge is too fast, use locks to avoid interface disorder issues caused by multi-threaded rendering of overlays
   (with-mutex lsp-bridge-diagnostic-lock
     (lsp-bridge--with-file-buffer filepath filehost
@@ -229,7 +245,9 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
                                         (setq diagnostic-index (1+ diagnostic-index))))
                                     (setq-local lsp-bridge-diagnostic-overlays (reverse lsp-bridge-diagnostic-overlays))))))
 
-(defvar lsp-bridge-diagnostic-frame nil)
+(defvar lsp-bridge-diagnostic-frame nil
+  "The child frame used to show the diagnostic tooltip.
+This is a second declaration of the variable defined above.")
 
 (defun lsp-bridge-diagnostic-insert-colored-string (color text)
   "Insert a colored string at point in the current buffer."
@@ -237,6 +255,13 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
     (insert colored-text)))
 
 (defun lsp-bridge-diagnostic-show-tooltip (diagnostic-overlay &optional goto-beginning)
+  "Show the diagnostic message of DIAGNOSTIC-OVERLAY in a tooltip.
+When GOTO-BEGINNING is non-nil, move point to the start of the
+overlay first.  When the command was one of the diagnostic jump
+commands and the buffer is longer than the window, the window is
+scrolled so that the diagnostic is not too close to an edge.  The
+message is shown in `lsp-bridge-diagnostic-buffer', either in the
+`lsp-bridge-diagnostic-frame' child frame or in the echo area."
   (let* ((diagnostic-display-message (overlay-get diagnostic-overlay 'display-message))
          (diagnostic-message (overlay-get diagnostic-overlay 'message))
          (diagnostic-wrapped-message (with-temp-buffer
@@ -296,6 +321,9 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
                        'lsp-bridge-diagnostic-show-tooltip ol))))
 
 (defun lsp-bridge-in-diagnostic-overlay-area-p (overlay)
+  "Return non-nil if point is inside diagnostic OVERLAY.
+Return nil when `lsp-bridge-diagnostic-frame' is not defined or is
+already visible."
   (and
    lsp-bridge-diagnostic-frame
    (not (frame-visible-p lsp-bridge-diagnostic-frame))
@@ -303,6 +331,9 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
    (<= (point) (overlay-end overlay))))
 
 (defun lsp-bridge-diagnostic-jump-next ()
+  "Jump to the next diagnostic and show its tooltip.
+Display a message when the buffer has no diagnostics or when point
+is already at the last diagnostic."
   (interactive)
   (if (zerop (length lsp-bridge-diagnostic-overlays))
       (message "[LSP-Bridge] No diagnostics.")
@@ -316,6 +347,9 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
       (message "[LSP-Bridge] Reach last diagnostic."))))
 
 (defun lsp-bridge-diagnostic-jump-prev ()
+  "Jump to the previous diagnostic and show its tooltip.
+Display a message when the buffer has no diagnostics or when point
+is already at the first diagnostic."
   (interactive)
   (if (zerop (length lsp-bridge-diagnostic-overlays))
       (message "[LSP-Bridge] No diagnostics.")
@@ -329,6 +363,7 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
       (message "[LSP-Bridge] Reach first diagnostic."))))
 
 (defun lsp-bridge-diagnostic-overlay-at-point ()
+  "Return the diagnostic overlay at point, or nil when there is none."
   (cl-dolist (overlay lsp-bridge-diagnostic-overlays)
     (when (and (>= (point) (overlay-start overlay))
                (< (point) (overlay-end overlay)))
@@ -336,6 +371,9 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
       )))
 
 (defun lsp-bridge-diagnostic-copy ()
+  "Copy the diagnostic message at point to the kill ring.
+Display a message when the buffer has no diagnostics or when
+point is not inside a diagnostic overlay."
   (interactive)
   (if (zerop (length lsp-bridge-diagnostic-overlays))
       (message "[LSP-Bridge] No diagnostics.")
@@ -345,15 +383,27 @@ You can set this value with `(2 3 4) if you just need render error diagnostic."
         (message "Copy diagnostics: '%s'" diagnostic-message)))))
 
 (defun lsp-bridge-workspace-diagnostic-list ()
+  "Report that workspace diagnostics are not supported.
+Only a few LSP servers implement workspace diagnostics and
+lsp-bridge does not request them."
   (interactive)
   ;; (lsp-bridge-call-file-api "workspace_diagnostics")
   (message "Workspace diagnostic just few LSP server implement it, lsp-bridge haven't support it."))
 
 (defun lsp-bridge-diagnostic-list ()
+  "Request the diagnostic list for the current buffer.
+The value of `lsp-bridge-diagnostic-hide-severities' is sent to
+the LSP server to filter the result."
   (interactive)
   (lsp-bridge-call-file-api "list_diagnostics" lsp-bridge-diagnostic-hide-severities))
 
 (defun lsp-bridge-diagnostic--list (diagnostics)
+  "Render DIAGNOSTICS in a popup buffer.
+DIAGNOSTICS is the list of diagnostic plists returned by the LSP
+server.  Each entry shows the message, its line and column and the
+matching source line with the diagnostic range highlighted.  The
+resulting text is passed to `lsp-bridge-ref-popup' together with
+the number of rendered diagnostics."
   (let ((filepath acm-backend-lsp-filepath)
         (current-buffer (current-buffer))
         (diagnostic-counter 0))

@@ -4,7 +4,8 @@
 
 (require 'json)
 
-(defconst lsp-bridge-jdtls-workspace-file-name "jdtls.json")
+(defconst lsp-bridge-jdtls-workspace-file-name "jdtls.json"
+  "Name of the generated jdtls configuration file.")
 
 (defcustom lsp-bridge-jdtls-workspace
   (expand-file-name "~/.cache/lsp-bridge-jdtls")
@@ -15,7 +16,9 @@
    (if (memq system-type '(cygwin windows-nt ms-dos))
        "langserver/jdtls_windows.json"
      "langserver/jdtls.json")
-   (file-name-directory load-file-name)))
+   (file-name-directory load-file-name))
+  "The default jdtls configuration file shipped with lsp-bridge.
+The Windows variant is used on Windows systems.")
 
 (defcustom lsp-bridge-jdtls-jvm-args '()
   "Specifies additional VM parameters for starting the Java language server.

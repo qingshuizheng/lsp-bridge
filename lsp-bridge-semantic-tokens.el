@@ -198,7 +198,8 @@ Faces to use for semantic token modifiers.")
 (defconst lsp-bridge-semantic-tokens--face-attribute-names
   (apply 'append
          (mapcar (lambda (x) (list (car x)))
-                 face-attribute-name-alist)))
+                 face-attribute-name-alist))
+  "Names of the face attributes handled when combining faces.")
 
 (defun lsp-bridge-semantic-tokens--combine-faces (faces)
   "Combine attributes of faces to one face."
@@ -217,7 +218,8 @@ Faces to use for semantic token modifiers.")
       (delete-overlay ov)
       (remhash key lsp-bridge-semantic-tokens--overlays))))
 
-(defvar lsp-bridge-semantic-tokens-lock (make-mutex "lsp-bridge-semantic-tokens-lock"))
+(defvar lsp-bridge-semantic-tokens-lock (make-mutex "lsp-bridge-semantic-tokens-lock")
+  "Mutex that serializes semantic token overlay rendering.")
 
 (defun lsp-bridge-semantic-tokens--render (buffer-name old-tokens new-tokens)
   "Update semantic tokens."
@@ -316,7 +318,8 @@ Faces to use for semantic token modifiers.")
   "Try request semantic tokens after window config change scroll."
   (lsp-bridge-semantic-tokens--request-1 (window-start) (window-end) t))
 
-(defvar-local lsp-bridge-semantic-tokens--after-change-timer nil)
+(defvar-local lsp-bridge-semantic-tokens--after-change-timer nil
+  "Timer that delays the semantic tokens request after a change.")
 
 (defun lsp-bridge-semantic-tokens--after-change ()
   "Try request semantic tokens after change."
@@ -337,9 +340,16 @@ Faces to use for semantic token modifiers.")
   (when lsp-bridge-semantic-tokens-mode
     (lsp-bridge-semantic-tokens--request-1 (window-start) (window-end) t)))
 
-(defvar-local lsp-bridge-semantic-tokens--monitor-change nil)
+(defvar-local lsp-bridge-semantic-tokens--monitor-change nil
+  "Non-nil when the buffer monitors changes for semantic tokens.")
 
 (defun lsp-bridge-semantic-tokens--hook-enable ()
+  "Enable hook based semantic tokens auto update for this buffer.
+Do nothing unless an LSP server is running.  This creates the
+overlay hash table, sets
+`lsp-bridge-semantic-tokens--monitor-change', installs the window
+scroll and window configuration hooks and requests tokens once
+after `lsp-bridge-semantic-tokens-delay'."
   (when (lsp-bridge-has-lsp-server-p)
     (unless lsp-bridge-semantic-tokens--overlays
       (setq-local lsp-bridge-semantic-tokens--overlays (make-hash-table :test 'equal)))
@@ -355,6 +365,10 @@ Faces to use for semantic token modifiers.")
     (run-at-time lsp-bridge-semantic-tokens-delay nil #'lsp-bridge-semantic-tokens-request)))
 
 (defun lsp-bridge-semantic-tokens--hook-disable ()
+  "Disable hook based semantic tokens auto update for this buffer.
+This removes the installed hooks, clears
+`lsp-bridge-semantic-tokens--monitor-change' and deletes all
+semantic token overlays."
   (remove-hook 'window-configuration-change-hook
                #'lsp-bridge-semantic-tokens--after-window-config-change t)
   (remove-hook 'window-scroll-functions
@@ -368,10 +382,18 @@ Faces to use for semantic token modifiers.")
 (defvar lsp-bridge-semantic-tokens--timer-update-buffers 0 "The count of enable lsp-bridge-semantic-tokens-mode.")
 
 (defun lsp-bridge-semantic-tokens--close-file ()
+  "Disable `lsp-bridge-semantic-tokens-mode' when the buffer is killed."
   (when lsp-bridge-semantic-tokens-mode
     (lsp-bridge-semantic-tokens-mode -1)))
 
 (defun lsp-bridge-semantic-tokens--timer-enable ()
+  "Enable timer based semantic tokens auto update for this buffer.
+Do nothing unless an LSP server is running.  This creates the
+overlay hash table, starts the global idle timer when it is the
+first buffer using this mode, counts the buffer in
+`lsp-bridge-semantic-tokens--timer-update-buffers', adds
+`lsp-bridge-semantic-tokens--close-file' to `kill-buffer-hook' and
+requests tokens once after `lsp-bridge-semantic-tokens-delay'."
   (when (lsp-bridge-has-lsp-server-p)
     (unless lsp-bridge-semantic-tokens--overlays
       (setq-local lsp-bridge-semantic-tokens--overlays (make-hash-table :test 'equal)))
@@ -386,6 +408,12 @@ Faces to use for semantic token modifiers.")
 
 
 (defun lsp-bridge-semantic-tokens--timer-disable ()
+  "Disable timer based semantic tokens auto update for this buffer.
+This removes the buffer from
+`lsp-bridge-semantic-tokens--timer-update-buffers', cancels the
+global idle timer when no buffer is left, removes
+`lsp-bridge-semantic-tokens--close-file' from `kill-buffer-hook'
+and deletes all semantic token overlays."
   (cl-decf lsp-bridge-semantic-tokens--timer-update-buffers)
   (when (equal lsp-bridge-semantic-tokens--timer-update-buffers 0)
     (cancel-function-timers #'lsp-bridge-semantic-tokens--timer-update))
@@ -400,7 +428,7 @@ Faces to use for semantic token modifiers.")
   (lsp-bridge-semantic-tokens--request-1 (window-start) (window-end) nil))
 
 (defun lsp-bridge-semantic-tokens-get-face-foreground (face)
-  "Recursively obtain the foreground color of FACE, including checking inherited faces."
+  "Return the foreground color of FACE, checking inherited faces."
   (let ((fg (face-attribute face :foreground)))
     (if (eq fg 'unspecified)
         ;; If the foreground is 'unspecified', then check the inherited face
