@@ -565,8 +565,10 @@ class LspServer:
         return initialization_options
 
     def get_document_uri(self, filepath):
-        """Get the document URI for a filepath, remapping .org files to a virtual
-        project file when orgBabelVirtualFile is configured in langserver JSON.
+        """Return the document URI for FILEPATH.
+
+        Remaps .org files to a virtual project file when orgBabelVirtualFile is
+        configured in the langserver JSON.
 
         Project-based LSP servers (e.g. rust-analyzer, clangd) only provide full
         completions for files that belong to the project. When editing code in an
@@ -575,7 +577,8 @@ class LspServer:
 
         The "orgBabelVirtualFile" field lets you specify a project file path
         (relative to project root) that the .org content should masquerade as,
-        e.g. "src/main.rs" for rust-analyzer."""
+        e.g. "src/main.rs" for rust-analyzer.
+        """
         if filepath.endswith('.org') and "orgBabelVirtualFile" in self.server_info:
             base = self.project_path
             if not os.path.isdir(base):
@@ -585,8 +588,11 @@ class LspServer:
         return path_to_uri(filepath)
 
     def parse_document_uri(self, filepath, external_file_link):
-        """If FileAction include external_file_link return by LSP server, such as jdt.
-        We should use external_file_link, such as uri 'jdt://xxx', otherwise use filepath as textDocument uri."""
+        """Return the textDocument URI for FILEPATH.
+
+        When the FileAction carries an external_file_link returned by the LSP
+        server (a jdt:// URI for Java, for instance), that link is used instead.
+        """
         # Init with filepath.
         uri = self.get_document_uri(filepath)
 

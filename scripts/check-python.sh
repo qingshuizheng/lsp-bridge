@@ -25,12 +25,18 @@ echo "== ruff: hard gate (E9,F63,F7,F82,E722,W291,W293)"
 ruff check --no-cache --output-format concise \
     --select E9,F63,F7,F82,E722,W291,W293 $PY
 
+# The rules left out here are the stylistic ones the ruff config in
+# pyproject.toml deliberately ignores (module/__init__ docstrings, the
+# D203/D213 and D401/D403 style choices); the CLI --select overrides the
+# config's select, so the ignore list has to be repeated.
+DOC_IGNORE="D100,D104,D107,D203,D213,D401,D403"
+
 echo "== ruff: documentation gate (D), work list until S2 is done"
 # shellcheck disable=SC2086
-ruff check --no-cache --statistics --exit-zero --select D $PY
+ruff check --no-cache --statistics --exit-zero --select D --ignore $DOC_IGNORE $PY
 
 if [ "$STRICT" = 1 ]; then
     echo "== ruff: documentation gate, strict"
     # shellcheck disable=SC2086
-    ruff check --no-cache --select D $PY
+    ruff check --no-cache --select D --ignore $DOC_IGNORE $PY
 fi

@@ -179,12 +179,12 @@ def get_remote_connection_info():
     return remote_connection_info
 
 def convert_workspace_edit_path_to_tramped_path(edit, remote_connection_info):
-    """ Convert documentUris in a WorkspaceEdit instance from local to remote(tramp).
+    """Convert documentUris in a WorkspaceEdit instance from local to remote(tramp).
 
-        ex. 'file://...' --> 'file://ssh:...
+    ex. 'file://...' --> 'file://ssh:...
 
-        About WorkspaceEdit interfeface:
-        https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspaceEdit
+    About WorkspaceEdit interfeface:
+    https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspaceEdit
     """
     if "documentChanges" in edit:
         # documentChanges's item can be one of (TextDocumentEdit, CreateFile, DeleteFile, RenameFile)
@@ -208,7 +208,7 @@ def convert_workspace_edit_path_to_tramped_path(edit, remote_connection_info):
         edit["changes"] = new_changes
 
 def local_path_to_tramp_path(path, tramp_method):
-    """convert path in DocumentUri format to tramp format."""
+    """Convert path in DocumentUri format to tramp format."""
     tramp_path = path.replace("file://", "file://" + tramp_method)
     return tramp_path
 
@@ -243,7 +243,8 @@ def message_emacs(message: str):
 
 
 def epc_arg_transformer(arg):
-    """Transform elisp object to python object
+    """Transform an elisp object into its Python equivalent.
+
     1                          => 1
     "string"                   => "string"
     (list :a 1 :b 2)           => {"a": 1, "b": 2}
@@ -503,9 +504,7 @@ def parse_json_content(content):
     return json_parser.loads(content)
 
 def windows_get_env_value(var_name: str) -> str:
-    """
-    Read a Windows environment variable by os.environ and return its value.
-    """
+    """Read a Windows environment variable from os.environ and return its value."""
     if var_name in os.environ.keys():
         return os.environ[var_name]
 
@@ -653,9 +652,7 @@ def remove_duplicate_references(data):
     return result
 
 def get_value_from_path(data, path):
-    """
-    Retrieve a value from a nested dictionary based on the given path.
-    """
+    """Retrieve a value from a nested dictionary based on the given path."""
     for key in path:
         if isinstance(data, dict) and key in data:
             data = data[key]
@@ -664,9 +661,9 @@ def get_value_from_path(data, path):
     return data
 
 def get_nested_value(json_data, attribute_path):
-    """
-    Find the corresponding value in json_data based on the attribute_path.
-    Handles both single paths and nested list paths.
+    """Find the value of ATTRIBUTE_PATH inside JSON_DATA.
+
+    Handles both a single path and a nested list path.
     """
     if isinstance(attribute_path[0], list):  # Handle nested list case
         for path in attribute_path:
@@ -678,7 +675,6 @@ def get_nested_value(json_data, attribute_path):
         return get_value_from_path(json_data, attribute_path)
 
 class MessageSender(Thread):
-
     """Base class for the threads that write messages to a process."""
 
     def __init__(self, process: subprocess.Popen):
@@ -693,7 +689,6 @@ class MessageSender(Thread):
         self.queue.put(message)
 
 class MessageReceiver(Thread):
-
     """Base class for the threads that read messages from a process."""
 
     def __init__(self, process: subprocess.Popen):

@@ -86,7 +86,7 @@
 |------+------+------|
 | **S0** 已完成 | 移除死后端 tabnine / codeium / sdcv；建 =scripts/docstring-report.py=、=scripts/check-elisp.sh=；本文件 | 全仓库 0 处引用；=py_compile= / parse 通过 |
 | **S1** ✅ 完成 | elisp docstring 补全（实际 ~470 处），**只加文档、不搬代码**，按文件切片 | =docstring-report.py --check= 全树通过；=check-elisp.sh= 无 warning 回归（整树 warning 207 → 173） |
-| **S2** | Python docstring 补全 + =except:= 清理 + ruff 配置与门禁（=scripts/check-python.sh=） | 进行中：docstring 已 100%、=E722= 29 处与空白 60 处已清、硬门禁全绿；剩余 =D= 风格重整（~400，多为既有 docstring 的句号/换行/首行摘要）与 =F403/F405= star-import（421，需与 =core/utils.py= 的导出面一起改） |
+| **S2** ✅ 基本完成 | Python docstring 补全 + =except:= 清理 + ruff/pydocstyle 配置与门禁 | =scripts/check-python.sh --strict= 全绿（py_compile / docstring 存在性 / 硬门禁 / D 门禁）；剩余：=F403/F405= star-import 421 条（需与 =core/utils.py= 的导出面一起决定，见「已做的决定」）与 =E501=（旧行宽） |
 | **S3** | popup 层重构：=acm-popup/acm-session/acm-menu/acm-doc=，popup 状态按父 frame 归位 | 新增 =test/acm-test.el=（ERT，frame 层打桩）覆盖：候选合并顺序、expand、predicates、wrap-around、多 frame 切换 |
 | **S4** | =acm-backend.el=：candidate 协议 + registry；=lsp-bridge.el= 拆分；协议握手 + =lsp-bridge-diagnose= | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
 | **S5** | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |

@@ -9,8 +9,11 @@ from core.utils import *
 
 
 def _detect_solidity_project_root(start_path):
-    """Walk up from start_path to find the Solidity project root
-    by looking for typical project markers (foundry.toml, hardhat.config, etc.)."""
+    """Find the Solidity project root above START_PATH.
+
+    Walks up looking for the markers a Solidity project usually carries
+    (foundry.toml, hardhat.config.*, truffle-config.js, remappings.txt, ...).
+    """
     markers = ("foundry.toml", "hardhat.config.js", "hardhat.config.ts",
                "truffle-config.js", "brownie-config.yaml", "remappings.txt")
     d = os.path.dirname(os.path.abspath(start_path)) if os.path.isfile(start_path) else os.path.abspath(start_path)
@@ -125,8 +128,10 @@ def _read_solidity_remappings(project_path):
 
 
 def _resolve_import_file_path(import_path, current_file, project_path):
-    """Resolve a raw Solidity import path string to an absolute file path.
-    Returns the resolved path or None."""
+    """Resolve the raw Solidity import path IMPORT_PATH to an absolute path.
+
+    Returns the resolved path, or None when it cannot be resolved.
+    """
     if not import_path:
         return None
 
@@ -168,8 +173,10 @@ def _resolve_import_file_path(import_path, current_file, project_path):
 
 
 def _resolve_solidity_import_path(current_file, cursor_pos, project_path):
-    """If the cursor line is part of an import statement, resolve its file path.
-    Handles both single-line and multi-line imports."""
+    """Resolve the file path imported by the statement at the cursor.
+
+    Handles both single-line and multi-line imports.
+    """
     if not current_file or not os.path.isfile(current_file):
         return None
 
@@ -237,8 +244,9 @@ def _resolve_solidity_import_path(current_file, cursor_pos, project_path):
 
 
 def _parse_all_imports(content):
-    """Parse all import statements from Solidity source, handling both single-line
-    and multi-line imports.
+    """Parse every import statement of a Solidity source.
+
+    Handles both single-line and multi-line imports.
 
     Returns a list of tuples: (names_list, import_path)
       - names_list: list of (original_name, local_name) tuples, or None for wildcard imports
@@ -247,7 +255,7 @@ def _parse_all_imports(content):
     Examples:
       import "path.sol";                         => (None, "path.sol")
       import { A, B as C } from "path.sol";      => ([("A","A"), ("B","C")], "path.sol")
-      import {\\n  A,\\n  B\\n} from "path.sol";    => ([("A","A"), ("B","B")], "path.sol")
+      a braced import split over three lines      => ([("A","A"), ("B","B")], "path.sol")
     """
     results = []
 
@@ -292,8 +300,9 @@ def _parse_all_imports(content):
 
 
 def _find_import_file_for_symbol(current_file, symbol_name, project_path, function_arity=None, _visited=None):
-    """Scan ALL import statements in current_file for one that provides symbol_name.
-    Returns the resolved file path or None.
+    """Scan every import statement of CURRENT_FILE for one providing SYMBOL_NAME.
+
+    Returns the resolved file path, or None.
 
     Handles single-line and multi-line imports:
       import { SimpleTransfer, SimpleTransferType } from "path/to/file.sol";
@@ -842,8 +851,10 @@ _SOLIDITY_DEF_KEYWORDS = r'\b(?:contract|interface|library|struct|enum|error|eve
 
 
 def _find_symbol_in_file(filepath, symbol_name, function_arity=None):
-    """Search a single .sol file for a definition of the given symbol.
-    Returns {"line": N, "character": N} or None."""
+    """Search one .sol file for the definition of SYMBOL_NAME.
+
+    Returns a {"line": N, "character": N} dict, or None.
+    """
     file_content = _read_text_file(filepath)
     if not file_content:
         return None
@@ -904,8 +915,10 @@ def _find_struct_field_decl_pos_in_line(line, field_name):
 
 
 def _find_struct_field_in_file(filepath, struct_name, field_name):
-    """Search a .sol file for a field within a struct definition.
-    Returns {"line": N, "character": N} or None."""
+    """Search a .sol file for FIELD_NAME inside the STRUCT_NAME definition.
+
+    Returns a {"line": N, "character": N} dict, or None.
+    """
     content = _read_text_file(filepath)
     if not content:
         return None
@@ -1194,8 +1207,7 @@ def _resolve_using_for_method_definition(current_file, symbol_name, receiver_typ
 
 
 def _resolve_struct_field_definition(current_file, cursor_pos, symbol_name, project_path):
-    """Resolve a struct field access like `v2templates[templateId].period`
-    or `someStruct.fieldName`.
+    """Resolve a struct field access such as `someStruct.fieldName`.
 
     Detects the `.field` pattern, walks backward past brackets to find the
     root variable name, resolves its type from the declaration (handles
@@ -1315,8 +1327,10 @@ def _resolve_struct_field_definition(current_file, cursor_pos, symbol_name, proj
 
 
 def _find_public_variable_in_file(filepath, var_name):
-    """Find a public state variable declaration that auto-generates a getter function.
-    Returns {"line": N, "character": N} or None."""
+    """Find a public state variable whose getter is auto-generated.
+
+    Returns a {"line": N, "character": N} dict, or None.
+    """
     content = _read_text_file(filepath)
     if not content:
         return None
@@ -1350,9 +1364,10 @@ def _find_public_variable_in_file(filepath, var_name):
 
 
 def _resolve_method_call_definition(current_file, cursor_pos, symbol_name, project_path, function_arity=None):
-    """When cursor is on a method name in a call like `obj.method(...)`,
-    resolve by finding the receiver's type, then look for the function
-    definition in that type's source file.
+    """Resolve the method called at the cursor in an `obj.method(...)` call.
+
+    The receiver's type is resolved first, then the function definition is
+    looked up in that type's source file.
 
     Returns (filepath, {"line": N, "character": N}) or None.
     """
@@ -1580,8 +1595,11 @@ def _resolve_inherited_function(current_file, symbol_name, project_path, functio
 
 
 def _find_solidity_symbol_in_project(current_file, cursor_pos, project_path, symbol_name=None, function_arity=None):
-    """When the Solidity LSP returns file:/// and the cursor is not on an import line,
-    try to locate the symbol definition by name in project .sol files."""
+    """Locate a symbol by name in the project's .sol files.
+
+    Used when the Solidity LSP answers with `file:///` and the cursor is not on
+    an import line.
+    """
     word = symbol_name or _get_symbol_at_cursor(current_file, cursor_pos)
     if not word:
         return None
@@ -1614,9 +1632,11 @@ def _get_solidity_server_name(obj):
 
 
 def _try_solidity_fallback(obj, define_jump_handler):
-    """Attempt Solidity-specific definition recovery.
-    Called when the LSP returns empty response or file:///.
-    Returns True if recovery succeeded and jump was performed."""
+    """Try the Solidity-specific definition recovery.
+
+    Runs when the LSP answers with an empty response or `file:///`, and returns
+    True when the recovery succeeded and the jump was performed.
+    """
     current_file = obj.file_action.filepath
     if not current_file or not current_file.endswith(".sol"):
         return False
@@ -1771,7 +1791,10 @@ def find_define_response(obj, response, define_jump_handler) -> None:
         eval_in_emacs(define_jump_handler, filepath, get_lsp_file_host(), start_pos)
 
 def create_decompile_external_file(uri_resolver, language_dir, decompile_dir, source_code):
-    '''Some LSP server, such as Java or C#, LSP server need decompile source code to *external* file before jump to definition in *original* file.
+    """Write decompiled SOURCE_CODE to an external file and return its URI.
+
+    Some LSP servers, such as Java or C#, need to decompile source code to an
+    *external* file before jumping to a definition in the *original* file.
     Base on lsp-bridge default policy, lsp-bridge will create NEW LSP server for *external* file if *external* file own by different directory.
     If *external* file use *new* LSP server, `lsp-bridge-find-def` won't response in *external* file,
     because *new* LSP server don't know project information about *original* project.
@@ -1780,7 +1803,7 @@ def create_decompile_external_file(uri_resolver, language_dir, decompile_dir, so
     to make sure *external* file share SAME LSP server with *original* file.
 
     Last, we can do `lsp-bridge-find-def` in *external* file.
-    '''
+    """
     # Init.
     external_file_dir = ''
 

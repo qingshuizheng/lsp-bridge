@@ -41,6 +41,7 @@ class Copilot:
     replies are consumed by `message_dispatcher`, and the candidates are pushed
     to Emacs on the "copilot" backend.
     """
+
     def __init__(self):
         """Set up the state of a Copilot session before its server exists.
 
@@ -62,8 +63,10 @@ class Copilot:
         self.workspace_folders = {}
 
     def check_node_launch_environment(self):
-        """Check if Node.js launch mode requirements are met
-        Returns: (is_valid, error_message)
+        """Check whether the Node.js launch mode requirements are met.
+
+        Returns:
+            A (is_valid, error_message) tuple.
         """
         (node_path, ) = get_emacs_vars(["acm-backend-copilot-node-path"])
 
@@ -90,8 +93,10 @@ class Copilot:
             return False, "npm not found"
 
     def check_binary_launch_environment(self):
-        """Check if binary launch mode requirements are met
-        Returns: (is_valid, error_message)
+        """Check whether the binary launch mode requirements are met.
+
+        Returns:
+            A (is_valid, error_message) tuple.
         """
         (binary_path, ) = get_emacs_vars(["acm-backend-copilot-binary-path"])
 
