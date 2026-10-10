@@ -2,7 +2,8 @@
 
 Mixed into `LspBridge`: building the EPC entries of every search backend and
 of the completion sources that are not a language server (elisp symbols,
-snippets, paths, ctags, copilot)."""
+snippets, paths, ctags, copilot).
+"""
 
 import queue
 import threading

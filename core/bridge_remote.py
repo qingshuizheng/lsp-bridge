@@ -2,7 +2,8 @@
 
 Mixed into `LspBridge`: the socket client, the file client for a remote host
 or a container, the message senders and receivers, the tramp information sync
-and the file operations that only make sense for a remote buffer."""
+and the file operations that only make sense for a remote buffer.
+"""
 
 import os
 import queue

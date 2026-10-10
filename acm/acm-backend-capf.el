@@ -127,6 +127,35 @@
 `global-lsp-bridge-mode' enables `lsp-bridge-mode' from these hooks in
 addition to `lsp-bridge-default-mode-hooks'.")
 
+(declare-function acm-preview-create-overlay "acm")
+
+(defun acm-backend-capf-candidate-expand (candidate-info bound-start &optional preview)
+  "Expand the CAPF candidate CANDIDATE-INFO, replacing BOUND-START onwards.
+The completion bounds and the `:exit-function' are asked from CAPF again
+instead of being guessed from the symbol at point, and the exit function runs
+after the label is inserted, which is what CAPF backends use for their post
+completion work.  PREVIEW non-nil shows the candidate in an overlay instead of
+inserting it."
+  (let* ((label (plist-get candidate-info :label))
+         (res (run-hook-wrapped 'completion-at-point-functions
+                                #'completion--capf-wrapper 'all))
+         (plist (pcase res
+                  (`(,_ . ,(and (pred functionp) _f)) nil)
+                  (`(,_hookfun . (,_start ,_end ,_collection . ,plist)) plist)))
+         (bounds (pcase res
+                   (`(,_ . ,(and (pred functionp) _f)) nil)
+                   (`(,_hookfun . (,start ,end ,_collection . ,_plist))
+                    (cons start end))))
+         (exit-fn (plist-get plist :exit-function))
+         (start (or (car bounds) bound-start))
+         (end (or (cdr bounds) (point))))
+    (if preview
+        (acm-preview-create-overlay start end label)
+      (delete-region start end)
+      (insert label)
+      (when exit-fn
+        (funcall exit-fn label 'finished)))))
+
 (defun acm-backend-capf-candidates (keyword)
   "Return CAPF completion candidates matching KEYWORD.
 Ask `completion-at-point-functions' through

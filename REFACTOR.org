@@ -257,6 +257,45 @@ ruff check core lsp_bridge.py          # S2 起接入
 断言 **EPC 对外方法集合与 HEAD 完全一致**（52 = 19 类内 + 33 继承）、 mixin 不重叠、
 模块级 helper 仍可从 =lsp_bridge= 导入；docstring 1591/1591 = 100%。
 
+**S7：把 emacs-config 同步到新 API（并因此拄出两个真 bug）**：
+同步本身很小：配置里的 =acm-backend-tabnine= → =codeium= →
+=acm-backend-search-sdcv-words= 三个 =setup= 指向已删掉的后端（已删），
+四个文件用 =(acm-frame-visible-p acm-menu-frame)= 判断菜单是否可见，
+而 =acm-menu-frame= 已随 session 重构消失 ⇒ 改用 README 里已文档化的
+=(acm-frame-visible-p (acm-popup menu-frame))= 。
+
+但"逐个符号对照包内定义"这个动作拄出两个真 bug：
+
+1. =acm-input-bound-style= 在 =acm-get-input-prefix= 里被 =(let* ((acm-input-bound-style
+   (if ... "vulpea" "ascii")))= **遮蔽** 掉 ⇒ 选项与"lsp-bridge 从后端派生的
+   每缓冲区风格"全都无效（配置里的 =(setq-default acm-input-bound-style "string")=
+   从来没生效）。现在只在 Vulpea 括号内强制 "vulpea"，其余保留调用方的值。
+2. =acm/acm.el= 两处 frame 创建把**槽位名当缓冲区值**传了
+   （=(acm-frame-create-frame-if-not-exist menu-frame menu-buffer ...)= ——=menu-buffer= 未求值）
+   ⇒ 编译器报两条 free variable，**运行期会 void-variable**，菜单/文档窗口
+   完全建不出来。这是我第 4 轮改宏参数签名时遗留的回归（当时只看了告警增量而没有
+   逐个核对调用点），现已修正为 =(acm-popup menu-buffer)= 。
+   两处修复后 =acm/acm.el= 告警从 13 降到 11。
+
+另外两个"配置里写了但没人调"的功能点：
+- =acm-backend-capf-candidate-expand=：**上游也从未调用**（=旧 acm.el 只按名字
+  调 fetch）⇒ CAPF 候选只会被通用地插入，=:exit-function= 不会跑。
+  本轮把它**下沉到包内**（=acm/acm-backend-capf.el= 新增该函数）并在
+  registry 里注册 =:expand-fn= + =:preview t=，配置端的重复实现删掉。
+- =acm-backend-telega-candidate-expand=：同样从未被调用（上游如此）。它编码的是
+  **用户偏好**（mention 实体、emoji 展开等），不适合强加给所有人 ⇒ 本轮**不改**，
+  记录为已知缺口（可选做法：把它搬进包的 telega 后端，或用 registry 从配置里
+  补上 =:expand-fn=）。
+
+**验收**：写了一个"配置里点名的包内符号是否都能解析"的检查
+（量到“有定义的符号”对象；弹字符串与注释；=setup= 用的 feature 名按文件存在算通过）：
+**同步后 69/69 全部解析**；同一检查跑在**同步前**的配置上则报 4 项失配
+（=acm-enable-tabnine= → =codeium= → =search-sdcv-words= 、 =acm-menu-frame=）——这就是 S7 的证据。
+包内门禁全部**按退出码**核实：=check-python.sh --strict= 0、 =check-test.sh= 0、
+=check-elisp.sh= 0（146 告警，S7 前 148）、 docstring 1592/1592、 checkdoc 0。
+（教训：之前用 =cmd | tail; echo $?= 读到的是 =tail= 的状态 ⇒ 以后一律直接读脚本退出码；
+这一次就是这样发现三个新模块的 D209 还在的。）
+
 **S5 第一步：Solidity fallback 拆分 + 通用文本工具独立**：
 =core/handler/find_define_base.py=（1835 行、 37 个模块级函数）按调用图与语言相关性拆成三个模块：
 

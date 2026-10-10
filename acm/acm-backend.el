@@ -309,6 +309,8 @@ name, so a user can re-register one of them with different fields."
                     :enabled (lambda () acm-enable-tabby))
              (:name "capf" :group "capf-candidates"
                     :fetch-fn acm-backend-capf-candidates
+                    :expand-fn acm-backend-capf-candidate-expand
+                    :preview t
                     :enabled (lambda () acm-enable-capf))
              (:name "path" :group "path-candidates"
                     :fetch-fn acm-backend-path-candidates

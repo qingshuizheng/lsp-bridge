@@ -424,10 +424,15 @@ there is no prefix at point."
         (cons (- (cdr bound) offset) (cdr bound)))))))
 
 (defun acm-get-input-prefix ()
-  "Get user input prefix."
+  "Return the user input prefix at point.
+The prefix is delimited by `acm-input-bound-style', except inside a Vulpea
+note link, where the `vulpea' style is forced because a note title is not a
+symbol.  Binding the style here is what keeps that workaround local, and it
+must not shadow the value the caller set: that value is the option default or
+the per buffer style `lsp-bridge' derives from the backend."
   (let* ((acm-input-bound-style (if (acm-in-vulpea-bracket-p)
                                     "vulpea"
-                                  "ascii"))
+                                  acm-input-bound-style))
          (bound (acm-get-input-prefix-bound)))
     (if bound
         (buffer-substring-no-properties (car bound) (cdr bound))
@@ -676,7 +681,7 @@ the menu or renders it.  Return nil."
                 (acm-frame-get-popup-position (acm-popup popup-point)))
 
           ;; Create menu frame if it not exists.
-          (acm-frame-create-frame-if-not-exist menu-frame menu-buffer "acm frame" 0 t)
+          (acm-frame-create-frame-if-not-exist menu-frame (acm-popup menu-buffer) "acm frame" 0 t)
 
           ;; Render menu.
           (acm-menu-render menu-old-cache))
@@ -970,7 +975,7 @@ by auto import."
                          candidate-doc
                        (format "%S" candidate-doc))))
             ;; Create doc frame if it not exist.
-            (acm-frame-create-frame-if-not-exist doc-frame doc-buffer "acm doc frame" 1 t)
+            (acm-frame-create-frame-if-not-exist doc-frame (acm-popup doc-buffer) "acm doc frame" 1 t)
             (acm-popup-set 'doc-hide-p nil)
 
             ;; Insert documentation and turn on wrap line.

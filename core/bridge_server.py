@@ -2,7 +2,8 @@
 
 Mixed into `LspBridge`: picking the servers of a file, checking that their
 commands exist, loading a single server info, creating the language servers
-and turning them off again."""
+and turning them off again.
+"""
 
 import os
 import shutil
