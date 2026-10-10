@@ -219,6 +219,29 @@ ruff check core lsp_bridge.py          # S2 起接入
 =server=、=--work-done-progress= 及其 timer、=acm-backend-lsp-show-progress=），
 主文件在末尾 =(require 'lsp-bridge-ui)= 并在顶部加了一条 =declare-function=
 （=lsp-bridge-symbols--current-defun= 被更早的 =lsp-bridge-mode= 一带引用）。
+**进度 2**：第 2 步（=remote/tramp= 层）已完成 —— =lsp-bridge-remote.el=（297 行、23 个定义：
+=remote-file-*= 六个缓冲区变量、=open-remote-file=／=-response=、tramp 信息同步与重连、
+=send-lsp-request=／=send-func-request=、=remote-kill-buffer=、=decode-base64=），
+=lsp-bridge.el= 4024 → 3761 行。**这一步暴露出拆分的三个真正难点**，都已解决并写进上面的生成规则：
+
+1. **跨文件宏**：=lsp-bridge--with-file-buffer=（定义在主文件）被依赖方*调用*时，必须让编译器知道它是宏。
+   实测：==(autoload 'x "file")= 编出来的代码运行时报 =invalid-function=；
+   ==(autoload 'x "file" nil nil 'macro)= 才正确展开 ✓（探针：=/tmp/mactest= 两种写法对比）。
+   仓库里 =lsp-bridge-diagnostic.el= 用的是**前者** ⇒ 这是一个**潜伏 bug**（只在字节编译后暴露），
+   另外 =breadcrumb/dart/imenu/inlay-hint= 连 autoload 都没有。本步只在 =lsp-bridge-remote.el= 里用正确写法；
+   其余文件留作独立一步（改动它们会移动整体 warning 画像，不适合混进搬家提交）。
+2. **依赖库 vs 包内声明**：宏要用 =autoload ... 'macro=、包内函数/变量用 =declare-function=／=(defvar X)=
+   （无值的 defvar = 声明 ✓，docstring 门禁已能识别）；只对**包外**库用 =require=（=cl-lib=／=tramp=／=subr-x=）。
+   对包内文件 =require=（例如 =(require 'lsp-bridge-epc)=）会把整个 =lsp-bridge.el= 提前加载，
+   从而**改变后续文件的告警画像** ⇒ 一律声明，不 require 包内文件。
+3. **编译顺序必须确定**：=check-elisp.sh= 之前用 =git ls-files --cached --others=，
+   未跟踪的新文件被 git 排在最前面编译 ⇒ 同样的代码得到不同的告警集合（假象）。
+   现在输出 =| sort=，并在对比时对两侧都用同一脚本＋同一文件集合。
+
+自动化：=scripts/= 之外我写了（不入库的）/tmp/move-region.py，它按上面规则**生成**新文件
+（requires + 声明 + 原样区域）并改写主文件（删区域、加对侧声明、末尾 require）。
+后续每一步 =lsp-bridge-workspace.el=／=jump=／=completion=／=transport=／=core= 都可以复用同一套流程与验收。
+
 **验收规则的细化**：搬家会改变警告所在的*文件*，所以比较时按**警告文本**归一化；
 一步只允许**减少**它自己修掉的警告，不允许新增。本步净减少 1 条：修掉了
 =lsp-bridge--mode-line-format= 里的 `mode-face` 自由变量（原来用 =setq-local= 把
