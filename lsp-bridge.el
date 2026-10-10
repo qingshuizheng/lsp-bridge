@@ -1430,6 +1430,35 @@ SymbolKind (defined in the LSP)."
 (require 'lsp-bridge-document)
 (require 'lsp-bridge-remote)
 
+;;;###autoload
+(defun global-lsp-bridge-mode ()
+  "Enable `lsp-bridge-mode' in every configured major mode hook.
+The hooks listed in `lsp-bridge-default-mode-hooks' and
+`acm-backend-capf-mode-hooks' get a function that enables the mode
+only when all predicates in `lsp-bridge-enable-predicates' allow it."
+  (interactive)
+
+  (dolist (hook (append
+                 lsp-bridge-default-mode-hooks
+                 acm-backend-capf-mode-hooks))
+    (add-hook hook (lambda ()
+                     (when (cl-every (lambda (pred)
+                                       (lsp-bridge-check-predicate pred "global-lsp-bridge-mode"))
+                                     lsp-bridge-enable-predicates)
+                       (lsp-bridge-mode 1))
+                     ))))
+
+
+;;;###autoload
+(define-minor-mode lsp-bridge-mode
+  "LSP Bridge mode."
+  :keymap lsp-bridge-mode-map
+  :lighter lsp-bridge-mode-lighter
+  :init-value nil
+  (if lsp-bridge-mode
+      (lsp-bridge--enable)
+    (lsp-bridge--disable)))
+
 (provide 'lsp-bridge)
 
 ;;; lsp-bridge.el ends here

@@ -574,15 +574,6 @@ Each element is a hook list in the form accepted by `add-hook'.")
   :type 'string
   :group 'lsp-bridge)
 
-;;;###autoload
-(define-minor-mode lsp-bridge-mode
-  "LSP Bridge mode."
-  :keymap lsp-bridge-mode-map
-  :lighter lsp-bridge-mode-lighter
-  :init-value nil
-  (if lsp-bridge-mode
-      (lsp-bridge--enable)
-    (lsp-bridge--disable)))
 
 (defun lsp-bridge--enable ()
   "Enable LSP Bridge mode."
@@ -679,23 +670,6 @@ so that no further file request is sent."
                                 (setq-local acm-backend-lsp-server-command-exist nil)
                                 ))
 
-;;;###autoload
-(defun global-lsp-bridge-mode ()
-  "Enable `lsp-bridge-mode' in every configured major mode hook.
-The hooks listed in `lsp-bridge-default-mode-hooks' and
-`acm-backend-capf-mode-hooks' get a function that enables the mode
-only when all predicates in `lsp-bridge-enable-predicates' allow it."
-  (interactive)
-
-  (dolist (hook (append
-                 lsp-bridge-default-mode-hooks
-                 acm-backend-capf-mode-hooks))
-    (add-hook hook (lambda ()
-                     (when (cl-every (lambda (pred)
-                                       (lsp-bridge-check-predicate pred "global-lsp-bridge-mode"))
-                                     lsp-bridge-enable-predicates)
-                       (lsp-bridge-mode 1))
-                     ))))
 
 (defun lsp-bridge--rename-file-advisor (orig-fun &optional arg &rest args)
   "Tell the server about a rename before `rename-file' runs.
