@@ -234,6 +234,14 @@ ruff check core lsp_bridge.py          # S2 起接入
    （无值的 defvar = 声明 ✓，docstring 门禁已能识别）；只对**包外**库用 =require=（=cl-lib=／=tramp=／=subr-x=）。
    对包内文件 =require=（例如 =(require 'lsp-bridge-epc)=）会把整个 =lsp-bridge.el= 提前加载，
    从而**改变后续文件的告警画像** ⇒ 一律声明，不 require 包内文件。
+**进度 4**：第 4 步（=jump/find/rename= 层）已完成 —— =lsp-bridge-jump.el=（295 行、23 个定义：
+=find-def=／=-other-window=／=-return=、=find-type-def=、=find-impl=、=find-references= 与其
+=--popup=／=fallback=、=rename= 与 =rename--highlight=、=flash-region=／=flash-line=、
+=mark-ring= 两件、=define--jump= 与其 flash、以及两个 fallback 选项变量），
+=lsp-bridge.el= 3589 → 3335 行。验收：归一化 warning 多重集**完全一致**（152 = 152，空 diff）。
+=workspace= 层（=pick-file-path=／=file-apply-edits=／workspace-symbol／formatting／indent／
+document-highlight）留在下一步。
+
 **进度 3**：第 3 步（=documentation/signature= 层）已完成 —— =lsp-bridge-document.el=
 （206 行、19 个定义：=show-documentation= 与两个回调、=popup-documentation= 系列的 frame 与滚动、
 HTML 实体替换、=signature-*= 的展示函数/变量/更新入口），=lsp-bridge.el= 3761 → 3589 行。
