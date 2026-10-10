@@ -179,7 +179,7 @@ Below is available types:
 `Variable' `Class' `Interface' `Module' `Property'
 `Unit' `Value' `Enum' `Keyword' `Snippet' `Color'
 `File' `Reference' `Folder' `EnumMember' `Constant'
-`Struct' `Event' `Operator' `TypeParameter'"
+`Struct' `Event' `Operator' `TypeParameter'")
 
 (defun acm-backend-lsp-init ()
   "Reset the buffer-local LSP completion state.
