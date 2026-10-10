@@ -8,23 +8,37 @@ from core.utils import *
 
 
 class JDTUriResolver(Handler):
+    """Unpack `jdt://` class files into real Java source files.
+
+    eclipse.jdt.ls returns definitions for dependency classes as `jdt://` URIs;
+    this handler asks `java/classFileContents` for the source, writes it under
+    the server's data directory (or a temp directory named after the project
+    hash) and then jumps there with the original define handler.
+    """
+
     name = "jdt_uri_resolver"
     method = "java/classFileContents"
     cancel_on_change = True
     send_document_uri = False
 
     def __init__(self, *args, **kwargs):
+        """Initialize the resolver with no pending URI or jump position."""
         super().__init__(*args, **kwargs)
         self.external_file_link = None
         self.start_pos = None
 
     def process_request(self, uri, start_pos, define_jump_handler) -> dict:
+        """Return params for URI and remember where the jump should land.
+
+        START_POS and DEFINE_JUMP_HANDLER are kept for `process_response`.
+        """
         self.start_pos = start_pos
         self.external_file_link = uri
         self.define_jump_handler = define_jump_handler
         return dict(uri=uri)
 
     def process_response(self, response: str):
+        """Write the source in RESPONSE to a file and jump into it."""
         if not response:
             message_emacs("No definition found.")
             return

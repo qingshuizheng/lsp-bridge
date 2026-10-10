@@ -6,12 +6,20 @@ if TYPE_CHECKING:
 from core.utils import *
 
 class Handler(abc.ABC):
+    """Base class for the per-request handlers that talk to an LSP server.
+
+    Subclasses set the class attributes below and implement
+    `process_request` (build the LSP params from Emacs' arguments) and
+    `process_response` (turn the LSP reply back into Emacs calls).
+    """
+
     name: str  # Name called by Emacs
     method: str  # Method name defined by LSP
     cancel_on_change = False  # Whether to cancel request on file change or cursor change
     send_document_uri = True
 
     def __init__(self, file_action: "FileAction"):
+        """Record FILE_ACTION as the owner and snapshot its last change."""
         self.latest_request_id = -1  # Latest request id
         self.last_change: tuple = file_action.last_change  # Last change information
         self.file_action = file_action
@@ -26,6 +34,12 @@ class Handler(abc.ABC):
         raise NotImplementedError()
 
     def handle_response(self, request_id, response):
+        """Dispatch RESPONSE to `process_response` if REQUEST_ID is current.
+
+        Responses that are not the latest one, or that arrive after the file
+        changed while `cancel_on_change` is set, are logged and dropped.  Any
+        error raised by `process_response` is caught and logged.
+        """
         if request_id != self.latest_request_id:
             logger.debug("Discard outdated response: received=%d, latest=%d",
                          request_id, self.latest_request_id)

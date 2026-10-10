@@ -18,6 +18,7 @@ class TsserverRequestHandler(Handler):
     send_document_uri = False
 
     def __init__(self, file_action):
+        """Initialize with no pending volar server, id, timer or answer."""
         super().__init__(file_action)
         self.volar_server = None
         self.seq_id = None
@@ -25,6 +26,7 @@ class TsserverRequestHandler(Handler):
         self._responded = False
 
     def process_request(self, *args, **kwargs) -> dict:
+        """Return empty params; this handler is only fed by the TS server."""
         return {}
 
     def _send_response_once(self, body) -> None:

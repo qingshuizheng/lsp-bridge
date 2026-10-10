@@ -3,14 +3,29 @@ from core.utils import *
 
 
 def make_code_block(language, string):
+    """Return STRING wrapped in a Markdown fenced block tagged LANGUAGE."""
     return "```{language}\n{string}\n```".format(language=language, string=string)
 
 
 class Hover(Handler):
+    """Show the server's documentation for the symbol at the cursor.
+
+    The reply's `contents` may be a string, a `{kind, value}` or
+    `{language, value}` object, or a list of either; they are normalised into
+    Markdown and sent to the popup or the documentation buffer depending on
+    SHOW_STYLE.  rust-analyzer is the only server that gets a position range
+    instead of a single position.
+    """
+
     name = "hover"
     method = "textDocument/hover"
 
     def process_request(self, start, end, show_style) -> dict:
+        """Return hover params for START..END, remembering SHOW_STYLE.
+
+        Only rust-analyzer accepts the range form (a non-standard extension);
+        every other server, and an empty selection, gets START as the position.
+        """
         lsp_server_name = self.file_action.get_match_lsp_servers("hover")[0].server_info['name']
         self.show_style = show_style
 
@@ -22,6 +37,11 @@ class Hover(Handler):
             return dict(position=range)
 
     def parse_hover_contents(self, contents, render_strings):
+        """Append CONTENTS rendered as Markdown to RENDER_STRINGS.
+
+        Returns RENDER_STRINGS joined by newlines; the method recurses for
+        lists and for the LSP `MarkedString`/`MarkupContent` shapes.
+        """
         if isinstance(contents, str):
             if contents.startswith("```"):
                 render_strings.append(contents)
@@ -55,6 +75,7 @@ class Hover(Handler):
         return "\n".join(render_strings)
 
     def process_response(self, response: dict) -> None:
+        """Render the `contents` of RESPONSE in Emacs."""
         if response is None or "contents" not in response or len(response["contents"]) == 0:
             message_emacs("No documentation available.")
             return

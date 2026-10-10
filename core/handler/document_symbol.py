@@ -2,16 +2,25 @@ from core.handler import Handler
 from core.utils import *
 
 class DocumentSymbol(Handler):
+    """Record the enclosing definition under the cursor in Emacs.
+
+    It walks the `textDocument/documentSymbol` tree and joins the names of
+    every symbol whose range contains the requested position, then hands the
+    dotted string to `lsp-bridge-symbols--record-current-defun`.
+    """
+
     name = "document_symbol"
     method = "textDocument/documentSymbol"
     send_document_uri = True
     position = None
 
     def process_request(self, position) -> dict:
+        """Remember POSITION as `self.position` and return empty params."""
         self.position = position
         return dict()
 
     def process_response(self, response: dict) -> None:
+        """Send the innermost symbol path around `self.position` to Emacs."""
         if response is not None:
             try:
                 symbols = []

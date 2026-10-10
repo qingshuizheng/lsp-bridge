@@ -4,11 +4,26 @@ from functools import cmp_to_key
 
 
 class CompletionWorkspaceSymbol(Handler):
+    """Offer workspace symbols as completion candidates.
+
+    The `workspace/symbol` reply is turned into acm items labelled
+    `NAME [kind]`, sorted so that labels starting with the typed prefix come
+    first and then by length, truncated to
+    `completion_workspace_symbol_items_limit`, and finally recorded by
+    `lsp-bridge-completion-workspace-symbol--record-items`.
+    """
+
     name = "completion_workspace_symbol"
     method = "workspace/symbol"
     provider = "workspace_symbol_provider"
 
     def process_request(self, lsp_server, query) -> dict:
+        """Return the params for QUERY and remember its server and prefix.
+
+        LSP_SERVER is remembered as `self.lsp_server` and its name as
+        `self.lsp_server_name`; the raw QUERY is kept as `self.prefix` because
+        the whitespace is stripped from the query that is actually sent.
+        """
         self.prefix = query
         self.lsp_server = lsp_server
         self.lsp_server_name = self.lsp_server.server_info["name"]
@@ -16,6 +31,7 @@ class CompletionWorkspaceSymbol(Handler):
         return dict(query=query)
 
     def compare_candidates(self, x, y):
+        """Order X before Y if it matches the prefix, then if it is shorter."""
         prefix = self.prefix.lower()
         x_label, y_label = x["label"].lower(), y["label"].lower()
         x_include_prefix, y_include_prefix = x_label.startswith(prefix), y_label.startswith(prefix)
@@ -28,6 +44,7 @@ class CompletionWorkspaceSymbol(Handler):
         return -1 if len(x_label) < len(y_label) else (1 if len(x_label) > len(y_label) else 0)
 
     def process_response(self, response: dict) -> None:
+        """Record the sorted, truncated symbols in RESPONSE for Emacs."""
         if response is not None:
             completion_symbols = []
 

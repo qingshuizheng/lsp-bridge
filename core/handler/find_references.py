@@ -8,10 +8,22 @@ REFERENCE_ENDC = '\033[0m'
 
 
 class FindReferences(Handler):
+    """Find the references of the symbol at the cursor.
+
+    The `textDocument/references` reply is de-duplicated, grouped by file and
+    rendered, with the matched text highlighted, into the
+    `lsp-bridge-references--popup` buffer.  An empty reply falls back to the
+    Emacs side search with `lsp-bridge-find-ref-fallback`.
+    """
+
     name = "find_references"
     method = "textDocument/references"
 
     def process_request(self, position) -> dict:
+        """Return the params asking for references of POSITION.
+
+        POSITION is also remembered as `self.pos` for the popup and fallback.
+        """
         self.pos = position
         return dict(
             position=position,
@@ -19,6 +31,7 @@ class FindReferences(Handler):
         )
 
     def process_response(self, response) -> None:
+        """Popup the references in RESPONSE, or fall back when there are none."""
         if response is None:
             eval_in_emacs("lsp-bridge-find-ref-fallback", self.pos)
         else:

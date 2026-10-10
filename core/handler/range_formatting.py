@@ -3,6 +3,13 @@ from core.utils import *
 
 
 class RangeFormatting(Handler):
+    """Format only a range of the buffer through `textDocument/rangeFormatting`.
+
+    The edits the server returns for the range are sent to
+    `lsp-bridge-format--update`; an empty reply only reports that nothing
+    needed formatting.
+    """
+
     name = "rangeFormatting"
     method = "textDocument/rangeFormatting"
     cancel_on_change = True
@@ -10,6 +17,7 @@ class RangeFormatting(Handler):
     provider_message = "Current server not support range format."
 
     def process_request(self, range_start, range_end, tab_size) -> dict:
+        """Return the range plus formatting options built from TAB_SIZE."""
         range = {
             "start": range_start,
             "end": range_end
@@ -26,6 +34,7 @@ class RangeFormatting(Handler):
         return dict(range=range, options=options)
 
     def process_response(self, response) -> None:
+        """Apply the edits in RESPONSE, or say nothing needed formatting."""
         if response and len(response) > 0:
             remote_connection_info = get_remote_connection_info()
             tramp_path = remote_connection_info + self.file_action.filepath

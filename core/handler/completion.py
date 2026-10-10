@@ -8,17 +8,33 @@ from core.utils import *
 
 
 class CompletionTriggerKind(Enum):
+    """How the completion request was triggered, per the LSP spec."""
+
     Invoked = 1
     TriggerCharacter = 2
     TriggerForIncompleteCompletions = 3
 
 
 class Completion(Handler):
+    """Turn `textDocument/completion` replies into acm completion candidates.
+
+    An instance remembers the server, position, typed prefix and buffer version
+    of the request, because the reply is used to filter and sort candidates and
+    is discarded when the buffer has moved on.
+    """
+
     name = "completion"
     method = "textDocument/completion"
     cancel_on_change = True
 
     def process_request(self, lsp_server, position, char, prefix, version) -> dict:
+        """Return completion params for POSITION after typing CHAR.
+
+        The chosen LSP_SERVER, the typed PREFIX and the buffer VERSION are
+        remembered on `self`; when CHAR is one of the server's trigger
+        characters the request is marked as character-triggered, otherwise as
+        invoked.
+        """
         self.method_server = lsp_server
         self.method_server_name = self.method_server.server_info["name"]
 
@@ -33,12 +49,22 @@ class Completion(Handler):
         return dict(position=position, context=context)
 
     def parse_sort_value(self, sort_text):
+        """Return SORT_TEXT as-is, ready to be compared lexicographically.
+
+        Servers such as Eclipse JDT.LS prefix it with a letter that encodes a
+        type priority, which the plain comparison below preserves.
+        """
         # Return sortText as-is per LSP spec (lexicographic comparison).
         # Some LSP servers (e.g. Eclipse JDT.LS) use letter-prefixed sortText
         # like "A0" for classes and "B0" for variables to encode type priority.
         return sort_text
 
     def compare_candidates(self, x, y):
+        """Order candidates X and Y for the completion menu.
+
+        Prefix matches come first, then the server's `score`, then `sortText`,
+        then the method name, and finally the shorter label.
+        """
         prefix = self.prefix.lower()
         x_label, y_label = (x["filterText"] or x["label"]).lower(), (y["filterText"] or y["label"]).lower()
         x_icon, y_icon = x["icon"], y["icon"]
@@ -70,6 +96,11 @@ class Completion(Handler):
         return -1 if len(x_label) < len(y_label) else (1 if len(x_label) > len(y_label) else 0)
 
     def get_display_new_text(self):
+        """Return True if any completion server wants `newText` displayed.
+
+        Servers opt in with a `displayNewText` flag in their server info, used
+        by Pin Yin style servers whose `newText` is the readable candidate.
+        """
         for server in self.file_action.get_match_lsp_servers("completion"):
             if server.server_info.get("displayNewText", False):
                 return True
@@ -77,6 +108,14 @@ class Completion(Handler):
         return False
 
     def get_display_label(self, item, display_new_text):
+        """Return the menu label for completion ITEM.
+
+        The label is combined with `detail`, shortened to
+        `display_label_max_length` with an ellipsis, and replaced by the
+        `textEdit` newText when DISPLAY_NEW_TEXT is set.  rust-analyzer
+        signatures containing `fn` or an ellipsis get their detail rewritten to
+        show the function prototype.
+        """
         label = item["label"]
         detail = item.get("detail", "")
 
@@ -122,27 +161,29 @@ class Completion(Handler):
         return display_label
 
     def fnv_1a(self, data):
-        '''
-        FNV-1a is a non-cryptographic hash function, faster than md5.
-        '''
+        """Return the FNV-1a hash of the bytes in DATA.
+
+        It is a non-cryptographic hash function, faster than md5, used to key
+        auto-import candidates by their insert text.
+        """
         h = 2166136261
         for byte in data:
             h = (h ^ byte) * 16777219
         return h
 
     def convert_snippet(self, snippet):
-        '''
-        Convert LSP snippet to YASnippet.
-        LSP snippet is ALMOST a valid yas snippet, but the server might returns
-            ${1:Placeholder} ... ${1:Placeholder}
-        which is not supported. Mirrors can't have placeholder themselves:
-            ${1:Placeholder} ... ${1}
+        """Return SNIPPET converted from LSP snippet syntax to YASnippet.
+
+        LSP snippets are almost valid YAS snippets, except that a repeated
+        placeholder carries its own default text (`${1:Placeholder}`), which
+        YAS mirrors cannot have; later occurrences are rewritten to `${1}`.
         https://joaotavora.github.io/yasnippet/snippet-development.html#org087775c
-        '''
+        """
         placeholder_regex = r'\$\{(\d+):([^}]+)\}'
         placeholders = {}
 
         def replace(match):
+           """Return MATCH unchanged once, then as a bare mirror."""
            index, name = match.groups()
            if name not in placeholders:
                placeholders[name] = index
@@ -153,6 +194,15 @@ class Completion(Handler):
         return re.sub(placeholder_regex, replace, snippet)
 
     def process_response(self, response: dict) -> None:
+        """Filter RESPONSE into acm candidates and record them for Emacs.
+
+        Items are dropped when their kind is blocked or the label does not
+        match the typed prefix; snippets are converted to YASnippet, auto
+        import edits become part of the candidate key, and the rest is sorted,
+        truncated to `completion_items_limit` and sent to
+        `lsp-bridge-completion--record-items` when `self.version` is still the
+        current buffer version.
+        """
         # Get completion items.
         completion_candidates = []
         items = {}

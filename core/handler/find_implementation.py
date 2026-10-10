@@ -7,15 +7,24 @@ REFERENCE_TEXT = '\033[94m'
 REFERENCE_ENDC = '\033[0m'
 
 class FindImplementation(Handler):
+    """Find and show the implementations of the symbol at the cursor.
+
+    A single location makes it jump like `find_define`; several locations are
+    grouped by file and rendered, with the matched text highlighted, into the
+    `lsp-bridge-references--popup` buffer.
+    """
+
     name = "find_implementation"
     method = "textDocument/implementation"
     cancel_on_change = True
 
     def process_request(self, position) -> dict:
+        """Return the params for POSITION and remember it as `self.pos`."""
         self.pos = position
         return dict(position=position)
 
     def process_response(self, response: dict) -> None:
+        """Jump to a lone location in RESPONSE or popup all of them."""
         if response is None:
             message_emacs("No implementation found")
         elif len(response) == 1:

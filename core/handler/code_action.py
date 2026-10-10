@@ -3,6 +3,12 @@ from core.utils import *
 
 
 class CodeAction(Handler):
+    """Collect the code actions a server offers for a range and its diagnostics.
+
+    The reply is pushed on the file action with the originating server name and
+    action kind so that several servers can each contribute actions.
+    """
+
     name = "code_action"
     method = "textDocument/codeAction"
     cancel_on_change = True
@@ -10,6 +16,12 @@ class CodeAction(Handler):
     provider_message = "Current server not support code action."
 
     def process_request(self, lsp_server_name, diagnostics, range_start, range_end, action_kind) -> dict:
+        """Return the params for the range, its DIAGNOSTICS and ACTION_KIND.
+
+        LSP_SERVER_NAME and ACTION_KIND are remembered on `self` so that
+        `process_response` can tag the actions with their origin; when
+        ACTION_KIND is a string it is also sent as the `only` filter.
+        """
         self.action_kind = action_kind
         self.lsp_server_name = lsp_server_name
 
@@ -31,6 +43,7 @@ class CodeAction(Handler):
         return dict(range=range, context=context)
 
     def process_response(self, response) -> None:
+        """Push the actions in RESPONSE on the file action for Emacs to pick."""
         remote_connection_info = get_remote_connection_info()
         if remote_connection_info != "":
             for item in response:

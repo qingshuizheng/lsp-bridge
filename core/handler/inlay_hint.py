@@ -3,6 +3,12 @@ from core.utils import *
 
 
 class InlayHint(Handler):
+    """Render the LSP inlay hints of a buffer range in Emacs.
+
+    Hints are keyed by their position, sorted top-to-bottom and then reversed
+    before `lsp-bridge-inlay-hint--render` inserts them into the buffer.
+    """
+
     name = "inlay_hint"
     method = "textDocument/inlayHint"
     cancel_on_change = True
@@ -10,6 +16,7 @@ class InlayHint(Handler):
     provider_message = "Current server not support inlay hint."
 
     def process_request(self, range_start, range_end) -> dict:
+        """Return the params for the RANGE_START..RANGE_END range."""
         range = {
             "start": range_start,
             "end": range_end
@@ -17,6 +24,7 @@ class InlayHint(Handler):
         return dict(range=range)
 
     def process_response(self, response: dict) -> None:
+        """Send the hints in RESPONSE, sorted and reversed, to Emacs."""
         if response is not None:
             inlay_hints = {}
 

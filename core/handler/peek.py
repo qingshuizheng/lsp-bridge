@@ -6,22 +6,43 @@ import linecache
 
 
 class PeekFindDefine(Handler):
+    """Resolve the definition at a position for the peek window.
+
+    It reuses `find_define_response`, but the jump handler is the peek callback
+    so the target is shown in the peek frame instead of being visited.
+    """
+
     name = "peek_find_definition"
     method = "textDocument/definition"
     cancel_on_change = True
 
     def process_request(self, position) -> dict:
+        """Return the params for POSITION and remember it as `self.pos`."""
         self.pos = position
         return dict(position=position)
 
     def process_response(self, response: Union[dict, list]) -> None:
+        """Show the definition in RESPONSE inside the peek frame."""
         find_define_response(self, response, "lsp-bridge-peek-define--return")
 
 class PeekFindReferences(Handler):
+    """Collect the references shown inside the peek frame.
+
+    The reply is de-duplicated and flattened to `line`, `column` and `path`
+    triples; the reference at the peeked definition itself (`self.define_pos`)
+    is skipped, and the result is passed to
+    `lsp-bridge-peek-references--return`.
+    """
+
     name = "peek_find_references"
     method = "textDocument/references"
 
     def process_request(self, position, define_position) -> dict:
+        """Return the params for POSITION, ignoring declaration occurrences.
+
+        POSITION is remembered as `self.pos` and DEFINE_POSITION as
+        `self.define_pos` so the latter can be filtered out of the reply.
+        """
         self.pos = position
         self.define_pos = define_position
 
@@ -31,6 +52,7 @@ class PeekFindReferences(Handler):
         )
 
     def process_response(self, response) -> None:
+        """Send the references in RESPONSE to the peek frame."""
         if response is None:
             eval_in_emacs("lsp-bridge-find-ref-fallback", self.pos)
         else:

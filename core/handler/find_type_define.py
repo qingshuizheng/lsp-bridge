@@ -3,14 +3,23 @@ from core.utils import *
 
 
 class FindTypeDefine(Handler):
+    """Jump to the type definition of the symbol at the cursor.
+
+    It only keeps the first location of the `textDocument/typeDefinition`
+    reply (which may be a `Location` or a Volar style `LocationLink`) and
+    jumps straight to it.
+    """
+
     name = "find_type_define"
     method = "textDocument/typeDefinition"
     cancel_on_change = True
 
     def process_request(self, position) -> dict:
+        """Return the params for POSITION."""
         return dict(position=position)
 
     def process_response(self, response: dict) -> None:
+        """Jump to the first location in RESPONSE, or report none found."""
         if not response:
             message_emacs("No type define found.")
             return

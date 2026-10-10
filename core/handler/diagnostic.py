@@ -3,8 +3,11 @@ from core.handler import Handler
 
 
 class Diagnostic(Handler):
-    """
-    Handler for textDocument/diagnostic request
+    """Pull the diagnostics of the current document from the server.
+
+    The reply's `items` are handed to the file action with the name of the
+    server that produced them, so diagnostics from several servers can be
+    merged.
     """
 
     name = "diagnostic"
@@ -13,6 +16,7 @@ class Diagnostic(Handler):
     provider_message = "LSP server doesn't support pull-based diagnostics"
 
     def process_request(self, identifier: Optional[str] = None, previous_result_id: Optional[str] = None) -> dict:
+        """Return params for IDENTIFIER, reusing PREVIOUS_RESULT_ID if given."""
         params = {}
         if identifier is not None:
             params["identifier"] = identifier
@@ -21,6 +25,7 @@ class Diagnostic(Handler):
         return params
 
     def process_response(self, response: dict) -> None:
+        """Record the `items` of RESPONSE for the answering server."""
         if not response or "items" not in response:
             return
 

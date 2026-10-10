@@ -1705,6 +1705,19 @@ def _try_solidity_fallback(obj, define_jump_handler):
 
 
 def find_define_response(obj, response, define_jump_handler) -> None:
+    """Jump OBJ to the definition described by RESPONSE.
+
+    DEFINE_JUMP_HANDLER is the Emacs function called with the target path,
+    host and position.  An empty reply first tries the Solidity recovery in
+    `_try_solidity_fallback` and otherwise calls
+    `lsp-bridge-find-def-fallback`; virtual URIs (`jdt://`,
+    `csharp:/metadata/`, `deno:`) are resolved by the matching URI resolver
+    handler before jumping, and a `file:///` placeholder is treated as "no
+    definition".
+
+    Raises:
+        NotImplementedError: If RESPONSE is a `jar://` URI (Clojure).
+    """
     if not response:
         # For Solidity: empty response is common for named imports — try recovery.
         if _try_solidity_fallback(obj, define_jump_handler):

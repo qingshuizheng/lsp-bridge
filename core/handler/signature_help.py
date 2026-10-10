@@ -3,6 +3,14 @@ from core.utils import *
 
 
 class SignatureHelp(Handler):
+    """Show the active signature and its parameters in Emacs.
+
+    Only the active signature is used.  Parameter labels are accepted either as
+    plain strings or, as ccls sends them, as `[start, end]` offsets into the
+    signature label; the resulting strings and the active parameter index go to
+    `lsp-bridge-signature-help--update`.
+    """
+
     name = "signature_help"
     method = "textDocument/signatureHelp"
     cancel_on_change = True
@@ -10,9 +18,11 @@ class SignatureHelp(Handler):
     provider_message = "Current server not support signature help."
 
     def process_request(self, position) -> dict:
+        """Return the params for POSITION."""
         return dict(position=position)
 
     def process_response(self, response: dict) -> None:
+        """Send the active signature of RESPONSE to Emacs as plain strings."""
         if response is not None:
             if len(response["signatures"]) > 0 and "parameters" in response["signatures"][0]:
                 parameters = response["signatures"][response.get("activeSignature", 0)]["parameters"]
