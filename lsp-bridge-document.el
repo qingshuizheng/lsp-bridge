@@ -12,8 +12,13 @@
 
 ;;; Code:
 
+;; The frame helpers this file calls - `acm-frame-new', `acm-frame-hide-frame' -
+;; and `acm-popup' are macros of the acm frontend, which requires nothing of
+;; lsp-bridge, so requiring it here cannot make a cycle.
+(require 'acm-frame)
+(eval-when-compile (require 'acm-frame))
+
 (defvar acm-frame--emacs-frame)
-(declare-function acm-frame-hide-frame "acm-frame")
 (declare-function acm-markdown-render-content "acm")
 (declare-function lsp-bridge--point-position "lsp-bridge")
 (declare-function lsp-bridge--position "lsp-bridge")
@@ -89,16 +94,13 @@ reused, filled with the markdown rendered VALUE and displayed."
       (goto-char (point-min)))
     (display-buffer buffer 'display-buffer-reuse-window)))
 
-(defvar lsp-bridge-popup-documentation-frame nil
-  "Popup frame used to show hover documentation near point.")
-
 (defun lsp-bridge-popup-documentation-scroll-up (&optional arg)
   "Scroll the hover documentation frame up by ARG lines.
 ARG is passed to `scroll-up-command'; the call is ignored when the
 documentation frame is not live."
   (interactive)
-  (when (frame-live-p lsp-bridge-popup-documentation-frame)
-    (with-selected-frame lsp-bridge-popup-documentation-frame
+  (when (frame-live-p (acm-popup hover-frame))
+    (with-selected-frame (acm-popup hover-frame)
       (apply #'scroll-up-command arg))))
 
 (defun lsp-bridge-popup-documentation-scroll-down (&optional arg)
@@ -106,8 +108,8 @@ documentation frame is not live."
 ARG is passed to `scroll-down-command'; the call is ignored when the
 documentation frame is not live."
   (interactive)
-  (when (frame-live-p lsp-bridge-popup-documentation-frame)
-    (with-selected-frame lsp-bridge-popup-documentation-frame
+  (when (frame-live-p (acm-popup hover-frame))
+    (with-selected-frame (acm-popup hover-frame)
       (apply #'scroll-down-command arg))))
 
 (defun lsp-bridge-popup-documentation--callback (value)
@@ -124,16 +126,15 @@ to the Emacs frame."
       (setq-local truncate-lines nil)
       (acm-markdown-render-content))
 
-    (acm-frame-new lsp-bridge-popup-documentation-frame
+    (acm-frame-new hover-frame
                    lsp-bridge-popup-documentation-buffer
                    "lsp bridge popup documentation frame"
                    (/ (frame-width emacs-frame) 2)
-                   (/ (frame-height emacs-frame) 2)
-                   )))
+                   (/ (frame-height emacs-frame) 2))))
 
 (defun lsp-bridge-hide-doc-tooltip ()
   "Hide the hover documentation popup frame."
-  (acm-frame-hide-frame lsp-bridge-popup-documentation-frame))
+  (acm-frame-hide-frame (acm-popup hover-frame)))
 
 (defcustom lsp-bridge-signature-show-function 'message
   "Function used to render the signature help.
@@ -155,12 +156,9 @@ Accepted values are `bottom-right' (the default), `top-left',
   :type 'string
   :group 'lsp-bridge)
 
-(defvar lsp-bridge-signature-frame nil
-  "Popup frame used to show the signature help.")
-
 (defun lsp-bridge-hide-signature-tooltip ()
   "Hide the signature help popup frame."
-  (acm-frame-hide-frame lsp-bridge-signature-frame))
+  (acm-frame-hide-frame (acm-popup signature-frame)))
 
 (defun lsp-bridge-signature-show-with-frame (str)
   "Use popup frame to show the STR signatureHelp string."
@@ -172,13 +170,12 @@ Accepted values are `bottom-right' (the default), `top-left',
           (visual-line-mode 1)
           (current-buffer))
 
-        (acm-frame-new lsp-bridge-signature-frame
+        (acm-frame-new signature-frame
                        lsp-bridge-signature-buffer
                        "lsp bridge signature frame"
                        nil
                        nil
-                       lsp-bridge-signature-show-with-frame-position
-                       ))
+                       lsp-bridge-signature-show-with-frame-position))
     (lsp-bridge-hide-signature-tooltip)))
 
 (defun lsp-bridge-signature-help--update (help-infos help-index)

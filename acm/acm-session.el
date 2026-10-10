@@ -48,7 +48,12 @@ Slots:
                that the same text is not rendered again.
   markdown-timer  Timer of a pending markdown render of the doc buffer.
   call-hierarchy-frame  The child frame showing the call hierarchy of the
-               symbol at point, which is per frame for the same reason."
+               symbol at point, which is per frame for the same reason.
+  hover-frame  The child frame showing the hover documentation of the symbol at
+               point, which lsp-bridge itself owns (unlike `doc-frame', which
+               belongs to the acm backend).
+  signature-frame  The child frame showing the signature help of the call at
+               point."
   (menu-frame nil)
   (doc-frame nil)
   (menu-buffer nil)
@@ -60,7 +65,9 @@ Slots:
   (doc-hide-p nil)
   (markdown-doc nil)
   (markdown-timer nil)
-  (call-hierarchy-frame nil))
+  (call-hierarchy-frame nil)
+  (hover-frame nil)
+  (signature-frame nil))
 
 (defvar acm-sessions (make-hash-table :test 'eq)
   "The popup sessions, keyed by the frame their popup belongs to.
@@ -89,17 +96,25 @@ FRAME defaults to `acm-session--frame'."
 
 (defun acm-session-drop (&optional frame)
   "Throw the popup session of FRAME away, frames and buffers included.
-FRAME defaults to the frame of the current buffer.  Nothing happens when FRAME
-has no session."
+Every child frame of the session is deleted - the menu, the documentation, the
+call hierarchy, the hover documentation and the signature help - and so are the
+menu and documentation buffers.  FRAME defaults to the frame of the current
+buffer.  Nothing happens when FRAME has no session."
   (let* ((frame (or frame (acm-session--frame)))
          (session (gethash frame acm-sessions)))
     (when session
       (dolist (child (list (acm-session-menu-frame session)
-                           (acm-session-doc-frame session)))
+                           (acm-session-doc-frame session)
+                           (acm-session-call-hierarchy-frame session)
+                           (acm-session-hover-frame session)
+                           (acm-session-signature-frame session)))
         (when (frame-live-p child)
           (delete-frame child)))
       (setf (acm-session-menu-frame session) nil
-            (acm-session-doc-frame session) nil)
+            (acm-session-doc-frame session) nil
+            (acm-session-call-hierarchy-frame session) nil
+            (acm-session-hover-frame session) nil
+            (acm-session-signature-frame session) nil)
       (dolist (buffer (list (acm-session-menu-buffer session)
                             (acm-session-doc-buffer session)))
         (when (buffer-live-p buffer)

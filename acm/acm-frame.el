@@ -219,6 +219,23 @@ to `acm-frame-make-frame'."
        (set-window-dedicated-p win t))
      ))
 
+(cl-defmacro acm-frame-new (frame-slot frame-buffer buffer-name &optional max-width max-height popup-pos)
+  "Create or reuse the popup of FRAME-SLOT and place it near point.
+FRAME-SLOT is a slot name of the session of the current frame (see
+`acm-session'), so the popup belongs to that frame and lives as long as it
+does.  FRAME-BUFFER is displayed inside the popup with one column of margin,
+BUFFER-NAME names the frame, MAX-WIDTH and MAX-HEIGHT bound its size and
+POPUP-POS is handed to `acm-frame-adjust-frame-pos' (see there)."
+  `(progn
+     (acm-frame-create-frame-if-not-exist ,frame-slot ,frame-buffer ,buffer-name 1 t)
+
+     (acm-frame-set-frame-max-size (acm-popup ,frame-slot) ,max-width ,max-height)
+
+     (let ((pos (acm-frame-get-popup-position (point) 1)))
+       (acm-frame-set-frame-position (acm-popup ,frame-slot) (car pos) (cdr pos)))
+
+     (acm-frame-adjust-frame-pos (acm-popup ,frame-slot) ,popup-pos)))
+
 (defun acm-frame-set-frame-max-size (frame &optional max-width max-height)
   "Fit FRAME to its buffer, bounded by MAX-WIDTH and MAX-HEIGHT.
 The minimum window size is temporarily set to 0 so that the frame really

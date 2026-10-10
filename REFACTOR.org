@@ -234,6 +234,20 @@ ruff check core lsp_bridge.py          # S2 起接入
    （无值的 defvar = 声明 ✓，docstring 门禁已能识别）；只对**包外**库用 =require=（=cl-lib=／=tramp=／=subr-x=）。
    对包内文件 =require=（例如 =(require 'lsp-bridge-epc)=）会把整个 =lsp-bridge.el= 提前加载，
    从而**改变后续文件的告警画像** ⇒ 一律声明，不 require 包内文件。
+**收口 2：lsp-bridge 自己的两个 frame 也归位到 session（修掉 =acm-frame-new= 悬空调用）**：
+=lsp-bridge-popup-documentation-frame=／=lsp-bridge-signature-frame= 是**全局变量**单一实例，
+与 =acm-session= 的设计冲突；而调用它们的 =(acm-frame-new ...)= 在早前一轮被当作死代码删除时，
+调用点还在 =lsp-bridge.el= 里（我当时只 grep 了 =acm/= 与 =test/= ✗，漏了根目录 ✗）⇒ 编译告警
+"the function 'acm-frame-new' is not known"，上游 4d48fea 同样如此。
+本轮：=acm-session= 新增 =hover-frame=／=signature-frame= 两个槽；=acm-frame.el= **恢复**
+=acm-frame-new=，但语义改为**槽位版**（创建 + 尺寸 + 定位 + =adjust-frame-pos=，
+不再有"父 frame 变了就删"的权宜逻辑——session 天然只属于一个父 frame）；
+=lsp-bridge-document.el= 的 7 处使用改为 =(acm-popup hover-frame)=／=(acm-popup signature-frame)=，
+并在顶部 =(require 'acm-frame)=（acm 前端不依赖 lsp-bridge，无循环）。
+=acm-session-drop= 现在回收**五个**子 frame（菜单/文档/调用层级/hover/签名），测试同步加强。
+验收：逐文件隔离编译 **197 vs 198**，差异恰好是那一条 =acm-frame-new= 告警的移除；
+=lsp-bridge-document.el= 从有告警变为 **0 告警**；session 测试 7/7；其余门禁全绿。
+
 **分包收口：共享宏搬进叶子文件 core（修掉一个上游潜伏 bug）**：
 =lsp-bridge--with-file-buffer=（以及 =lsp-bridge-save-position=）被 **11 个文件**使用，
 但它住在会被子模块 require 的 =lsp-bridge.el= 里 ⇒ 使用方只有两条路，都错：

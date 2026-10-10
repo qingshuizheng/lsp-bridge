@@ -72,12 +72,16 @@ owns a session."
         (key 'acm-session-test-drop-frame))
     (let ((session (acm-session key)))
       (setf (acm-session-menu-frame session) 'menu-child
-            (acm-session-doc-frame session) 'doc-child)
+            (acm-session-doc-frame session) 'doc-child
+            (acm-session-call-hierarchy-frame session) 'hierarchy-child
+            (acm-session-hover-frame session) 'hover-child
+            (acm-session-signature-frame session) 'signature-child)
       (cl-letf (((symbol-function 'frame-live-p) (lambda (_frame) t))
                 ((symbol-function 'delete-frame) (lambda (frame) (push frame deleted))))
         (acm-session-drop key))
       (should (equal (sort (mapcar #'symbol-name deleted) #'string<)
-                     '("doc-child" "menu-child")))
+                     '("doc-child" "hierarchy-child" "hover-child"
+                       "menu-child" "signature-child")))
       (should-not (buffer-live-p (acm-session-menu-buffer session)))
       (should-not (buffer-live-p (acm-session-doc-buffer session)))
       (should-not (gethash key acm-sessions)))

@@ -452,7 +452,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 
 每个后端还有自己的微调选项（ `acm-backend-<名字>-*`） ， 实现都在 `acm/acm-backend-<名字>.el`， 选项和上面的其它选项列在一起。
 
-popup 拥有的一切——菜单、 文档、 调用层级三个子 frame， 它们显示的 buffer， 菜单弹出的位置， 以及避免重复计算的缓存——都属于创建它的那个 frame， 存在一个 `acm-session` 里（ =acm/acm-session.el=， 以父 frame 为键的哈希表） 。 因此两个 Emacs frame 各有自己的 popup， 而 popup 只在其父 frame 被删除时才连同 frame 与 buffer 一起丢弃。 读用 `acm-popup`， 写用 `acm-popup-set`。
+popup 拥有的一切——菜单、 文档、 调用层级、 hover 文档、 签名帮助五个子 frame， 它们显示的 buffer， 菜单弹出的位置， 以及避免重复计算的缓存——都属于创建它的那个 frame， 存在一个 `acm-session` 里（ =acm/acm-session.el=， 以父 frame 为键的哈希表） 。 因此两个 Emacs frame 各有自己的 popup， 而 popup 只在其父 frame 被删除时才连同 frame 与 buffer 一起丢弃。 读用 `acm-popup`， 写用 `acm-popup-set`。
 
 一个后端就是 `acm/acm-backend.el` 里的一条注册： 它的取候选/展开/文档函数、 启用它的选项或谓词、 它贡献的候选组， 以及它具备的能力（ 是否支持预览、 是否有缓存要清、 候选是否要在语言服务器已给出同样标题时去掉） 。 增加一个后端就是往那里加数据——`acm-backend-register` 也允许第三方包自己注册——菜单代码不再需要知道它的名字。
 
