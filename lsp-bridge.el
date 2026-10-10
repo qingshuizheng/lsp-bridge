@@ -2097,7 +2097,7 @@ shown.")
   "If `lsp-bridge-complete-manually' is non-nil, hide completion menu."
   (or
    ;; Don't hide completion menu if it has show up.
-   (acm-frame-visible-p acm-menu-frame)
+   (acm-frame-visible-p (acm-popup menu-frame))
 
    ;; Show completion menu when `lsp-bridge-complete-manually' and `lsp-bridge-manual-complete-flag' are non-nil.
    ;; If `lsp-bridge-complete-manually' is nil, not check `lsp-bridge-manual-complete-flag'.
@@ -2453,7 +2453,7 @@ files reload their words from the remote server, local files send a
 
 (defun lsp-bridge-completion-ui-visible-p ()
   "Return non-nil if the acm completion menu frame is visible."
-  (acm-frame-visible-p acm-menu-frame))
+  (acm-frame-visible-p (acm-popup menu-frame)))
 
 (defun lsp-bridge-monitor-after-save ()
   "Notify the server that the current buffer was saved.
@@ -3015,9 +3015,8 @@ Each element is a hook list in the form accepted by `add-hook'.")
 
   (add-hook 'post-command-hook #'lsp-bridge-start-process)
 
-  ;; Don't enable lsp-bridge when current buffer is acm buffer.
-  (unless (or (equal (buffer-name (current-buffer)) acm-buffer)
-              (equal (buffer-name (current-buffer)) acm-doc-buffer))
+  ;; Don't enable lsp-bridge when the current buffer is a popup of the menu.
+  (unless (acm-session-popup-buffer-p)
     ;; Disable backup file.
     ;; Please use my another plugin `https://github.com/manateelazycat/auto-save' and use git for file version management.
     (when lsp-bridge-disable-backup

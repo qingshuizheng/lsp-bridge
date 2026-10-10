@@ -17,9 +17,6 @@
 (defvar lsp-bridge-call-hierarchy-preview-height 30
   "Height of the preview window; 0 disables the preview.")
 
-(defvar lsp-bridge-call-hierarchy--frame nil
-  "The child frame that shows the call hierarchy popup.")
-
 (defvar lsp-bridge-call-hierarchy--index 0
   "Index of the call selected in `lsp-bridge-call-hierarchy--popup-response'.")
 
@@ -67,11 +64,11 @@ width covers the icon and the name and path columns."
          (width (+ 6 ;; length of spaces and icon
                    lsp-bridge-call-hierarchy-name-width
                    lsp-bridge-call-hierarchy-path-width)))
-    (acm-frame-create-frame-if-not-exist lsp-bridge-call-hierarchy--frame buffer
-                                                "call hierarchy" 0 nil)
-    (acm-frame-set-frame-size lsp-bridge-call-hierarchy--frame width height)
-    (acm-frame-set-frame-colors lsp-bridge-call-hierarchy--frame)
-    (acm-frame-set-frame-pos-center lsp-bridge-call-hierarchy--frame)))
+    (acm-frame-create-frame-if-not-exist call-hierarchy-frame buffer
+                                         "call hierarchy" 0 nil)
+    (acm-frame-set-frame-size (acm-popup call-hierarchy-frame) width height)
+    (acm-frame-set-frame-colors (acm-popup call-hierarchy-frame))
+    (acm-frame-set-frame-pos-center (acm-popup call-hierarchy-frame))))
 
 (defun lsp-bridge-call-hierarchy-format-call-string (s l)
   "Return string S padded or truncated to width L."
@@ -201,7 +198,7 @@ for preview and forgets the saved origin and preview windows."
   (interactive)
   (let ((origin-window lsp-bridge-call-hierarchy--origin-window)
         (preview-window lsp-bridge-call-hierarchy--preview-window))
-    (acm-frame-delete-frame lsp-bridge-call-hierarchy--frame)
+    (acm-frame-delete-frame call-hierarchy-frame)
     (when (get-buffer "*lsp-bridge-call-hierarchy*")
       (kill-buffer "*lsp-bridge-call-hierarchy*"))
 

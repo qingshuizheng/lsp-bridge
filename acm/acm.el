@@ -91,6 +91,9 @@
 
 (require 'acm-icon)
 (require 'acm-frame)
+(require 'acm-session)
+;; `acm-popup' is a macro, so it has to be known while this file is compiled.
+(eval-when-compile (require 'acm-session))
 (require 'acm-backend)
 (require 'acm-quick-access)
 
@@ -267,24 +270,7 @@ returned."
   (dotimes (i 10)
     (define-key acm-mode-map (format "%d" i) #'acm-insert-number-or-complete-candiate)))
 
-(defvar acm-buffer " *acm-buffer*"
-  "Name of the hidden buffer that holds the rendered completion menu.")
-(defvar acm-menu-frame nil
-  "Popup frame displaying the completion menu, or nil when hidden.")
-(defvar acm-menu-frame-popup-point nil
-  "Buffer position the menu frame is anchored to in the current buffer.")
-(defvar acm-menu-frame-popup-position nil
-  "Cons of the x and y pixel position of the menu frame, or nil.")
 
-(defvar acm-menu-number-cache 0
-  "Number of candidates rendered by the last `acm-menu-render' call.
-Together with `acm-menu-max-length-cache' it tells `acm-menu-render'
-whether the menu frame has to be resized.")
-(defvar acm-menu-max-length-cache 0
-  "Width of the widest displayed candidate of the last menu render.
-The value is in pixels when `acm-string-width-function' is
-`string-pixel-width' and in columns otherwise; `acm-menu-render-items'
-uses it to right-align the annotation column.")
 
 (defvar-local acm-candidates nil
   "All candidates collected by `acm-update-candidates' in this buffer.")
@@ -305,14 +291,6 @@ also sets it per buffer from the prefix style of the backend.")
 (defvar-local acm-filter-string ""
   "Characters typed while the acm filter is on.")
 
-(defvar acm-doc-frame nil
-  "Popup frame displaying the documentation of the current candidate.")
-(defvar acm-doc-frame-hide-p nil
-  "Non-nil when the doc frame is meant to stay hidden.
-`acm-doc-try-show' clears it whenever it displays documentation; no
-other code in this file reads the flag.")
-(defvar acm-doc-buffer " *acm-doc-buffer*"
-  "Name of the hidden buffer that holds the rendered documentation.")
 
 (defvar acm-preview-overlay nil
   "Overlay drawing the preview of the selected candidate, or nil.")
@@ -341,17 +319,17 @@ Toggling it also (re)installs the overriding keys of
 (defun acm-hide ()
   "Hide the completion menu, the doc frame and the acm filter.
 Turn off `acm-mode', remove the buffer-local `pre-command-hook' that
-`acm-update' installed, clear `acm-menu-max-length-cache' and ask the
+`acm-update' installed, forget the cached menu size of the session and ask the
 backend of the current candidate to clean its cache."
   (interactive)
-  (let* ((completion-menu-is-show-p (acm-frame-visible-p acm-menu-frame))
+  (let* ((completion-menu-is-show-p (acm-frame-visible-p (acm-popup menu-frame)))
          (candidate-info (acm-menu-current-candidate))
          (backend (plist-get candidate-info :backend)))
     ;; Turn off `acm-mode'.
     (acm-mode -1)
 
     ;; Hide menu frame.
-    (acm-frame-hide-frame acm-menu-frame)
+    (acm-frame-hide-frame (acm-popup menu-frame))
 
     ;; Hide doc frame.
     (acm-doc-hide)
@@ -359,8 +337,8 @@ backend of the current candidate to clean its cache."
     ;; Turn off acm filter.
     (acm-filter-off t)
 
-    ;; Clean `acm-menu-max-length-cache'.
-    (setq acm-menu-max-length-cache 0)
+    ;; Forget the cached menu size of the session.
+    (acm-popup-set 'menu-max-length-cache 0)
 
     (when acm-preview-overlay
       (if (not (eq this-command 'acm-hide))
@@ -647,7 +625,7 @@ the menu or renders it.  Return nil."
            (not (member (plist-get (nth 0 candidates) :annotation) '("Emmet Abbreviation" "Snippet" "Yas-Snippet" "Tempel" "Vulpea"))))
       (acm-hide))
      ((> (length candidates) 0)
-      (let* ((menu-old-cache (cons acm-menu-max-length-cache acm-menu-number-cache)))
+      (let* ((menu-old-cache (cons (acm-popup menu-max-length-cache) (acm-popup menu-number-cache))))
         ;; Enable acm-mode to inject mode keys.
         (acm-mode 1)
 
@@ -689,22 +667,16 @@ the menu or renders it.  Return nil."
         (acm-frame-init-colors)
 
         ;; Record menu popup position and buffer.
-        (setq acm-menu-frame-popup-point (or (car bounds) (point)))
+        (acm-popup-set 'popup-point (or (car bounds) (point)))
 
         ;; `posn-at-point' will failed in CI, add checker make sure CI can pass.
         ;; CI don't need popup completion menu.
-        (when (posn-at-point acm-menu-frame-popup-point)
-          (setq acm-menu-frame-popup-position
-                (acm-frame-get-popup-position acm-menu-frame-popup-point))
-
-          ;; We need delete frame first when user switch to different frame.
-          (when (and (frame-live-p acm-menu-frame)
-                     (not (eq (frame-parent acm-menu-frame) (selected-frame))))
-            (acm-frame-delete-frame acm-menu-frame)
-            (acm-frame-delete-frame acm-doc-frame))
+        (when (posn-at-point (acm-popup popup-point))
+          (acm-popup-set 'popup-position
+                (acm-frame-get-popup-position (acm-popup popup-point)))
 
           ;; Create menu frame if it not exists.
-          (acm-frame-create-frame-if-not-exist acm-menu-frame acm-buffer "acm frame" 0 t)
+          (acm-frame-create-frame-if-not-exist menu-frame menu-buffer "acm frame" 0 t)
 
           ;; Render menu.
           (acm-menu-render menu-old-cache))
@@ -719,14 +691,19 @@ ARGS are ignored; the function is added as `:after' advice to
   ;; Reset colors.
   (acm-frame-init-colors t)
 
-  ;; Reset frame colors.
-  (when (frame-live-p acm-menu-frame)
-    (acm-frame-set-frame-colors acm-menu-frame)
-    (when (frame-visible-p acm-menu-frame)
-      (acm-menu-render
-       (cons acm-menu-max-length-cache acm-menu-number-cache))))
-  (when (frame-live-p acm-doc-frame)
-    (acm-frame-set-frame-colors acm-doc-frame)))
+  ;; Reset the colors of every frame's popup, not only of this one's.
+  (dolist (session (acm-session-all))
+    (let ((menu-frame (acm-session-menu-frame session))
+          (doc-frame (acm-session-doc-frame session)))
+      (when (frame-live-p menu-frame)
+        (acm-frame-set-frame-colors menu-frame)
+        (when (frame-visible-p menu-frame)
+          (with-current-buffer (acm-session-menu-buffer session)
+            (acm-menu-render
+             (cons (acm-session-menu-max-length-cache session)
+                   (acm-session-menu-number-cache session))))))
+      (when (frame-live-p doc-frame)
+        (acm-frame-set-frame-colors doc-frame)))))
 
 (if (daemonp)
     ;; The :background of 'default is unavailable until frame is created in
@@ -758,14 +735,13 @@ Thin wrapper around `acm-doc--hide'."
   (acm-doc--hide))
 
 (defun acm-doc--hide()
-  "Hide `acm-doc-frame' and clear the pending markdown render state.
-Cancel `acm-markdown-render-timer' and reset
-`acm-markdown-render-doc'."
-  (acm-frame-hide-frame acm-doc-frame)
+  "Hide the documentation frame and clear the pending markdown render state.
+Cancel the pending markdown render and forget the rendered text."
+  (acm-frame-hide-frame (acm-popup doc-frame))
 
-  (acm-cancel-timer acm-markdown-render-timer)
+  (acm-cancel-timer (acm-popup markdown-timer))
 
-  (setq acm-markdown-render-doc nil))
+  (acm-popup-set 'markdown-doc nil))
 
 (defun acm--pre-command ()
   "Hide the completion menu for commands outside `acm-continue-commands'.
@@ -782,7 +758,7 @@ label.  Delete `acm-preview-overlay' and, unless NOT-HIDE
 is non-nil, hide the menu and the doc frame."
   (interactive)
   (let* ((candidate-info (acm-menu-current-candidate))
-         (bound-start acm-menu-frame-popup-point))
+         (bound-start (acm-popup popup-point)))
     (if (acm-backend-expand-p candidate-info)
         (acm-backend-expand candidate-info bound-start)
       (delete-region bound-start (point))
@@ -815,7 +791,7 @@ candidate label from the popup point on.  The overlay is stored in
 `acm-preview-overlay' and the menu frame is moved when the preview
 made it taller."
   (let* ((candidate-info (acm-menu-current-candidate))
-         (beg acm-menu-frame-popup-point)
+         (beg (acm-popup popup-point))
          (cand (plist-get candidate-info :label))
          (end (+ beg (length cand))))
     (when acm-preview-overlay (delete-overlay acm-preview-overlay))
@@ -825,26 +801,26 @@ made it taller."
       (setq acm-preview-overlay (acm-preview-create-overlay beg (point) cand)))
     ;; adjust pos of menu frame.
     (when-let* ((popup-pos (acm-frame-get-popup-position
-                           acm-menu-frame-popup-point
+                           (acm-popup popup-point)
                            (1- (length (split-string (overlay-get acm-preview-overlay 'display) "\n")))))
-               ((not (eq (cdr popup-pos) (cdr acm-menu-frame-popup-position)))))
-      (setcdr acm-menu-frame-popup-position (cdr popup-pos))
+               ((not (eq (cdr popup-pos) (cdr (acm-popup popup-position))))))
+      (setcdr (acm-popup popup-position) (cdr popup-pos))
       (acm-menu-adjust-pos))))
 
 (defun acm-complete-or-expand-yas-snippet ()
   "Complete the candidate when the menu is visible, else expand a snippet.
 Bind this to <tab> in `yas-keymap'; it calls `acm-complete' while
-`acm-menu-frame' is visible, and `yas-next-field-or-maybe-expand'
+the menu frame is visible, and `yas-next-field-or-maybe-expand'
 otherwise."
   (interactive)
-  (if (acm-frame-visible-p acm-menu-frame)
+  (if (acm-frame-visible-p (acm-popup menu-frame))
       (acm-complete)
     (yas-next-field-or-maybe-expand)))
 
 (defun acm-insert-common ()
   "Insert common prefix of menu."
   (interactive)
-  (when (acm-frame-visible-p acm-menu-frame)
+  (when (acm-frame-visible-p (acm-popup menu-frame))
     (let* ((common-string "")
            (items (mapcar (lambda (v) (plist-get v :label)) acm-menu-candidates))
            (item-min-length (cl-reduce #'min (mapcar #'string-width items)))
@@ -919,8 +895,8 @@ removed.  Return nil."
                              'display
                              (acm-indent-pixel
                               (if (equal acm-string-width-function 'string-pixel-width)
-                                  (- (+ acm-menu-max-length-cache (* 20 (string-pixel-width " "))) item-length)
-                                (ceiling (* (frame-char-width) (- (+ acm-menu-max-length-cache 20) item-length)))))))
+                                  (- (+ (acm-popup menu-max-length-cache) (* 20 (string-pixel-width " "))) item-length)
+                                (ceiling (* (frame-char-width) (- (+ (acm-popup menu-max-length-cache) 20) item-length)))))))
                ;; Render annotation color.
                (propertize annotation-text 'face annotation-face)
                ;; Return char.
@@ -933,7 +909,7 @@ removed.  Return nil."
           ;; Hide doc frame if some backend not support fetch candidate documentation.
           (when (and
                  (not (acm-backend-doc-p v))
-                 (acm-frame-visible-p acm-doc-frame))
+                 (acm-frame-visible-p (acm-popup doc-frame)))
             (acm-doc-hide)))
 
         ;; Insert candidate line.
@@ -950,10 +926,10 @@ removed.  Return nil."
   "Adjust menu frame position."
   (let* ((emacs-width (frame-pixel-width))
          (emacs-height (frame-pixel-height))
-         (acm-frame-width (frame-pixel-width acm-menu-frame))
-         (acm-frame-height (frame-pixel-height acm-menu-frame))
-         (cursor-x (car acm-menu-frame-popup-position))
-         (cursor-y (cdr acm-menu-frame-popup-position))
+         (acm-frame-width (frame-pixel-width (acm-popup menu-frame)))
+         (acm-frame-height (frame-pixel-height (acm-popup menu-frame)))
+         (cursor-x (car (acm-popup popup-position)))
+         (cursor-y (cdr (acm-popup popup-position)))
          (offset-x (* (frame-char-width) acm-icon-width))
          (offset-y (line-pixel-height))
          (acm-frame-x (if (> (+ cursor-x acm-frame-width) emacs-width)
@@ -969,13 +945,13 @@ removed.  Return nil."
                        ;; Otherwise, popup down.
                        (t
                         (+ cursor-y offset-y)))))
-    (acm-frame-set-frame-position acm-menu-frame acm-frame-x acm-frame-y)))
+    (acm-frame-set-frame-position (acm-popup menu-frame) acm-frame-x acm-frame-y)))
 
 (defun acm-doc-try-show (&optional update-completion-item)
   "Show the documentation of the current candidate in the doc frame.
 Ask the backend for the documentation of the current candidate and,
 when it is non-empty and `acm-enable-doc' is non-nil, insert it in
-`acm-doc-buffer', maybe render it as markdown according to
+the documentation buffer, maybe render it as markdown according to
 `acm-enable-doc-markdown-render' and adjust the doc frame.  A
 non-nil UPDATE-COMPLETION-ITEM hides the doc frame when the backend
 is \"lsp\"; other backends always hide it here.  The backend is asked
@@ -994,22 +970,22 @@ by auto import."
                          candidate-doc
                        (format "%S" candidate-doc))))
             ;; Create doc frame if it not exist.
-            (acm-frame-create-frame-if-not-exist acm-doc-frame acm-doc-buffer "acm doc frame" 1 t)
-            (setq acm-doc-frame-hide-p nil)
+            (acm-frame-create-frame-if-not-exist doc-frame doc-buffer "acm doc frame" 1 t)
+            (acm-popup-set 'doc-hide-p nil)
 
             ;; Insert documentation and turn on wrap line.
-            (with-current-buffer (get-buffer-create acm-doc-buffer)
+            (with-current-buffer (get-buffer-create (acm-popup doc-buffer))
               (read-only-mode -1)
-              (when (not (string-equal doc acm-markdown-render-doc))
+              (when (not (string-equal doc (acm-popup markdown-doc)))
                 (erase-buffer)
                 (insert doc))
               (visual-line-mode 1))
 
             ;; Only render markdown styling when idle 200ms, because markdown render is expensive.
             (when (member backend '("lsp" "copilot"))
-              (acm-cancel-timer acm-markdown-render-timer)
+              (acm-cancel-timer (acm-popup markdown-timer))
               (cl-case acm-enable-doc-markdown-render
-                (async (setq acm-markdown-render-timer
+                (async (acm-popup-set 'markdown-timer
                              (run-with-idle-timer 0.2 nil
                                                   (lambda ()
                                                     (acm-doc-markdown-render-content doc)))))
@@ -1027,14 +1003,14 @@ by auto import."
 
 (defun acm-doc-frame-adjust-display-boundary ()
   "Adjust doc frame position when using display boundary."
-  (let* ((acm-frame-width (frame-pixel-width acm-menu-frame))
-         (acm-frame-height (frame-pixel-height acm-menu-frame))
+  (let* ((acm-frame-width (frame-pixel-width (acm-popup menu-frame)))
+         (acm-frame-height (frame-pixel-height (acm-popup menu-frame)))
          ;; Get menu frame position relative to its parent
-         (acm-frame-pos (frame-position acm-menu-frame))
+         (acm-frame-pos (frame-position (acm-popup menu-frame)))
          (acm-frame-x (car acm-frame-pos))
          (acm-frame-y (cdr acm-frame-pos))
          ;; Get parent frame absolute position
-         (parent-frame (frame-parameter acm-menu-frame 'parent-frame))
+         (parent-frame (frame-parameter (acm-popup menu-frame) 'parent-frame))
          (parent-abs-pos (and parent-frame (cdr (assq 'outer-position (frame-geometry parent-frame)))))
          (parent-abs-x (if parent-abs-pos (car parent-abs-pos) 0))
          (parent-abs-y (if parent-abs-pos (cdr parent-abs-pos) 0))
@@ -1054,13 +1030,13 @@ by auto import."
                (frame-pixel-height))))
 
     ;; Convert pixel-size into char-size
-    (acm-frame-set-frame-max-size acm-doc-frame
+    (acm-frame-set-frame-max-size (acm-popup doc-frame)
                                   (ceiling (/ acm-doc-frame-max-width (frame-char-width)))
                                   (min (ceiling (/ acm-doc-frame-max-height (window-default-line-height)))
                                        acm-doc-frame-max-lines))
     ;; Adjust doc frame with it's size.
-    (let* ((acm-doc-frame-width (frame-pixel-width acm-doc-frame))
-           (acm-doc-frame-height (frame-pixel-height acm-doc-frame))
+    (let* ((acm-doc-frame-width (frame-pixel-width (acm-popup doc-frame)))
+           (acm-doc-frame-height (frame-pixel-height (acm-popup doc-frame)))
            ;; Calculate doc frame position (relative coordinates)
            (acm-doc-frame-x (if (> (+ menu-abs-x acm-frame-width acm-doc-frame-max-width) (display-pixel-width))
                                 (- acm-frame-x acm-doc-frame-width)
@@ -1072,13 +1048,13 @@ by auto import."
                                   (- (display-pixel-height) acm-doc-frame-height parent-abs-y))
                               acm-frame-y)))
 
-      (acm-frame-set-frame-position acm-doc-frame acm-doc-frame-x acm-doc-frame-y))))
+      (acm-frame-set-frame-position (acm-popup doc-frame) acm-doc-frame-x acm-doc-frame-y))))
 
 (defun acm-doc-frame-adjust-parent-boundary ()
   "Adjust doc frame position when using parent frame boundary."
-  (let* ((acm-frame-width (frame-pixel-width acm-menu-frame))
-         (acm-frame-height (frame-pixel-height acm-menu-frame))
-         (acm-frame-pos (frame-position acm-menu-frame))
+  (let* ((acm-frame-width (frame-pixel-width (acm-popup menu-frame)))
+         (acm-frame-height (frame-pixel-height (acm-popup menu-frame)))
+         (acm-frame-pos (frame-position (acm-popup menu-frame)))
          (acm-frame-x (car acm-frame-pos))
          (acm-frame-y (cdr acm-frame-pos))
          (acm-frame-left-distance acm-frame-x)
@@ -1093,13 +1069,13 @@ by auto import."
                (frame-pixel-height))))
 
     ;; Convert pixel-size into char-size
-    (acm-frame-set-frame-max-size acm-doc-frame
+    (acm-frame-set-frame-max-size (acm-popup doc-frame)
                                   (ceiling (/ acm-doc-frame-max-width (frame-char-width)))
                                   (min (ceiling (/ acm-doc-frame-max-height (window-default-line-height)))
                                        acm-doc-frame-max-lines))
     ;; Adjust doc frame with it's size.
-    (let* ((acm-doc-frame-width (frame-pixel-width acm-doc-frame))
-           (acm-doc-frame-height (frame-pixel-height acm-doc-frame))
+    (let* ((acm-doc-frame-width (frame-pixel-width (acm-popup doc-frame)))
+           (acm-doc-frame-height (frame-pixel-height (acm-popup doc-frame)))
            (acm-doc-frame-x (if (> (+ acm-frame-x acm-frame-width acm-doc-frame-max-width) (frame-pixel-width))
                                 (- acm-frame-x acm-doc-frame-width)
                               (+ acm-frame-x acm-frame-width)))
@@ -1108,7 +1084,7 @@ by auto import."
                                     (max 0 (- acm-frame-y acm-doc-frame-height))
                                   (- (frame-pixel-height) acm-doc-frame-height))
                               acm-frame-y)))
-      (acm-frame-set-frame-position acm-doc-frame acm-doc-frame-x acm-doc-frame-y))))
+      (acm-frame-set-frame-position (acm-popup doc-frame) acm-doc-frame-x acm-doc-frame-y))))
 
 (defun acm-doc-frame-adjust ()
   "Adjust doc frame position based on boundary configuration."
@@ -1121,10 +1097,10 @@ by auto import."
   (nth (+ acm-menu-offset acm-menu-index) acm-candidates))
 
 (defun acm-menu-render (menu-old-cache)
-  "Render the menu in `acm-buffer' and resize and place its frame.
+  "Render the menu in the session menu buffer and resize and place its frame.
 MENU-OLD-CACHE is a cons of the max candidate length and the
 candidate number of the previous render, as held by
-`acm-menu-max-length-cache' and `acm-menu-number-cache'; the frame is
+the cached menu size and candidate number; the frame is
 only resized when they differ from the new values.  The cache
 variables are updated here, and `acm-doc-try-show' is called at the
 end."
@@ -1135,11 +1111,11 @@ end."
          (menu-new-number (length items))
          (menu-index acm-menu-index))
     ;; Record newest cache.
-    (setq acm-menu-max-length-cache menu-new-max-length)
-    (setq acm-menu-number-cache menu-new-number)
+    (acm-popup-set 'menu-max-length-cache menu-new-max-length)
+    (acm-popup-set 'menu-number-cache menu-new-number)
 
     ;; Insert menu candidates.
-    (with-current-buffer (get-buffer-create acm-buffer)
+    (with-current-buffer (get-buffer-create (acm-popup menu-buffer))
       (erase-buffer)
       (acm-menu-render-items items menu-index))
 
@@ -1148,10 +1124,10 @@ end."
     ;; or menu width not change when switch to next page.
     (when (or (not (equal menu-old-max-length menu-new-max-length))
               (not (equal menu-old-number menu-new-number)))
-      (acm-frame-set-frame-max-size acm-menu-frame)
+      (acm-frame-set-frame-max-size (acm-popup menu-frame))
 
       ;; Adjust doc frame with menu frame position.
-      (when (acm-frame-visible-p acm-doc-frame)
+      (when (acm-frame-visible-p (acm-popup doc-frame))
         (acm-doc-frame-adjust)))
 
     ;; Adjust menu frame position.
@@ -1188,7 +1164,7 @@ only when one of them changed, and `acm-preview-current' is called
 when `acm-enable-preview' is non-nil."
   `(let* ((menu-old-index acm-menu-index)
           (menu-old-offset acm-menu-offset)
-          (menu-old-cache (cons acm-menu-max-length-cache acm-menu-number-cache)))
+          (menu-old-cache (cons (acm-popup menu-max-length-cache) (acm-popup menu-number-cache))))
      ,@body
 
      (cond ((< acm-menu-index 0)
@@ -1289,35 +1265,27 @@ map binds `completion-at-point'."
 (defun acm-doc-scroll-up ()
   "Scroll the doc frame buffer up by one screen."
   (interactive)
-  (with-current-buffer acm-doc-buffer
-    (when (framep acm-menu-frame)
-      (with-selected-frame acm-doc-frame
+  (with-current-buffer (acm-popup doc-buffer)
+    (when (framep (acm-popup menu-frame))
+      (with-selected-frame (acm-popup doc-frame)
         (scroll-up-command)))))
 
 (defun acm-doc-scroll-down ()
   "Scroll the doc frame buffer down by one screen."
   (interactive)
-  (with-current-buffer acm-doc-buffer
-    (when (framep acm-menu-frame)
-      (with-selected-frame acm-doc-frame
+  (with-current-buffer (acm-popup doc-buffer)
+    (when (framep (acm-popup menu-frame))
+      (with-selected-frame (acm-popup doc-frame)
         (scroll-down-command)))))
 
 (defun acm-doc-toggle ()
   "Toggle documentation preview for selected candidate."
   (interactive)
-  (if (acm-frame-visible-p acm-doc-frame)
+  (if (acm-frame-visible-p (acm-popup doc-frame))
       (acm-doc-hide)
     (let ((acm-enable-doc t))
       (acm-doc-try-show))))
 
-(defvar acm-markdown-render-timer nil
-  "Idle timer that renders the markdown styling of the doc buffer.
-Armed by `acm-doc-try-show' when
-`acm-enable-doc-markdown-render' is `async', and cancelled by
-`acm-doc--hide' and on every new documentation.")
-(defvar acm-markdown-render-doc nil
-  "Documentation string already rendered in `acm-doc-buffer'.
-Used to skip re-inserting and re-rendering unchanged documentation.")
 
 (defvar acm-markdown-render-prettify-symbols-alist
   (nconc
@@ -1353,7 +1321,7 @@ off line numbers and the mode line.  Return nil."
       (gfm-view-mode)
 
       ;; Then remapping background and height of `markdown-code-face' to same as acm doc buffer.
-      (face-remap-add-relative 'markdown-code-face :background (face-attribute 'default :background acm-menu-frame))
+      (face-remap-add-relative 'markdown-code-face :background (face-attribute 'default :background (acm-popup menu-frame)))
       ))
 
   (read-only-mode 0)
@@ -1373,18 +1341,18 @@ off line numbers and the mode line.  Return nil."
     (setq-local mode-line-format nil)))
 
 (defun acm-doc-markdown-render-content (doc)
-  "Render the markdown styling of DOC in `acm-doc-buffer'.
+  "Render the markdown styling of DOC in the session documentation buffer.
 Do nothing when the doc frame is not visible or when DOC is already
-the rendered `acm-markdown-render-doc'.  Otherwise render it and,
+the rendered markdown text.  Otherwise render it and,
 when `acm-enable-doc-markdown-render' is `async', adjust the doc
 frame again because `gfm-view-mode' changes the content."
-  (when (and (acm-frame-visible-p acm-doc-frame)
-             (not (string-equal doc acm-markdown-render-doc)))
-    (with-current-buffer (get-buffer-create acm-doc-buffer)
+  (when (and (acm-frame-visible-p (acm-popup doc-frame))
+             (not (string-equal doc (acm-popup markdown-doc))))
+    (with-current-buffer (get-buffer-create (acm-popup doc-buffer))
       (read-only-mode -1)
       (acm-markdown-render-content))
 
-    (setq acm-markdown-render-doc doc)
+    (acm-popup-set 'markdown-doc doc)
 
     ;; We need `acm-doc-frame-adjust' again if `acm-enable-doc-markdown-render' is `async'.
     ;; otherwise, `gfm-view-mode' will remove ``` line.

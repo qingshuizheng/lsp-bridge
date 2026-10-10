@@ -18,6 +18,11 @@
 ;;
 ;;; Code:
 
+(require 'cl-lib)
+(require 'acm-session)
+;; `acm-popup' is a macro, so it has to be known while this file is compiled.
+(eval-when-compile (require 'acm-session))
+
 (defface acm-frame-default-face
   '()
   "Default face, foreground and background colors used for the popup.")
@@ -162,10 +167,10 @@ created invisible; callers show it with `acm-frame-set-frame-position'."
 Emacs 30 shrinks the font of a child frame after the machine resumes
 from suspend; this runs from `after-focus-change-function' to undo it."
   (ignore-errors
-    (with-selected-frame acm-menu-frame
+    (with-selected-frame (acm-popup menu-frame)
       (set-frame-font acm-frame-font))
 
-    (with-selected-frame acm-doc-frame
+    (with-selected-frame (acm-popup doc-frame)
       (set-frame-font acm-frame-font))))
 
 (if (daemonp)
@@ -175,34 +180,15 @@ from suspend; this runs from `after-focus-change-function' to undo it."
                 ))
   (add-function :after after-focus-change-function #'acm-frame-restore-font))
 
-(cl-defmacro acm-frame-new (frame frame-buffer buffer-name &optional max-width max-height popup-pos)
-  "Create or reuse the popup FRAME and place it near point.
-FRAME is the variable holding the child frame and is set to a new frame
-when it is not live; a frame whose parent is no longer the selected
-frame is deleted first.  FRAME-BUFFER is displayed inside the popup,
-BUFFER-NAME names the frame, MAX-WIDTH and MAX-HEIGHT bound its size and
-POPUP-POS is handed to `acm-frame-adjust-frame-pos' (see there)."
-  `(progn
-     (when (and (frame-live-p ,frame)
-                (not (eq (frame-parent ,frame) (selected-frame))))
-       (acm-frame-delete-frame ,frame))
-
-     (acm-frame-create-frame-if-not-exist ,frame ,frame-buffer ,buffer-name 1 t)
-
-     (acm-frame-set-frame-max-size ,frame ,max-width ,max-height)
-
-     (let ((pos (acm-frame-get-popup-position (point) 1)))
-       (acm-frame-set-frame-position ,frame (car pos) (cdr pos)))
-
-     (acm-frame-adjust-frame-pos ,frame ,popup-pos)))
-
-(cl-defmacro acm-frame-create-frame-if-not-exist (frame frame-buffer frame-name margin no-accept-focus)
-  "Create the child frame FRAME unless it is already live.
-FRAME-NAME names the frame, FRAME-BUFFER is shown inside it with MARGIN
-columns of left and right margin, and NO-ACCEPT-FOCUS is forwarded to
-`acm-frame-make-frame'."
-  `(unless (frame-live-p ,frame)
-     (setq ,frame (acm-frame-make-frame ,frame-name ,no-accept-focus))
+(cl-defmacro acm-frame-create-frame-if-not-exist (frame-slot frame-buffer frame-name margin no-accept-focus)
+  "Create the popup of FRAME-SLOT in FRAME-BUFFER unless it is already live.
+FRAME-SLOT is a slot name of the session of the current frame (see
+`acm-session'), so the popup belongs to that frame; FRAME-BUFFER is the buffer
+to display in it, evaluated once.  FRAME-NAME names the frame, MARGIN is the
+number of columns of left and right margin, and NO-ACCEPT-FOCUS is forwarded
+to `acm-frame-make-frame'."
+  `(unless (frame-live-p (acm-popup ,frame-slot))
+     (acm-popup-set ',frame-slot (acm-frame-make-frame ,frame-name ,no-accept-focus))
 
      (with-current-buffer (get-buffer-create ,frame-buffer)
        ;; Install mouse ignore map
@@ -227,7 +213,7 @@ columns of left and right margin, and NO-ACCEPT-FOCUS is forwarded to
          (set (make-local-variable (car var)) (cdr var))))
 
      ;; Set frame window and buffer.
-     (let ((win (frame-root-window ,frame)))
+     (let ((win (frame-root-window (acm-popup ,frame-slot))))
        (set-window-buffer win ,frame-buffer)
        ;; Mark window as dedicated to prevent frame reuse.
        (set-window-dedicated-p win t))
@@ -303,16 +289,17 @@ modes, and for the tab-line and header-line height."
     (cons (+ x window-left)
           (+ y window-top offset-y))))
 
-(cl-defmacro acm-frame-delete-frame (frame)
-  "Delete the child frame FRAME and set its variable to nil.
-When the popup was allowed to accept focus, the input focus goes back to
-the parent frame first."
-  `(when (frame-live-p ,frame)
-     (if (and (not (frame-parameter ,frame 'no-accept-focus))
+(cl-defmacro acm-frame-delete-frame (frame-slot)
+  "Delete the child frame held in FRAME-SLOT of the current session.
+FRAME-SLOT is a slot name of the session (see `acm-session').  When the popup
+was allowed to accept focus, the input focus goes back to the parent frame
+first, and the slot is set to nil afterwards."
+  `(when (frame-live-p (acm-popup ,frame-slot))
+     (if (and (not (frame-parameter (acm-popup ,frame-slot) 'no-accept-focus))
               (frame-live-p acm-frame--emacs-frame))
          (select-frame-set-input-focus acm-frame--emacs-frame))
-     (delete-frame ,frame)
-     (setq ,frame nil)))
+     (delete-frame (acm-popup ,frame-slot))
+     (acm-popup-set ',frame-slot nil)))
 
 (defun acm-frame-get-theme-mode ()
   "Get theme mode, dark or light."
