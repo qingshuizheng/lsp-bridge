@@ -166,8 +166,7 @@ predicate refuses, the menu is hidden instead."
                  ;; We need reset `lsp-bridge-manual-complete-flag' if completion menu popup by `lsp-bridge-popup-complete-menu'.
                  (when lsp-bridge-complete-manually
                    (setq-local lsp-bridge-manual-complete-flag nil)))
-             (acm-hide)
-             )))))
+             (acm-hide))))))
 
 (defun lsp-bridge-record-last-change-position ()
   "Record the current buffer, modification tick and cursor position.
@@ -257,8 +256,7 @@ regexp that opens an interpolation."
   "Hide completion if last command is `acm-complete'."
   (or
    (not (member (lsp-bridge-command-name last-command) '("acm-complete" "acm-complete-quick-access")))
-   (member (lsp-bridge-command-name) '("self-insert-command" "org-self-insert-command"))
-   ))
+   (member (lsp-bridge-command-name) '("self-insert-command" "org-self-insert-command"))))
 
 (defun lsp-bridge--not-only-blank-before-cursor ()
   "Hide completion if only blank before cursor, except in a note bracket."
@@ -328,8 +326,7 @@ shown.")
    ;; Show completion menu when `lsp-bridge-complete-manually' and `lsp-bridge-manual-complete-flag' are non-nil.
    ;; If `lsp-bridge-complete-manually' is nil, not check `lsp-bridge-manual-complete-flag'.
    (not lsp-bridge-complete-manually)
-   lsp-bridge-manual-complete-flag
-   ))
+   lsp-bridge-manual-complete-flag))
 
 (defun lsp-bridge--not-in-org-table ()
   "Return non-nil if point is not inside an org table."
@@ -416,8 +413,7 @@ it."
             (when (file-exists-p dirname)
               (lsp-bridge-call-async "search_paths_search"
                                      dirname
-                                     (file-name-base filename)
-                                     ))))
+                                     (file-name-base filename)))))
       ;; We need cleanup `acm-backend-path-items' when cursor not in string.
       ;; Otherwise, other completion backend won't show up.
       (setq-local acm-backend-path-items nil))))
@@ -457,8 +453,7 @@ updated and the documentation frame is shown or hidden accordingly."
               ;; Show doc frame if `documentation' exist and not empty.
               (acm-doc-try-show t)
             ;; Hide doc frame immediately.
-            (acm-doc-hide))
-          ))))
+            (acm-doc-hide))))))
 
 (defun lsp-bridge--not-acm-doc-markdown-buffer ()
   "Return non-nil when the current buffer is not an acm doc temp buffer.
@@ -476,8 +471,7 @@ documentation are excluded from the change monitors."
   "Check if the file extension matches .zsh, .zshenv, or .zshrc."
   (not (ignore-errors
          (or (string-equal (file-name-extension (buffer-file-name)) "zsh")
-             (member (buffer-name) '(".zshenv" ".zshrc"))
-             ))))
+             (member (buffer-name) '(".zshenv" ".zshrc"))))))
 
 (defun lsp-bridge-copilot-complete ()
   "Ask the copilot backend to complete at point.

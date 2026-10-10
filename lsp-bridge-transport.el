@@ -76,8 +76,7 @@
                (lsp-bridge-epc-define-method mngr 'get-user-tsdk-path 'lsp-bridge--user-tsdk-path-func)
                (lsp-bridge-epc-define-method mngr 'get-buffer-content 'lsp-bridge--get-buffer-content-func)
                (lsp-bridge-epc-define-method mngr 'get-current-line 'lsp-bridge--get-current-line-func)
-               (lsp-bridge-epc-define-method mngr 'get-ssh-password 'lsp-bridge--get-ssh-password-func)
-               ))))
+               (lsp-bridge-epc-define-method mngr 'get-ssh-password 'lsp-bridge--get-ssh-password-func)))))
     (if lsp-bridge-server
         (setq lsp-bridge-server-port (process-contact lsp-bridge-server :service))
       (error "[LSP-Bridge] lsp-bridge-server failed to start")))
@@ -405,8 +404,7 @@ Holds a cons of the log buffer window and the window to select again.")
   (setq lsp-bridge-log-buffer-window
         (cl-dolist (buffer (buffer-list))
           (when (string-equal (buffer-name buffer) lsp-bridge-name)
-            (cl-return (cons (get-buffer-window buffer) (selected-window)))
-            )))
+            (cl-return (cons (get-buffer-window buffer) (selected-window))))))
 
   ;; Restart lsp-bridge process.
   (lsp-bridge-kill-process)
@@ -442,8 +440,7 @@ The data is written to ~/lsp-bridge.prof when
                              (list lsp-bridge-python-file)
                              (list (number-to-string lsp-bridge-server-port))
                              (when lsp-bridge-enable-profile
-                               (list "profile"))
-                             )))
+                               (list "profile")))))
 
       ;; Set process arguments.
       (if lsp-bridge-enable-debug
@@ -594,8 +591,7 @@ alone, so that a mismatched pair fails loudly instead of mysteriously."
                                 :commands (cons lsp-bridge-internal-process-prog lsp-bridge-internal-process-args)
                                 :title (mapconcat 'identity (cons lsp-bridge-internal-process-prog lsp-bridge-internal-process-args) " ")
                                 :port lsp-bridge-epc-port
-                                :connection (lsp-bridge-epc-connect "127.0.0.1" lsp-bridge-epc-port)
-                                ))
+                                :connection (lsp-bridge-epc-connect "127.0.0.1" lsp-bridge-epc-port)))
   (lsp-bridge-epc-init-epc-layer lsp-bridge-epc-process)
 
   (if (lsp-bridge--handshake)

@@ -153,8 +153,7 @@ Please read https://microsoft.github.io/language-server-protocol/specifications/
       (lsp-bridge-call-file-api "try_code_action"
                                 (lsp-bridge--point-position (car range))
                                 (lsp-bridge--point-position (cdr range))
-                                action-kind)
-      )))
+                                action-kind))))
 
 (defun lsp-bridge-code-action-popup-select ()
   "Apply the code action selected in the code action popup.

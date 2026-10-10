@@ -60,8 +60,7 @@ position of the org src block instead of the buffer position."
       (lsp-bridge-call-file-api "signature_help"
                                 (if (and lsp-bridge-enable-org-babel (eq major-mode 'org-mode))
                                     (lsp-bridge--position-in-org)
-                                  (lsp-bridge--position))
-                                ))))
+                                  (lsp-bridge--position))))))
 
 (defun lsp-bridge-switch-to-documentation-buffer (norecord)
   "Show the documentation buffer in another window.

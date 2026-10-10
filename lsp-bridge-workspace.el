@@ -134,8 +134,7 @@ message is shown when the server returned no symbol."
         (let* ((symbol-info (plist-get (car match-info) :location))
                (symbol-file (lsp-bridge-pick-file-path (format "%s" (plist-get symbol-info :uri))))
                (symbol-position (plist-get (plist-get symbol-info :range) :start)))
-          (lsp-bridge-jump-to-file symbol-file symbol-position)
-          )))))
+          (lsp-bridge-jump-to-file symbol-file symbol-position))))))
 
 (defun lsp-bridge-jump-to-file (file position)
   "Open FILE and move to POSITION.
@@ -220,8 +219,7 @@ server is told that the whole file changed."
      ;; Make LSP server update full content.
      (lsp-bridge-call-file-api "update_file" (buffer-name))
      ;; Notify format complete.
-     (message "[LSP-BRIDGE] Complete code formatting.")
-     )))
+     (message "[LSP-BRIDGE] Complete code formatting."))))
 
 (defun lsp-bridge-workspace-apply-edit (info &optional temp-buffer)
   "Apply the workspace edit described by INFO.

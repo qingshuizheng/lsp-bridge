@@ -83,8 +83,7 @@ are stored through `lsp-bridge-search-backend--record-items'."
                                                                               :backend "tabby"))
                                                                       candidates)))
                                (when candidates
-                                 (lsp-bridge-search-backend--record-items "tabby" candidates-with-metadata))
-                               ))))
+                                 (lsp-bridge-search-backend--record-items "tabby" candidates-with-metadata))))))
 
         (setq tabby--current-completion-request request)
         (setq tabby--ongoing-request-id

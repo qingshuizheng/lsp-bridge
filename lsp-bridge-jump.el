@@ -113,8 +113,7 @@ Like `lsp-bridge-find-def' but sets
     (goto-char position)
     (unless (equal buffer this-buffer)
       (switch-to-buffer buffer))
-    (recenter)
-    ))
+    (recenter)))
 
 (defun lsp-bridge-find-type-def ()
   "Jump to the type definition of the symbol at point.

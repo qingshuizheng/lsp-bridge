@@ -371,8 +371,7 @@ is already at the first diagnostic."
   (cl-dolist (overlay lsp-bridge-diagnostic-overlays)
     (when (and (>= (point) (overlay-start overlay))
                (< (point) (overlay-end overlay)))
-      (cl-return overlay)
-      )))
+      (cl-return overlay))))
 
 (defun lsp-bridge-diagnostic-copy ()
   "Copy the diagnostic message at point to the kill ring.

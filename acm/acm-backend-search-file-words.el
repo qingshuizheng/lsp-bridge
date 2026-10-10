@@ -159,8 +159,7 @@ the buffer unchanged."
        (point))
      (save-excursion
        (skip-syntax-forward acm-backend-search-file-words-bound-regex (line-end-position))
-       (point))
-     )))
+       (point)))))
 
 (defun acm-backend-search-file-words-clean ()
   "Clear the file word candidates and the candidate cache in this buffer."

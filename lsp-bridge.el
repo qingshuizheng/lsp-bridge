@@ -785,8 +785,7 @@ letting lsp-bridge pop the menu up while typing.")
     (perl-mode .                                           "perl-language-server")
     (futhark-mode .                                        "futhark-lsp")
     (conf-toml-mode .                                      "taplo")
-    (slint-mode .                                          "slint-lsp")
-    )
+    (slint-mode .                                          "slint-lsp"))
   "The lang server rule for file mode."
   :type 'cons)
 
@@ -1248,8 +1247,7 @@ A string is returned as is, a symbol is resolved with `symbol-value';
 this lets langserver rules hold either a name or a variable."
   (pcase (format "%s" (type-of info))
     ("string" info)
-    ("symbol" (symbol-value info))
-    ))
+    ("symbol" (symbol-value info))))
 
 (defun lsp-bridge-get-mode-name-from-file-path (file-path)
   "Return the major mode that `auto-mode-alist' picks for FILE-PATH."
@@ -1346,8 +1344,7 @@ the file name through the multi and single lang server rules."
                                            (lsp-bridge-get-single-lang-server-by-file-mode filename))))
              (if multi-lang-server-name
                  multi-lang-server-name
-               lang-server-by-name)
-             )))))
+               lang-server-by-name))))))
 
 (add-hook 'kill-emacs-hook #'lsp-bridge-kill-process)
 

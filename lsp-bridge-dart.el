@@ -140,8 +140,7 @@ under `lsp-bridge-dart-closing-labels-lock'."
                 (let* ((overlay (make-overlay (point) (1+ (point)) nil t)))
                   (overlay-put overlay 'before-string (propertize (concat " // " label) 'face 'lsp-bridge-dart-closing-label-face))
                   (overlay-put overlay 'evaporate t) ; NOTE, `evaporate' is import
-                  (push overlay lsp-bridge-dart-closing-label-overlays)
-                  ))))))))
+                  (push overlay lsp-bridge-dart-closing-label-overlays)))))))))
 
 (provide 'lsp-bridge-dart)
 

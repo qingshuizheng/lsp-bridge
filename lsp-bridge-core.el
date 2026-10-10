@@ -180,8 +180,7 @@ overlay accepts the typed characters."
              (setq last-command 'acm-filter-insert-char))
             ((member this-command-string '("delete-block-backward" "grammatical-edit-backward-delete"))
              (setq this-command 'acm-filter-delete-char)
-             (setq last-command 'acm-filter-delete-char))
-            ))))
+             (setq last-command 'acm-filter-delete-char))))))
 
 (defun lsp-bridge-monitor-post-command ()
   "React to the command that just ran.
@@ -319,8 +318,7 @@ the `lsp-bridge--before-change-*' buffer-local variables."
         (setq-local lsp-bridge--before-change-end-point end)
 
         (setq-local lsp-bridge--before-change-begin-pos (lsp-bridge--point-position begin))
-        (setq-local lsp-bridge--before-change-end-pos (lsp-bridge--point-position end))
-        ))))
+        (setq-local lsp-bridge--before-change-end-pos (lsp-bridge--point-position end))))))
 
 (defun lsp-bridge-monitor-post-self-insert ()
   "Record the position after a self insert finished.
@@ -417,8 +415,7 @@ backends and search words requests are triggered."
                 (lsp-bridge-search-words-update
                  lsp-bridge--before-change-begin-pos
                  lsp-bridge--before-change-end-pos
-                 change-text))
-              )))))))
+                 change-text)))))))))
 
 (defun lsp-bridge-elisp-get-filepath ()
   "Return the file path at point.
@@ -503,8 +500,7 @@ files reload their words from the remote server, local files send a
                              (substring-no-properties (buffer-name))
                              begin-pos
                              end-pos
-                             change-text
-                             ))))
+                             change-text))))
 
 (defun lsp-bridge-monitor-after-save ()
   "Notify the server that the current buffer was saved.
@@ -544,8 +540,7 @@ Runs in `minibuffer-setup-hook' when
 map provides a `completion-at-point' binding."
   (when (and lsp-bridge-enable-completion-in-minibuffer
              (where-is-internal #'completion-at-point (list (current-local-map))))
-    (lsp-bridge-mode 1)
-    ))
+    (lsp-bridge-mode 1)))
 
 (defconst lsp-bridge--internal-hooks
   '((before-change-functions lsp-bridge-monitor-before-change nil t)
@@ -555,8 +550,7 @@ map provides a `completion-at-point' binding."
     (after-save-hook lsp-bridge-monitor-after-save nil t)
     (kill-buffer-hook lsp-bridge-close-buffer-file nil t)
     (before-revert-hook lsp-bridge-close-buffer-file nil t)
-    (post-self-insert-hook lsp-bridge-monitor-post-self-insert 90 t)
-    )
+    (post-self-insert-hook lsp-bridge-monitor-post-self-insert 90 t))
   "Hooks added buffer-locally while lsp-bridge mode is enabled.
 Each element is a hook list in the form accepted by `add-hook'.")
 
@@ -667,8 +661,7 @@ capture and must not start lsp-bridge."
 Sets its buffer-local `acm-backend-lsp-server-command-exist' to nil
 so that no further file request is sent."
   (lsp-bridge--with-file-buffer filename filehost
-                                (setq-local acm-backend-lsp-server-command-exist nil)
-                                ))
+                                (setq-local acm-backend-lsp-server-command-exist nil)))
 
 
 (defun lsp-bridge--rename-file-advisor (orig-fun &optional arg &rest args)

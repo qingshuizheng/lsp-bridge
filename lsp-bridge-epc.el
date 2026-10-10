@@ -486,8 +486,7 @@ This variable is for debug purpose.")
     (when (and proc (equal 'run (process-status proc)))
       (kill-process proc))
     (when buf  (kill-buffer buf))
-    (setq lsp-bridge-epc-live-connections (delete mngr lsp-bridge-epc-live-connections))
-    ))
+    (setq lsp-bridge-epc-live-connections (delete mngr lsp-bridge-epc-live-connections))))
 
 (defun lsp-bridge-epc-args (args)
   "[internal] If ARGS is an atom, return it. If list, return the cadr of it."
@@ -740,8 +739,7 @@ This variable is used for the management purpose.")
           (lsp-bridge-epc-log "LSPBRIDGE-EPC-SERVER- DISCONNECT %S" process)
           (lsp-bridge-epc-stop-epc (cdr pair))
           (setq lsp-bridge-epc-server-client-processes
-                (assq-delete-all process lsp-bridge-epc-server-client-processes))
-          ))
+                (assq-delete-all process lsp-bridge-epc-server-client-processes))))
       nil))))
 
 (defun lsp-bridge-epc-server-start (connect-function &optional port)

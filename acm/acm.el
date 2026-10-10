@@ -708,8 +708,7 @@ the menu or renders it.  Return nil."
           (acm-frame-create-frame-if-not-exist menu-frame (acm-popup menu-buffer) "acm frame" 0 t)
 
           ;; Render menu.
-          (acm-menu-render menu-old-cache))
-        ))
+          (acm-menu-render menu-old-cache))))
      (t
       (acm-hide)))))
 
@@ -1424,8 +1423,7 @@ frame again because `gfm-view-mode' changes the content."
     ;; We need `acm-doc-frame-adjust' again if `acm-enable-doc-markdown-render' is `async'.
     ;; otherwise, `gfm-view-mode' will remove ``` line.
     (cl-case acm-enable-doc-markdown-render
-      (async (acm-doc-frame-adjust))
-      )))
+      (async (acm-doc-frame-adjust)))))
 
 (defun acm-in-comment-p (&optional state)
   "Return non-nil if point is inside a comment.

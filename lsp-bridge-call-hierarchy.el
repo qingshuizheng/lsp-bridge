@@ -153,8 +153,7 @@ the highlight overlay and updates the preview."
                     (line-beginning-position) (1+ (line-end-position)))
       (setq lsp-bridge-call-hierarchy--index
             (+ next lsp-bridge-call-hierarchy--index))
-      (lsp-bridge-call-hierarchy-maybe-preview)
-      ))
+      (lsp-bridge-call-hierarchy-maybe-preview)))
 
 (defun lsp-bridge-call-hierarchy-next ()
   "Select the next call in the call hierarchy buffer."

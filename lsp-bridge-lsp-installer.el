@@ -107,8 +107,7 @@ langserver/omnisharp-*.json configurations look for the server."
     (unless (file-directory-p install-des)
       (make-directory install-des t))
     (call-process-shell-command (format "%s -xf %s -C %s" "tar" down-des install-des))
-    (call-process-shell-command (format "chmod +x %s" (format "%sOmniSharp" install-des)))
-    ))
+    (call-process-shell-command (format "chmod +x %s" (format "%sOmniSharp" install-des)))))
 
 (defun lsp-bridge-copilot-login ()
   "Ask the Python side to log in to the Copilot language server."

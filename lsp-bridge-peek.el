@@ -731,8 +731,7 @@ when not peeking and sets `lsp-bridge-peek--content-update'."
 	     (pos-list (nth 2 selected-symbol))
 	     (file (nth selected-id path-list))
 	     (pos (nth selected-id pos-list)))
-    (lsp-bridge-jump-to-file file pos)
-    ))
+    (lsp-bridge-jump-to-file file pos)))
 
 (defun lsp-bridge-peek-jump-back ()
   "Jump to the file and position before jump."
@@ -740,8 +739,7 @@ when not peeking and sets `lsp-bridge-peek--content-update'."
   (when lsp-bridge-peek-file-and-pos-before-jump
     (lsp-bridge-jump-to-file
      (nth 0 lsp-bridge-peek-file-and-pos-before-jump)
-     (nth 1 lsp-bridge-peek-file-and-pos-before-jump)
-     )))
+     (nth 1 lsp-bridge-peek-file-and-pos-before-jump))))
 
 (defun lsp-bridge-peek--search-symbols (line)
   "Search for symbols from current position to LINEs after.

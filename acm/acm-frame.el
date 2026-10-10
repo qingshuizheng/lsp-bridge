@@ -134,8 +134,7 @@ created invisible; callers show it with `acm-frame-set-frame-position'."
                    (visibility . nil)
                    (no-special-glyphs . t)
                    (desktop-dont-save . t)
-                   (mode-line-format . nil)
-                   )))
+                   (mode-line-format . nil))))
 
     ;; Make sure popup frame's font same as parent frame.
     (with-selected-frame frame
@@ -176,8 +175,7 @@ from suspend; this runs from `after-focus-change-function' to undo it."
 (if (daemonp)
     (add-hook 'server-after-make-frame-hook
               (lambda ()
-                (add-function :after after-focus-change-function #'acm-frame-restore-font)
-                ))
+                (add-function :after after-focus-change-function #'acm-frame-restore-font)))
   (add-function :after after-focus-change-function #'acm-frame-restore-font))
 
 (cl-defmacro acm-frame-create-frame-if-not-exist (frame-slot frame-buffer frame-name margin no-accept-focus)
@@ -216,8 +214,7 @@ to `acm-frame-make-frame'."
      (let ((win (frame-root-window (acm-popup ,frame-slot))))
        (set-window-buffer win ,frame-buffer)
        ;; Mark window as dedicated to prevent frame reuse.
-       (set-window-dedicated-p win t))
-     ))
+       (set-window-dedicated-p win t))))
 
 (cl-defmacro acm-frame-new (frame-slot frame-buffer buffer-name &optional max-width max-height popup-pos)
   "Create or reuse the popup of FRAME-SLOT and place it near point.

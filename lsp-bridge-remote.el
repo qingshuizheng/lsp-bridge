@@ -69,8 +69,7 @@
       ;; ssh port
       (? ":" (+ digit))
       ;; path
-      (? ":") (? "~") (* nonl) eol
-      )
+      (? ":") (? "~") (* nonl) eol)
   "Regexp matching the `host:path' text of a remote file request.
 Used to detect that a minibuffer input names a remote file; the
 TODO notes that tramp docker patterns are not covered yet.")
@@ -275,8 +274,7 @@ remote file and lsp-bridge is enabled in it."
 Runs in `kill-buffer-hook' of remote buffers and sends a
 `close_remote_file' request with the host and path."
   (when lsp-bridge-remote-file-flag
-    (lsp-bridge-call-async "close_remote_file" lsp-bridge-remote-file-host lsp-bridge-remote-file-path)
-    ))
+    (lsp-bridge-call-async "close_remote_file" lsp-bridge-remote-file-host lsp-bridge-remote-file-path)))
 
 (defun lsp-bridge-decode-base64 (base64-string)
   "Return BASE64-STRING decoded as UTF-8 text."
