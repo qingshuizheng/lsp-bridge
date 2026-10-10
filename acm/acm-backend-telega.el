@@ -35,11 +35,7 @@ there, and turning corfu off turns it back on: the two completion frontends
 should not be active in the same buffer.  It is off by default, because corfu
 being on does not mean it completes anything in a chat."
   :type 'boolean
-  :group 'acm-backend-telega
-  :set (lambda (symbol value)
-         (set-default symbol value)
-         (when (fboundp 'acm-backend-telega--install-corfu-exclusive)
-           (acm-backend-telega--install-corfu-exclusive))))
+  :group 'acm-backend-telega)
 
 (defvar-local acm-backend-telega-items 'fetch
   "List of loaded items.
@@ -68,7 +64,9 @@ Number if async request has been made, but request is not yet completed.
   "Turn lsp-bridge off while corfu is on in a telega chat, and back on after.
 Only telega chat buffers are touched.  The `lsp-bridge-mode' guard is what
 makes this safe: `corfu-mode-hook' also runs when corfu is turned *off*, and
-without the guard the two hooks would keep switching each other off forever."
+without the guard the two hooks would keep switching each other off forever.
+The hook is installed whether or not `acm-backend-telega-corfu-exclusive' is
+set, so that setting the option later still takes effect."
   (when (derived-mode-p 'telega-chat-mode)
     (if corfu-mode
         (when (bound-and-true-p lsp-bridge-mode)
@@ -76,16 +74,10 @@ without the guard the two hooks would keep switching each other off forever."
       (unless (bound-and-true-p lsp-bridge-mode)
         (lsp-bridge-mode 1)))))
 
-(defun acm-backend-telega--install-corfu-exclusive ()
-  "Follow `acm-backend-telega-corfu-exclusive' in `corfu-mode-hook'."
-  (if acm-backend-telega-corfu-exclusive
-      (add-hook 'corfu-mode-hook #'acm-backend-telega--corfu-toggle)
-    (remove-hook 'corfu-mode-hook #'acm-backend-telega--corfu-toggle)))
-
-;; The option is normally set before this file is loaded (a config sets it and
-;; then the backend loads), which is the case the hook here covers; the `:set'
-;; of the option covers setting it later.
-(acm-backend-telega--install-corfu-exclusive)
+;; The option is checked inside the toggle rather than here, because a config
+;; normally sets it *after* this file is loaded - with the hook installed only
+;; when the option was already set, such a config would never get the behaviour.
+(add-hook 'corfu-mode-hook #'acm-backend-telega--corfu-toggle)
 
 ;;; The candidates of every source
 
