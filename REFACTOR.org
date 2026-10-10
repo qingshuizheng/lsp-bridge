@@ -257,6 +257,30 @@ ruff check core lsp_bridge.py          # S2 起接入
 断言 **EPC 对外方法集合与 HEAD 完全一致**（52 = 19 类内 + 33 继承）、 mixin 不重叠、
 模块级 helper 仍可从 =lsp_bridge= 导入；docstring 1591/1591 = 100%。
 
+**S7 后续 2：把 `this-command` 的卡死隐患修进包内**：上游有 8 处把命令对象
+字符串化（=lsp-bridge-core.el= 4 处、=lsp-bridge-completion.el= 3 处（含 =last-command=）、
+=lsp-bridge-diagnostic.el= 1 处）。=this-command=/=last-command= 有可能不是符号
+（meow 把 =key-binding= 的结果塞进去，键绑到 lambda 时就是闭包），而 =format "%s"= 会走
+=prin1= 打印闭包的整个环境 —— 大对象时在 C 层构造数 GB 字符串且不检查 quit，Emacs 会
+连 =\\[keyboard-quit]= 都不响应，只能 kill。用户原本用 5 个 advice 打补丁，
+但 =lsp-bridge-diagnostic-show-tooltip= 那处**不在覆盖范围内** ✗。
+
+做法：新增 =lsp-bridge-command-name (&optional command)=（放在 core 这个叶子里），
+符号 → =symbol-name=（对既有行为**完全不变**），非符号 → 类型名（不再 prin1）✓；
+9 处调用点全部替换 ✓。测试 =test/lsp-bridge-core-test.el=（4 例），其中决定性的一例是
+"带 20 万元素环境的闭包 → 结果 < 40 字符且不含 payload" ✓（未修复时该断言必然失败）。
+验收：残留 grep 为空 ✓；=check-elisp.sh= 退出码 0 且告警 **146 = 基线** ✓；
+ERT 66 例（+4）✓；checkdoc 0 ✓。
+**切换注意**：重构版生效后，=packages.nix= 里针对这 6 处的 =overrideLspBridge= 补丁会打不上 ✗，
+需要一并删除（配置里那 5 个 advice 已在本轮删除 ✓）。
+
+**收 telega 的 corfu 互斥（opt-in）**：新增 =acm-backend-telega-corfu-exclusive=
+（默认 nil ✓；=:set= + 加载时安装 ✓；保留 =lsp-bridge-mode= guard 以防两个钩子乒乓 ✓）
+→ 配置里的 =z/telega-corfu-toggle-lsp-bridge= 与 =add-hook= 删除 ✓。
+
+**明确不收** =z/lsp-bridge-less-friction-h=：acm 自带 =acm-backend-capf= 说明"与 capf 系前端共存"
+是受支持的模式；它与刚收进去的 telega 选项会互相触发乒乓；且它是对 corfu/company 的**环境策略** ✓。
+
 **S7 后续：telega 扩展从配置合并进包**（用户要求：
 “从 init-lsp-bridge 里捡出来合进去”）：原本 =acm/acm-backend-telega.el= 只有 @ 成员候选（且仅限有用户名的成员），
 而 emoji、 slash、代码围栏、hashtag、Telegram emoji 五个来源与展开函数全在用户配置里（=lisp/init-lsp-bridge.el= 的

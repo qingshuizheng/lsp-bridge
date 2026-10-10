@@ -28,6 +28,19 @@
   :type 'boolean
   :group 'acm-backend-telega)
 
+(defcustom acm-backend-telega-corfu-exclusive nil
+  "If non-nil, corfu and lsp-bridge exclude each other in telega chats.
+With this on, turning corfu on in a telega chat turns `lsp-bridge-mode' off
+there, and turning corfu off turns it back on: the two completion frontends
+should not be active in the same buffer.  It is off by default, because corfu
+being on does not mean it completes anything in a chat."
+  :type 'boolean
+  :group 'acm-backend-telega
+  :set (lambda (symbol value)
+         (set-default symbol value)
+         (when (fboundp 'acm-backend-telega--install-corfu-exclusive)
+           (acm-backend-telega--install-corfu-exclusive))))
+
 (defvar-local acm-backend-telega-items 'fetch
   "List of loaded items.
 Number if async request has been made, but request is not yet completed.
@@ -48,6 +61,31 @@ Number if async request has been made, but request is not yet completed.
 (defun acm-backend-telega-enabled-p ()
   "Return non-nil if lsp-bridge is enabled in telega chatbufs."
   (and lsp-bridge-mode acm-enable-telega (derived-mode-p 'telega-chat-mode)))
+
+;;; Keeping corfu and lsp-bridge out of each other's way
+
+(defun acm-backend-telega--corfu-toggle ()
+  "Turn lsp-bridge off while corfu is on in a telega chat, and back on after.
+Only telega chat buffers are touched.  The `lsp-bridge-mode' guard is what
+makes this safe: `corfu-mode-hook' also runs when corfu is turned *off*, and
+without the guard the two hooks would keep switching each other off forever."
+  (when (derived-mode-p 'telega-chat-mode)
+    (if corfu-mode
+        (when (bound-and-true-p lsp-bridge-mode)
+          (lsp-bridge-mode -1))
+      (unless (bound-and-true-p lsp-bridge-mode)
+        (lsp-bridge-mode 1)))))
+
+(defun acm-backend-telega--install-corfu-exclusive ()
+  "Follow `acm-backend-telega-corfu-exclusive' in `corfu-mode-hook'."
+  (if acm-backend-telega-corfu-exclusive
+      (add-hook 'corfu-mode-hook #'acm-backend-telega--corfu-toggle)
+    (remove-hook 'corfu-mode-hook #'acm-backend-telega--corfu-toggle)))
+
+;; The option is normally set before this file is loaded (a config sets it and
+;; then the backend loads), which is the case the hook here covers; the `:set'
+;; of the option covers setting it later.
+(acm-backend-telega--install-corfu-exclusive)
 
 ;;; The candidates of every source
 
