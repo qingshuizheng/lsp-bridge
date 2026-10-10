@@ -210,6 +210,61 @@ ruff check core lsp_bridge.py          # S2 起接入
 而 Emacs 的 =ns_make_frame_visible= 原本在 =orderFront= **之后**才补父子关系 ——
 这就是 nix-config 补丁 08 修掉的全屏切 space bug。改 popup 层（S3）时这条契约要保留。
 
+** S4 剩余：=lsp-bridge.el= 拆分（已测量，可直接执行）
+
+现状（2026-10-11 测量）：=lsp-bridge.el= **4115 行、330 个顶层定义**（183 defun/defmacro、
+146 defcustom/defvar/defface/defgroup），只有两处分区注释（=which-func= 与 =mode-line=），
+其余是"按历史顺序堆叠"的。
+
+用 =reader= 走完顶层 form 后统计出的**前向引用**（一个定义引用了文件里更晚定义的名字）：
+**66 / 330**。这是拆分的真正风险来源——拆完之后这些引用会跨文件，必须显式处理。
+
+被引用最多的定义（按"提到它的定义数"排序，含 docstring 里的提及）：
+
+| 定义 | 被引 | 归属 |
+|------+------+------|
+| =lsp-bridge-call-file-api= / =call-async= | 21 / 18 | 传输 |
+| =lsp-bridge--position= | 16 | 坐标工具 |
+| =lsp-bridge-remote-file-path= / =-host= / =is-remote-file= | 16 / 13 / 15 | 远程 |
+| =lsp-bridge-mode= / =-has-lsp-server-p= / =-process-live-p= | 10 / 10 / 9 | 核心状态 |
+| =lsp-bridge-epc-process= | 8 | 传输 |
+| =lsp-bridge-try-completion= / =-jump-to-def-in-other-window= | 7 / 7 | 补全 / 跳转 |
+
+目标文件（每个都是"整块定义搬家"，不重写）：
+
+1. =lsp-bridge-core.el=：全局/缓冲区状态变量（=lsp-bridge-epc-process=、=-internal-process*=
+   、=lsp-bridge-mode-map=、mode-line 变量…）、=lsp-bridge-mode= 与 enable/disable/hooks、
+   坐标工具 =lsp-bridge--position= 等"人人要用"的小件。**放最前面**，因为多数前向引用指向它。
+2. =lsp-bridge-transport.el=：EPC 层（=--start-epc-server=、=call-async=、=call-file-api=、
+   =call-sync=、11 个 =--*-func= 回调、=--first-start=、进程启停、协议握手与 =diagnose=）。
+3. =lsp-bridge-remote.el=：=lsp-bridge-remote-*=、tramp 相关（=resolve-remote-host=、
+   =-buffer-file-name-text=、=-truename=、=-sync-tramp-remote=、=find-file-hook-function=…）。
+4. =lsp-bridge-completion.el=：补全谓词 15 个、=completion--record-items=、
+   =fetch-completion-item-info=、signature/hover/document 的桥接。
+5. =lsp-bridge-jump.el=：find-def/ref/impl/type-def、=jump-to-def-in-other-window=、
+   =mark-ring=、=lsp-bridge-find-*-fallback-function= 相关。
+6. =lsp-bridge-workspace.el=：workspace symbol、rename、formatting、indent、document highlight、
+   code action 的 elisp 侧入口。
+7. =lsp-bridge-ui.el=：=which-func= / =imenu= / =mode-line= / breadcrumb 的 elisp 胶水
+   （即现在的文件尾两节）。
+8. =lsp-bridge.el= 只留：文件头、=require= 链（顺序 =core → transport → remote → jump →
+   workspace → completion → ui=）、=[provide 'lsp-bridge]=，以及 README 指向的入口
+   =lsp-bridge-start-process= 等少数"门面"函数的 =declare-function= 转发。
+
+每一步的规则与验收（每步一个 commit）：
+
+- **只搬家**：一次移动一组内聚定义 + 它们的 =defcustom=，不改写实现；跨文件的引用用
+  =declare-function=／=defvar= 声明（本仓库的 elisp 门禁对它们零警告，见 @acm-backend.el）。
+- 每步后跑：=./scripts/check-elisp.sh=（要求**归一化 warning 多重集与上一步完全相同**，
+  用 =git worktree= 对比，而不是只看总数）、=checkdoc= 0、=docstring-report.py --check= 100%、
+  =./scripts/check-test.sh= 全绿。
+- 每步后还要做一次"**真的能加载**"冒烟：=emacs -Q --batch -L . -L acm -l lsp-bridge.el= 不报错，
+  且 =acm= 能加载（=test/acm-test.el= 已覆盖 =require 'acm= 路径）。
+- 顺序按风险从低到高：先 =ui=→=remote=→=workspace=→=jump=→=completion=→=transport=→=core=；
+  最后把 =lsp-bridge.el= 收成一个 require 链。前向引用多的文件放后面，避免一步之内改动过多声明。
+- 不做的事：不顺手改行为、不重命名对外符号（=lsp-bridge-*= 全部保持，用户配置依赖它们）、
+  不删 =lsp-bridge-restart-process=／=lsp-bridge-diagnose= 等命令名。
+
 ** 非目标（明确不做）
 
 - 不改 LSP 协议语义；=langserver/*.json=、=multiserver/*.json= 只补注释，不改内容。
