@@ -2035,14 +2035,14 @@ regexp that opens an interpolation."
    ))
 
 (defun lsp-bridge--not-only-blank-before-cursor ()
-  "Hide completion if only blank before cursor, except in roam bracket."
+  "Hide completion if only blank before cursor, except in a note bracket."
   (or (not
        (null
         (split-string (buffer-substring-no-properties
                        (max (1- (point)) (line-beginning-position))
                        (point)))))
-      ;; Keep completion after space in Org roam bracket.
-      (acm-in-roam-bracket-p)))
+      ;; Keep completion after a space inside a Vulpea link bracket.
+      (acm-in-vulpea-bracket-p)))
 
 (defun lsp-bridge--not-match-hide-characters ()
   "Return non-nil if the character before point allows completion.

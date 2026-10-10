@@ -101,7 +101,7 @@
 (require 'acm-backend-telega)
 (require 'acm-backend-ctags)
 (require 'acm-backend-copilot)
-(require 'acm-backend-org-roam)
+(require 'acm-backend-vulpea)
 (require 'acm-backend-jupyter)
 (require 'acm-backend-tabby)
 (require 'acm-backend-capf)
@@ -213,7 +213,7 @@ Each element names one of the groups built by
                                                         "jupyter-candidates"
                                                         "tabby-candidates"
                                                         "ctags-candidates"
-                                                        "org-roam-candidates"
+                                                        "vulpea-candidates"
                                                         "file-words-candidates"
                                                         "telega-candidates")
   "Order in which the completion backends are asked for candidates.
@@ -310,7 +310,7 @@ uses it to right-align the annotation column.")
 
 (defvar-local acm-input-bound-style "ascii"
   "How `acm-get-input-prefix-bound' delimits the completion prefix.
-One of \"ascii\", \"symbol\", \"string\" or \"org-roam\"; `lsp-bridge'
+One of \"ascii\", \"symbol\", \"string\" or \"vulpea\"; `lsp-bridge'
 also sets it per buffer from the prefix style of the backend.")
 
 (defvar-local acm-filter-overlay nil
@@ -419,18 +419,20 @@ So we use `minor-mode-overriding-map-alist' to override key, make sure all keys 
                             (eq sym x)
                           (string-match-p x (symbol-name sym))))))
 
-(defun acm-in-roam-bracket-p ()
-  "Return non-nil if point is inside an `org-roam' completion bracket.
+(defun acm-in-vulpea-bracket-p ()
+  "Return non-nil if point is inside a Vulpea note link bracket.
 This is a WORKAROUND used to switch `acm-input-bound-style' to
-\"org-roam\" locally, so that non-ASCII links can be completed and
-expanded."
-  (and acm-enable-org-roam
+\"vulpea\" locally, so that note titles - which are not symbols and may
+contain non-ASCII characters - can be completed and expanded inside the
+`[[' brackets of a link."
+  (and acm-enable-vulpea
+       (featurep 'vulpea)
        (eq major-mode 'org-mode)
-       (featurep 'org-roam)
        (not (org-in-src-block-p))
-       (org-in-regexp org-roam-bracket-completion-re 1)
-       ;; Prevent completing before roam bracket, e.g. *[[]]
-       (<= (match-beginning 2) (point))))
+       ;; Only complete what is being typed: `org-in-regexp' also matches when
+       ;; point merely sits on the opening brackets, e.g. *[[]].
+       (when (org-in-regexp acm-backend-vulpea-bracket-re 1)
+         (<= (match-beginning 2) (point)))))
 
 (defun acm-get-input-prefix-bound ()
   "Return the buffer region that holds the completion prefix.
@@ -447,8 +449,8 @@ there is no prefix at point."
               (point-at-bol)))))
    ((equal "symbol" acm-input-bound-style)
     (bounds-of-thing-at-point 'symbol))
-   ((equal "org-roam" acm-input-bound-style)
-    (when (org-in-regexp org-roam-bracket-completion-re 1)
+   ((equal "vulpea" acm-input-bound-style)
+    (when (org-in-regexp acm-backend-vulpea-bracket-re 1)
       (cons (match-beginning 2)
             (match-end 2))))
    ((equal "ascii" acm-input-bound-style)
@@ -460,8 +462,8 @@ there is no prefix at point."
 
 (defun acm-get-input-prefix ()
   "Get user input prefix."
-  (let* ((acm-input-bound-style (if (acm-in-roam-bracket-p)
-                                    "org-roam"
+  (let* ((acm-input-bound-style (if (acm-in-vulpea-bracket-p)
+                                    "vulpea"
                                   "ascii"))
          (bound (acm-get-input-prefix-bound)))
     (if bound
@@ -574,9 +576,9 @@ advances the buffer-local template ticker or arms
          template-first-part-candidates
          template-second-part-candidates
          ctags-candidates
-         org-roam-candidates)
-    (when (acm-in-roam-bracket-p)
-      (setq org-roam-candidates (acm-backend-org-roam-candidates keyword)))
+         vulpea-candidates)
+    (when (acm-in-vulpea-bracket-p)
+      (setq vulpea-candidates (acm-backend-vulpea-candidates keyword)))
 
     (when acm-enable-copilot
       (setq copilot-candidates (acm-backend-copilot-candidates keyword)))
@@ -620,7 +622,7 @@ advances the buffer-local template ticker or arms
                                         ("jupyter-candidates" jupyter-candidates)
                                         ("tabby-candidates" tabby-candidates)
                                         ("ctags-candidates" ctags-candidates)
-                                        ("org-roam-candidates" org-roam-candidates)
+                                        ("vulpea-candidates" vulpea-candidates)
                                         ("file-words-candidates" file-words-candidates)
                                         ("telega-candidates" (acm-backend-telega-candidates keyword))
                                         ))
@@ -723,15 +725,15 @@ the menu or renders it.  Return nil."
          (candidates (or candidate (acm-update-candidates)))
          (menu-candidates (cl-subseq candidates 0 (min (length candidates) acm-menu-length)))
          (current-select-candidate-index (cl-position previous-select-candidate (mapcar 'acm-menu-index-info menu-candidates) :test 'equal))
-         (acm-input-bound-style (if (acm-in-roam-bracket-p)
-                                    "org-roam"
+         (acm-input-bound-style (if (acm-in-vulpea-bracket-p)
+                                    "vulpea"
                                   "ascii"))
          (bounds (acm-get-input-prefix-bound)))
     (cond
      ;; Hide completion menu if there is only one exact match candidate, except when the candidate is a template.
      ((and (equal (length candidates) 1)
            (string-equal keyword (plist-get (nth 0 candidates) :label))
-           (not (member (plist-get (nth 0 candidates) :annotation) '("Emmet Abbreviation" "Snippet" "Yas-Snippet" "Tempel" "Org roam"))))
+           (not (member (plist-get (nth 0 candidates) :annotation) '("Emmet Abbreviation" "Snippet" "Yas-Snippet" "Tempel" "Vulpea"))))
       (acm-hide))
      ((> (length candidates) 0)
       (let* ((menu-old-cache (cons acm-menu-max-length-cache acm-menu-number-cache)))
