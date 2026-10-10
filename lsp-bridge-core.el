@@ -590,7 +590,13 @@ Each element is a hook list in the form accepted by `add-hook'.")
   (add-hook 'post-command-hook #'lsp-bridge-start-process)
 
   ;; Don't enable lsp-bridge when the current buffer is a popup of the menu.
-  (unless (acm-session-popup-buffer-p)
+  ;; `acm-session' is what knows the popup buffers, and this file is the leaf
+  ;; that the rest of the package loads first, so it is not required here: when
+  ;; it is not loaded (an older acm, a config that loads core on its own) there
+  ;; is no popup buffer either, and the answer is nil.  Calling it unguarded made
+  ;; enabling the mode depend on something this file does not control.
+  (unless (and (fboundp 'acm-session-popup-buffer-p)
+               (acm-session-popup-buffer-p))
     ;; Disable backup file.
     ;; Please use my another plugin `https://github.com/manateelazycat/auto-save' and use git for file version management.
     (when lsp-bridge-disable-backup
