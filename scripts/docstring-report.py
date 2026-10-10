@@ -80,6 +80,11 @@ ELISP_PROGRAM = r"""
 
 
 def elisp_files(limit: set[str] | None) -> list[pathlib.Path]:
+    """Return the elisp files to check, vendored ones excluded.
+
+    When LIMIT is given it holds repo-relative paths and only those files are
+    returned.
+    """
     return sorted(
         p for p in ROOT.glob("**/*.el")
         if p.name not in VENDORED
@@ -89,6 +94,11 @@ def elisp_files(limit: set[str] | None) -> list[pathlib.Path]:
 
 
 def python_files(limit: set[str] | None) -> list[pathlib.Path]:
+    """Return the Python files to check, vendored and test files excluded.
+
+    When LIMIT is given it holds repo-relative paths and only those files are
+    returned.
+    """
     return sorted(
         p for p in ROOT.glob("**/*.py")
         if str(p.relative_to(ROOT)) not in VENDORED
@@ -99,6 +109,11 @@ def python_files(limit: set[str] | None) -> list[pathlib.Path]:
 
 
 def run_elisp(files: list[pathlib.Path]) -> tuple[list[tuple[str, str, int, str]], dict[str, tuple[int, int]]]:
+    """Check FILES with a real Emacs reader.
+
+    Returns the missing items as (path, kind, line, name) tuples and, per
+    file, the number of definitions and of missing docstrings.
+    """
     missing: list[tuple[str, str, int, str]] = []
     per_file: dict[str, tuple[int, int]] = {}
     for f in files:
@@ -122,6 +137,12 @@ def run_elisp(files: list[pathlib.Path]) -> tuple[list[tuple[str, str, int, str]
 
 
 def run_python(files: list[pathlib.Path]) -> tuple[list[tuple[str, str, int, str]], dict[str, tuple[int, int]]]:
+    """Check FILES with `ast`.
+
+    Returns the missing items as (path, kind, line, name) tuples and, per
+    file, the number of definitions and of missing docstrings.  Files that do
+    not parse are reported on stderr and skipped.
+    """
     missing: list[tuple[str, str, int, str]] = []
     per_file: dict[str, tuple[int, int]] = {}
     for f in files:
@@ -142,6 +163,7 @@ def run_python(files: list[pathlib.Path]) -> tuple[list[tuple[str, str, int, str
 
 
 def main() -> int:
+    """Print the report and, with --check, exit non-zero on missing docstrings."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--list", action="store_true", help="list every missing docstring")
     ap.add_argument("--check", action="store_true", help="exit 1 when anything is missing")

@@ -51,9 +51,16 @@
   "Function used to fit frame to buffer.")
 
 (defun acm-frame-border-face ()
+  "Return the face that draws the popup's border.
+Emacs 28 and later use `child-frame-border', older versions use
+`internal-border'."
   (if (facep 'child-frame-border) 'child-frame-border 'internal-border))
 
 (defun acm-frame-set-frame-colors (frame)
+  "Apply the popup faces to FRAME.
+The border colour comes from `acm-frame-border-face' and the background
+from `acm-frame-default-face', both taken from the `default' face of the
+selected frame, so the popup follows the current theme."
   ;; Set frame border color.
   (let* ((face (acm-frame-border-face))
          (new (face-attribute 'acm-frame-border-face :background nil 'default)))
@@ -65,9 +72,19 @@
     (unless (equal (frame-parameter frame 'background-color) new)
       (set-frame-parameter frame 'background-color new))))
 
-(defvar acm-frame-font nil)
-(defvar x-gtk-resize-child-frames) ;; not present on non-gtk builds
+(defvar acm-frame-font nil
+  "Font recorded from the parent frame when the first popup was created.
+`acm-frame-restore-font' puts it back after the system resumes.")
+(defvar x-gtk-resize-child-frames nil
+  "Bound by the GTK build of Emacs to control child-frame resizing.
+Only GTK defines it, so declare it here to let-bind it on any build.")
 (defun acm-frame-make-frame (frame-name &optional no-accept-focus)
+  "Create the child frame of a popup and return it.
+FRAME-NAME names the frame (see `acm-frame-new').  NO-ACCEPT-FOCUS
+non-nil means the popup must never take input focus: it is created
+without a border and the focus is redirected to the parent frame, which
+is what the completion menu and the doc frame want.  The frame is
+created invisible; callers show it with `acm-frame-set-frame-position'."
   (let* ((after-make-frame-functions nil)
          (parent (selected-frame))
          (parent-font (with-selected-frame parent
@@ -141,6 +158,9 @@
 ;; so I call `acm-frame-restore-font' on hook `after-focus-change-function'
 ;; make sure font size restore to normal size when system return from suspend.
 (defun acm-frame-restore-font ()
+  "Restore the recorded popup font on the menu and doc frames.
+Emacs 30 shrinks the font of a child frame after the machine resumes
+from suspend; this runs from `after-focus-change-function' to undo it."
   (ignore-errors
     (with-selected-frame acm-menu-frame
       (set-frame-font acm-frame-font))
@@ -156,6 +176,12 @@
   (add-function :after after-focus-change-function #'acm-frame-restore-font))
 
 (cl-defmacro acm-frame-new (frame frame-buffer buffer-name &optional max-width max-height popup-pos)
+  "Create or reuse the popup FRAME and place it near point.
+FRAME is the variable holding the child frame and is set to a new frame
+when it is not live; a frame whose parent is no longer the selected
+frame is deleted first.  FRAME-BUFFER is displayed inside the popup,
+BUFFER-NAME names the frame, MAX-WIDTH and MAX-HEIGHT bound its size and
+POPUP-POS is handed to `acm-frame-adjust-frame-pos' (see there)."
   `(progn
      (when (and (frame-live-p ,frame)
                 (not (eq (frame-parent ,frame) (selected-frame))))
@@ -171,6 +197,9 @@
      (acm-frame-adjust-frame-pos ,frame ,popup-pos)))
 
 (cl-defmacro acm-frame-create-frame-if-not-exist (frame frame-buffer frame-name margin no-accept-focus)
+  "Create the child frame FRAME unless it is already live.
+FRAME-BUFFER is shown inside it with MARGIN columns of left and right
+margin, and NO-ACCEPT-FOCUS is forwarded to `acm-frame-make-frame'."
   `(unless (frame-live-p ,frame)
      (setq ,frame (acm-frame-make-frame ,frame-name ,no-accept-focus))
 
@@ -204,15 +233,22 @@
      ))
 
 (defun acm-frame-set-frame-max-size (frame &optional max-width max-height)
+  "Fit FRAME to its buffer, bounded by MAX-WIDTH and MAX-HEIGHT.
+The minimum window size is temporarily set to 0 so that the frame really
+shrinks to its content."
   ;; Set the smallest window size value to ensure that frame adjusts to the accurate size of its content.
   (let* ((window-min-height 0)
          (window-min-width 0))
     (funcall acm-frame-fit-frame-to-buffer frame max-height nil max-width nil)))
 
 (defun acm-frame-set-frame-size (frame width height)
+  "Resize FRAME to WIDTH x HEIGHT characters."
   (set-frame-size frame width height))
 
 (defun acm-frame-set-frame-position (frame x y)
+  "Move FRAME to X, Y (pixels, relative to its parent) and show it.
+The frame is redisplayed before being made visible, otherwise the popup
+is sometimes drawn empty."
   ;; Make sure frame visible before set position.
   (unless (frame-visible-p frame)
     ;; Force redisplay, otherwise the popup sometimes does not display content.
@@ -222,6 +258,7 @@
   (set-frame-position frame x y))
 
 (defun acm-frame-set-frame-pos-center (frame)
+  "Center FRAME inside the parent frame recorded by `acm-frame-make-frame'."
   (let* ((parent-width (frame-pixel-width acm-frame--emacs-frame))
          (parent-height (frame-pixel-height acm-frame--emacs-frame))
          (frame-width (frame-pixel-width frame))
@@ -231,6 +268,11 @@
     (acm-frame-set-frame-position frame x y)))
 
 (defun acm-frame-get-popup-position (frame-popup-point &optional line-bias)
+  "Return the pixel position to place a popup at for FRAME-POPUP-POINT.
+The value is a (X . Y) cons relative to the parent frame.  LINE-BIAS
+shifts it down by that many line heights.  The coordinates account for
+the icon and quick-access columns, for the margin added by centering
+modes, and for the tab-line and header-line height."
   (let* ((edges (window-pixel-edges))
          (window-left (+
                        ;; Edges fine-tuning.
@@ -261,6 +303,9 @@
           (+ y window-top offset-y))))
 
 (cl-defmacro acm-frame-delete-frame (frame)
+  "Delete the child frame FRAME and set its variable to nil.
+When the popup was allowed to accept focus, the input focus goes back to
+the parent frame first."
   `(when (frame-live-p ,frame)
      (if (and (not (frame-parameter ,frame 'no-accept-focus))
               (frame-live-p acm-frame--emacs-frame))
@@ -288,6 +333,11 @@ influence of C1 on the result."
           (color-values c1) (color-values c2))))
 
 (defun acm-frame-init-colors (&optional force)
+  "Set the popup faces from the current theme.
+The menu background blends the frame's default background towards black
+on dark themes and towards grey on light ones.  FORCE recomputes the
+faces even when they are already set, which is what a theme change
+needs."
   (let* ((is-dark-mode (string-equal (acm-frame-get-theme-mode) "dark"))
          (blend-background (if is-dark-mode "#000000" "#AAAAAA"))
          (default-background (if (or force (equal (face-attribute 'acm-frame-default-face :background) 'unspecified))
@@ -308,17 +358,26 @@ influence of C1 on the result."
       (set-face-foreground 'acm-frame-select-face (face-attribute 'font-lock-function-name-face :foreground)))))
 
 (defun acm-frame-visible-p (frame)
+  "Return non-nil if FRAME is live and currently visible."
   (and (frame-live-p frame)
        (frame-visible-p frame)))
 
 (defun acm-frame-hide-frame (frame)
+  "Hide FRAME if it is visible.
+On macOS hiding a child frame detaches it from its parent window, and
+showing it again has to re-attach it first: see `ns_make_frame_visible'
+in Emacs' nsterm.m."
   (when (acm-frame-visible-p frame)
     (make-frame-invisible frame)))
 
 (defun acm-frame-adjust-frame-pos (frame &optional popup-pos margin action-menu-p)
-  "Adjust position to avoid out of screen.
-ACTION-MENU-P is used to give code action menu a special treat to make it more useful.
-Only when calling this function from code-action file should make this variable be true."
+  "Move FRAME so that it stays inside the parent frame.
+POPUP-POS decides which corner it is aligned to: \"top-left\",
+\"top-right\", \"bottom-left\", \"bottom-right\" or \"point\" (the
+default, which keeps the popup next to point and flips it above the line
+when it would fall off the bottom).  MARGIN is the gap kept to the edges
+of the parent frame, 50 by default.  ACTION-MENU-P non-nil is used by the
+code-action menu, which prefers to flip above point."
   (let* ((margin (or margin 50))
          (popup-pos (or popup-pos "point"))
          (main-window-x (car (frame-position acm-frame--emacs-frame)))
@@ -355,6 +414,8 @@ Only when calling this function from code-action file should make this variable 
                                (- (+ main-window-y main-window-height) frame-height margin))))))))
 
 (defun acm-frame-can-display-p ()
+  "Return non-nil if child frames can be displayed in this session.
+Nil in batch mode, on a dumb terminal and on non-graphic displays."
   (not (or noninteractive
            emacs-basic-display
            (not (display-graphic-p)))))
