@@ -339,7 +339,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 - `acm-doc-frame-max-lines`: 帮助窗口的最大行数， 默认是 20
 - `acm-doc-frame-boundary`: 文档框架的边界约束策略，选项包括 `'parent-frame`、`'display`，默认为 `'parent-frame`。`'parent-frame` 将文档框架限制在父 Emacs 窗口内，`'display` 允许文档框架超出 Emacs 窗口但不超出显示器边界
 - `acm-candidate-match-function`: lsp-bridge 前端对补全候选词的过滤算法， 选项有 `'regexp-quote`, `'orderless-flex`, `'orderless-literal`, `'orderless-prefixes`, `'orderless-regexp`, `'orderless-initialism`, 默认为 `regexp-quote`， orderless-\* 开头的算法需要额外安装 [orderless](https://github.com/oantolin/orderless)
-- `acm-completion-mode-candidates-merge-order`: 向各后端索取当前模式候选词的顺序， 也是这些候选词的显示顺序， 默认是 Elisp、 LSP、 LSP 工作区符号、 capf、 Jupyter、 Tabby、 ctags、 Org-roam、 文件单词、 telega
+- `acm-completion-mode-candidates-merge-order`: 向各后端索取当前模式候选词的顺序， 也是这些候选词的显示顺序， 默认是 Elisp、 LSP、 LSP 工作区符号、 capf、 Jupyter、 Tabby、 ctags、 Vulpea、 文件单词、 telega
 - `acm-backend-lsp-candidate-min-length`: LSP 补全最小的触发字符数, 默认是 0
 - `acm-backend-lsp-block-kind-list`: 过滤某些类型的 LSP 候选词， 默认是列表， 当值为 `'("Snippet" "Enum")` 的时候， 意味着 Snippet Enum 这两种类型的补全不会显示
 - `acm-backend-elisp-candidate-min-length`: Elisp 补全最小的触发字符数, 默认是 0
@@ -377,7 +377,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 - `acm-backend-lsp-workspace-symbol-candidate-min-length`: 触发工作区符号补全的最少字符数， 默认 0
 - `acm-backend-lsp-workspace-symbol-candidates-max-number`: 工作区符号候选词的最大数量， 默认 100
 - `acm-backend-lsp-workspace-symbol-frontend-filter-p`: 是否在前端再次过滤工作区符号候选词， 默认关闭（ Python 后端已经过滤过）
-- `acm-backend-org-roam-candidates-number`: Org-roam 候选词的最大数量， 默认 10
+- `acm-backend-vulpea-candidates-number`: 菜单里 Vulpea 笔记标题候选词的最大数量， 默认 10
 - `acm-backend-tempel-candidates-number`: tempel 候选词的最大数量， 默认 2
 - `acm-backend-yas-match-by-trigger-keyword`: 按触发关键字而不是名字匹配 yasnippet 候选词， 默认关闭
 - `acm-backend-yas-show-trigger-keyword`: yasnippet 候选词附加信息的格式字符串， 默认 `" (%s)"`
@@ -446,7 +446,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 | `copilot` | `acm-enable-copilot`（ 关） | GitHub Copilot 的行内补全 |
 | `tabby` | `acm-enable-tabby`（ 关） | Tabby 服务端 |
 | `jupyter` | `acm-enable-jupyter`（ 关） | buffer 对应的 Jupyter kernel |
-| `org-roam` | `acm-enable-org-roam`（ 关） | Org-roam 节点标题 |
+| `vulpea` | `acm-enable-vulpea`（ 关） | Vulpea 数据库里的笔记标题， 插入为 `[[id:...][Title]]` 链接 |
 | `lsp-workspace-symbol` | `acm-enable-lsp-workspace-symbol`（ 关） | 整个工作区的符号 |
 
 每个后端还有自己的微调选项（ `acm-backend-<名字>-*`） ， 实现都在 `acm/acm-backend-<名字>.el`， 选项和上面的其它选项列在一起。

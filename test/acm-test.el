@@ -11,7 +11,7 @@
 ;;
 ;; Run them with:
 ;;
-;;   emacs -Q --batch -L . -L acm -L test -l test/acm-test.el \
+;;   Emacs -Q --batch -L . -L acm -L test -l test/acm-test.el \
 ;;         -f ert-run-tests-batch-and-exit
 ;;
 ;; or through scripts/check-test.sh, which also runs the Python tests.

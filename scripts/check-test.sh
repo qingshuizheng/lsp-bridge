@@ -29,6 +29,9 @@ run_python() {
 echo "== ERT: acm menu (test/acm-test.el)"
 run_ert test/acm-test.el
 
+echo "== ERT: Vulpea backend (test/acm-backend-vulpea-test.el)"
+run_ert test/acm-backend-vulpea-test.el
+
 echo "== ERT: Org Babel server lookup (test/lsp-bridge-org-babel-test.el)"
 run_ert test/lsp-bridge-org-babel-test.el
 

@@ -339,7 +339,7 @@ lsp-bridge provides support for more than two language servers for many language
 - `acm-doc-frame-max-lines`: Max line number of help documentation, default is 20
 - `acm-doc-frame-boundary`: Boundary constraint for documentation frame positioning, options include `'parent-frame`, `'display`, default is `'parent-frame`. `'parent-frame` constrains the doc frame within the parent Emacs frame, `'display` allows the doc frame to extend beyond Emacs frame but within display screen boundaries
 - `acm-candidate-match-function`: lsp-bridge frontend filter algorithm for candidates, options include `'regexp-quote`, `'orderless-flex`, `'orderless-literal`, `'orderless-prefixes`, `'orderless-regexp`, `'orderless-initialism`, default is `regexp-quote`, orderless-* started algorithms require additional installation of [orderless](https://github.com/oantolin/orderless)
-- `acm-completion-mode-candidates-merge-order`: The order in which the backends are asked for candidates of the current mode, which is also the order in which those candidates are displayed. The default is Elisp, LSP, LSP workspace symbol, capf, Jupyter, Tabby, ctags, Org-roam, file words and telega
+- `acm-completion-mode-candidates-merge-order`: The order in which the backends are asked for candidates of the current mode, which is also the order in which those candidates are displayed. The default is Elisp, LSP, LSP workspace symbol, capf, Jupyter, Tabby, ctags, Vulpea, file words and telega
 - `acm-backend-lsp-candidate-min-length`: The minimum characters to trigger lsp completion, default is 0
 - `acm-backend-lsp-block-kind-list`: Filters certain types of LSP completion candidates. By default it is an empty list. When the value is set to `'(Snippet Enum)`, this means that Snippet and Enum completions will not be shown.
 - `acm-backend-elisp-candidate-min-length`: The minimum characters to trigger elisp completion, default is 0
@@ -377,7 +377,7 @@ lsp-bridge provides support for more than two language servers for many language
 - `acm-backend-lsp-workspace-symbol-candidate-min-length`: The minimum characters to trigger workspace symbol completion, default is 0
 - `acm-backend-lsp-workspace-symbol-candidates-max-number`: The maximum number of workspace symbol candidates, default is 100
 - `acm-backend-lsp-workspace-symbol-frontend-filter-p`: Filter the workspace symbol candidates on the frontend again, disabled by default because the Python backend already filtered them
-- `acm-backend-org-roam-candidates-number`: The maximum number of Org-roam candidates, default is 10
+- `acm-backend-vulpea-candidates-number`: Maximal number of Vulpea note candidates in the menu, default is 10
 - `acm-backend-tempel-candidates-number`: The maximum number of tempel candidates, default is 2
 - `acm-backend-yas-match-by-trigger-keyword`: Match yasnippet candidates by their trigger keyword instead of their name, disabled by default
 - `acm-backend-yas-show-trigger-keyword`: The format string of the extra information shown next to a yasnippet candidate, default is `" (%s)"`
@@ -446,7 +446,7 @@ The candidates of the current mode are collected from the backends below. `acm-c
 | `copilot` | `acm-enable-copilot` (off) | GitHub Copilot inline completions |
 | `tabby` | `acm-enable-tabby` (off) | a Tabby server |
 | `jupyter` | `acm-enable-jupyter` (off) | the Jupyter kernel of the buffer |
-| `org-roam` | `acm-enable-org-roam` (off) | Org-roam node titles |
+| `vulpea` | `acm-enable-vulpea` (off) | note titles from the Vulpea database, inserted as `[[id:...][Title]]` links |
 | `lsp-workspace-symbol` | `acm-enable-lsp-workspace-symbol` (off) | the symbols of the whole workspace |
 
 Each backend also has tuning options of its own (`acm-backend-<name>-*`) and is implemented in `acm/acm-backend-<name>.el`; the options are listed above together with the rest.

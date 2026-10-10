@@ -48,6 +48,14 @@
 
 ** 进度
 
+- 2026-10-11 =acm-backend-org-roam= → **=acm-backend-vulpea=**（用户要求"匹配 vulpea 包"）：
+  候选来自 =vulpea-db-query= 的 =vulpea-note=，展开用 =vulpea-utils-link-make-string=
+  插入 =[[id:UUID][Title]]=；开关 =acm-enable-vulpea=、候选组 =vulpea-candidates=、
+  谓词 =acm-in-vulpea-bracket-p=。bracket 正则从 org-roam 的
+  =org-roam-bracket-completion-re=（要求闭合 =]]=）换成我们自己的、闭合可选版本，
+  所以 =[[= 刚敲就能补全，且 =[[foo]]= 会被整段替换。破坏性：选项名与 group 名都变了，
+  引用 =org-roam= 的地方（=acm.el=、=lsp-bridge.el=）已全部改名，=test/acm-backend-vulpea-test.el=
+  用桩覆盖（vulpea 的 DB 是磁盘文件，测试只测候选构造与展开）。
 - 2026-10-11 docstring 阶段收尾：**1524/1524 定义有 docstring（100%）**，
   整树 byte-compile warning 207 → 127，**checkdoc 全树 0 findings**
   （唯一的例外是 vendored 的 =lsp-bridge-epc.el=），参数扫描（区分大小写）
@@ -95,7 +103,7 @@
 | **S4** | =acm-backend.el=：candidate 协议 + registry；=lsp-bridge.el= 拆分；协议握手 + =lsp-bridge-diagnose= | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
 | **S5** | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
 | **S6** | 测试与 CI：acm 冒烟测试、docstring 门、ruff、Emacs 版本矩阵（现在只跑 Ubuntu + Emacs 28.1，而代码用 30+ 的 child frame 特性） | 进行中：=test/acm-test.el=（14 例，headless）+ =test/lsp-bridge-org-babel-test.el=（9 例）由 =scripts/check-test.sh= 跑通；=--all= 追加 langserver/byte-compile/语言服务器驱动的 Python 测试；剩余：CI 里的 Emacs 版本矩阵 |
-| **S7** | 文档（README/架构说明）+ 同步 emacs-config（5 处 advice、选项改名、删除已移除后端的 setup 块） | 用户日常使用回归；=emacs-config= 单独提交 |
+| **S7** | 文档（README/架构说明）+ 同步 emacs-config（5 处 advice、选项改名、删除已移除后端的 setup 块；若想要笔记补全需新增 =acm-enable-vulpea t=，目前 config 未开） | 用户日常使用回归；=emacs-config= 单独提交 |
 
 ** 验收命令
 
@@ -147,6 +155,7 @@ ruff check core lsp_bridge.py          # S2 起接入
 | =acm/acm.el= =acm-candidate-sort-by-prefix= | 注释与 docstring 说"先按前缀、再按候选长度"排序，实际比较的是**plist 的长度**（恒等），第二级排序是空操作 | 已修（改比 =:label= 长度）并加了测试 |
 | =lsp-bridge.el= =lsp-bridge--not-match-stop-commands= | 第一个分支拿 =lsp-bridge-last-change-command=（symbol）去 =member= 一个**字符串**列表，永远不匹配；只有 =last-command= 那支有效 | 已修（同样用 =format "%s"=）并加了测试 |
 | =acm/acm.el= =acm-update= | =acm-menu-index= 是按**上一次**的 =acm-menu-candidates= 判断的，新 buffer 首次弹菜单时存成 -1（被 =nth= 接受负下标掩盖，表现上仍选中第一个） | 已修（按新列表判断）并加了测试 |
+| =acm/acm.el= =acm-get-input-prefix= | =let*= 把 =acm-input-bound-style= 强绑成 ="vulpea"/"ascii"=，用户设的 ="string"/"symbol"= 在这个函数里不生效（上游 4d48fea 亦如此） | 用户 config 里正是 =(setq-default acm-input-bound-style "string")=，实测 =中文abc= 只返回 ="abc"=；S7 同步 config 时决定：让选项生效，还是删掉那行 |
 | =core/handler/find_define_base.py= | =jar://=（Clojure）走 =NotImplementedError=；另有 12 处既有 docstring 风格问题（有的行宽 146 列） | 需要专门的一轮整理（文件本身 1799 行、含 Solidity 专用逻辑，见 S5） |
 
 跨仓库的一条：=acm-frame.el= 的契约里写着"macOS 上隐藏子 frame 会断开父子关系"，
