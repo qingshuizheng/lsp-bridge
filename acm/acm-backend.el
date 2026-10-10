@@ -350,7 +350,9 @@ name, so a user can re-register one of them with different fields."
                     :doc-fn acm-backend-elisp-candidate-doc
                     :skip-in-comment t)
              (:name "telega" :group "telega-candidates"
-                    :fetch-fn acm-backend-telega-candidates)
+                    :fetch-fn acm-backend-telega-candidates
+                    :expand-fn acm-backend-telega-candidate-expand
+                    :preview t)
              (:name "yas" :fetch-fn acm-backend-yas-candidates
                     :expand-fn acm-backend-yas-candidate-expand
                     :doc-fn acm-backend-yas-candidate-doc

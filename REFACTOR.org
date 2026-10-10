@@ -257,6 +257,30 @@ ruff check core lsp_bridge.py          # S2 起接入
 断言 **EPC 对外方法集合与 HEAD 完全一致**（52 = 19 类内 + 33 继承）、 mixin 不重叠、
 模块级 helper 仍可从 =lsp_bridge= 导入；docstring 1591/1591 = 100%。
 
+**S7 后续：telega 扩展从配置合并进包**（用户要求：
+“从 init-lsp-bridge 里捡出来合进去”）：原本 =acm/acm-backend-telega.el= 只有 @ 成员候选（且仅限有用户名的成员），
+而 emoji、 slash、代码围栏、hashtag、Telegram emoji 五个来源与展开函数全在用户配置里（=lisp/init-lsp-bridge.el= 的
+=(setup acm-backend-telega ...)= 块），且 =acm-backend-telega-candidate-expand= **从未被调用**（上游也如此，因为 registry 里
+telega 条目没有 =:expand-fn= ⇒ 候选只会被通用插入，mention 实体/emoji 都不会生效）。
+
+本次合并：五个来源的候选构造器与候选函数、=items-set= 的增强版（无用户名的成员也入选，
+label 用 title、展开时变成带 =:user_id= 的 mention 实体）、展开函数、统一入口
+=acm-backend-telega-candidates=（五个来源各自判断是否适用后 append），以及为了让 “:” 与 “```” 触发
+在 telega 里能生效而放宽的两个补全谓词（放在 =with-eval-after-load 'lsp-bridge= 里）。
+命名按包内约定：构造器 =acm-backend-telega--<kind>-candidate= →
+状态变量 =acm-backend-telega-{hashtag,tg-emoji}-{items,timer}= → 全部带完整 docstring。
+registry 计划外的一步：给 telega 条目补上 =:expand-fn= 与 =:preview t= ⇒
+=acm-backend-expand-p= 现在为 t，展开才真正跑得起来。
+
+**为何保留 =no-byte-compile: t=**：该文件用了 telega 的**宏**（=with-telega-chatbuf= 等），
+若在 telega 不在 load-path 时编译，宏会被当成函数调用编出去 ⇒ 运行期出错。
+代价是门禁不编译它 ⇒ 我用**去掉 cookie 的临时副本编译**来验收（只报外部依赖；
+关于本文件自己的函数**零告警** ⇒ 无笔误/arity 错）。
+
+验收：forms ✓；无 telega 也能加载 ✓；registry 接线 =expand-p=t preview-p=t= ✓；checkdoc 0 ✓；
+=check-elisp.sh= 退出码 0 且告警 **146 = 基线** ✓；=check-test.sh= / =check-python.sh --strict= 退出码 0 ✓；
+docstring **1608/1608 = 100%**（+16 个新定义）✓；配置侧符号检查 **51/51 全解析**（配置从 516 行减到 234）✓。
+
 **S6：CI 从"只跑 Ubuntu + Emacs 28.1 + 仅 LSP 驱动测试"改为两个作业**：
 
 - =gates=：**Emacs 28.2 / 29.4 / 30.1 矩阵**（=Package-Requires= 声明 28，且机械检查确认

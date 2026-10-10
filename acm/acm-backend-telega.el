@@ -1,6 +1,23 @@
 ;;; acm-backend-telega.el --- telega backend for acm -*- lexical-binding: t; no-byte-compile: t; -*-
 ;;; Commentary:
+;;
+;; Completion inside telega chat buffers: the members of the chat after "@",
+;; emoji after a lone ":", the bot commands and quick replies after "/", a
+;; language name inside a ``` fence, hashtags after "#", and Telegram's own
+;; emoji search after ":" when the keyword closes with ":".
+;;
+;; The file stays uncompiled on purpose (`no-byte-compile'), because it uses
+;; telega's macros - `with-telega-chatbuf' for one - that are neither required
+;; nor declared here: compiled without telega on the load path they would turn
+;; into function calls.
+;;
+;; It also relaxes two of lsp-bridge's completion predicates for telega chats,
+;; because without that the ":" and "```" triggers can never fire there: one
+;; keeps the popup alive right after ":", the other allows completion inside a
+;; string, which is what a code fence looks like to a syntax table.
 ;;; Code:
+
+(require 'cl-lib)
 
 (defgroup acm-backend-telega nil
   "Telega backend for ACM."
@@ -16,37 +33,101 @@
 Number if async request has been made, but request is not yet completed.
 `fetch' if members has not yet been fetched.")
 
+(defvar-local acm-backend-telega-hashtag-items nil
+  "Hashtags the last `acm-backend-telega-hashtag-candidates' asked for.")
+
+(defvar-local acm-backend-telega-hashtag-timer nil
+  "Timer of the pending hashtag search, or nil.")
+
+(defvar-local acm-backend-telega-tg-emoji-items nil
+  "Telegram emoji the last `acm-backend-telega-tg-emoji-candidates' asked for.")
+
+(defvar-local acm-backend-telega-tg-emoji-timer nil
+  "Timer of the pending Telegram emoji search, or nil.")
+
 (defun acm-backend-telega-enabled-p ()
   "Return non-nil if lsp-bridge is enabled in telega chatbufs."
   (and lsp-bridge-mode acm-enable-telega (derived-mode-p 'telega-chat-mode)))
 
+;;; The candidates of every source
+
+(defun acm-backend-telega--mention-candidate (user)
+  "Return the completion candidate of the chat member USER.
+The label is the username when USER has one - `telega-msg-sender-username'
+asked `with-@' - and the member title otherwise; the title always becomes
+the annotation, and the member itself is kept for the expansion, which
+needs it to build a mention entity for a member without a username."
+  (let* ((username (ignore-errors (telega-msg-sender-username user 'with-@)))
+         (title (ignore-errors
+                  (telega-msg-sender-title user
+                    :with-avatar-p nil
+                    :with-badges-p nil
+                    :with-title-faces-p nil)))
+         (label (or username title)))
+    (list :key (or username title)
+          :icon "at"
+          :label label
+          :displayLabel label
+          :annotation title
+          :member user
+          :backend "telega")))
+
+(defun acm-backend-telega--emoji-candidate (entry)
+  "Return the completion candidate of the emoji ENTRY.
+ENTRY is a `(name . char)' pair of `telega-emoji-alist'."
+  (list :key (car entry)
+        :icon "emoji"
+        :label (car entry)
+        :displayLabel (car entry)
+        :annotation (cdr entry)
+        :emoji t
+        :emoji-char (cdr entry)
+        :backend "telega"))
+
+(defun acm-backend-telega--precode-candidate (lang)
+  "Return the completion candidate of the code fence language LANG."
+  (list :key lang
+        :icon "code"
+        :label lang
+        :displayLabel lang
+        :annotation "code block"
+        :precode t
+        :backend "telega"))
+
+(defun acm-backend-telega--hashtag-candidate (hashtag)
+  "Return the completion candidate of the HASHTAG, without its \"#\"."
+  (list :key (concat "#" hashtag)
+        :icon "tag"
+        :label (concat "#" hashtag)
+        :displayLabel (concat "#" hashtag)
+        :annotation "hashtag"
+        :hashtag t
+        :backend "telega"))
+
+(defun acm-backend-telega--tg-emoji-candidate (emoji-keyword)
+  "Return the completion candidate of the Telegram EMOJI-KEYWORD.
+EMOJI-KEYWORD is one entry of the `:emojis' of `telega--searchEmojis'."
+  (let ((name (telega-tl-str emoji-keyword :keyword))
+        (emoji (telega-tl-str emoji-keyword :emoji)))
+    (list :key (concat ":" name ":")
+          :icon "emoji"
+          :label (concat ":" name ":")
+          :displayLabel (concat ":" name ":")
+          :annotation emoji
+          :emoji t
+          :emoji-char emoji
+          :backend "telega")))
+
+;;; The members of the chat
+
 (defun acm-backend-telega-items-set (members)
   "Set `acm-backend-telega-items' from MEMBERS in the current chatbuf.
-It is the callback of `telega--searchChatMembers'.  Only MEMBERS that
-have a username become candidates, using the username as label and the
-member title as annotation."
+It is the callback of `telega--searchChatMembers'.  Every member becomes a
+candidate: those with a username are labelled with it, the others with their
+title, and the expansion turns the latter into a mention entity."
   (cl-assert (acm-backend-telega-enabled-p))
   (setq acm-backend-telega-items
-        (mapcar (lambda (user)
-                  (let ((username (telega-msg-sender-username user))
-                        ;; TODO: support images/faces in the
-                        ;; lsp-bridge completion popup, so title with
-                        ;; avatars, badges and faces could be used
-                        (title (telega-msg-sender-title user
-                                 :with-avatar-p nil
-                                 :with-badges-p nil
-                                 :with-title-faces-p nil)))
-                    (list :key username
-                          :icon "at"
-                          :label username
-                          :displayLabel username
-                          :annotation title
-                          :backend "telega")))
-                ;; NOTE: only members having username are
-                ;; supported for lsp-bridge completion
-                ;; TODO: support for members without username, as in
-                ;; `telega-company-username' company backend
-                (cl-remove-if-not #'telega-msg-sender-username members)))
+        (mapcar #'acm-backend-telega--mention-candidate members))
   (message "Fetch telega userlist... done."))
 
 (defun acm-backend-telega-update-items (&rest _args)
@@ -75,17 +156,16 @@ member title as annotation."
                            (acm-backend-telega-items-set members))))))))
           )))
 
-(defun acm-backend-telega-candidates (keyword)
-  "Return telega username candidates matching KEYWORD.
-Return nil unless lsp-bridge is enabled in the current telega chat
-buffer and \"@\" precedes KEYWORD.  When KEYWORD is empty return
-`acm-backend-telega-items' unchanged, otherwise return the items whose
-label or annotation matches KEYWORD, sorted by prefix."
+(defun acm-backend-telega-mention-candidates (keyword)
+  "Return the chat member candidates matching KEYWORD.
+Return nil unless lsp-bridge is enabled in the current telega chat buffer
+and \"@\" precedes KEYWORD.  When KEYWORD is empty return
+`acm-backend-telega-items' unchanged, otherwise return the items whose label
+or annotation matches KEYWORD, sorted by prefix."
   (when (and (acm-backend-telega-enabled-p)
              (save-excursion
                (backward-char (length keyword))
-               (= (char-before) ?@)
-               ))
+               (= (char-before) ?@)))
     (if (string-equal keyword "")
         acm-backend-telega-items
       (acm-candidate-sort-by-prefix
@@ -95,6 +175,251 @@ label or annotation matches KEYWORD, sorted by prefix."
           (or (string-match keyword (plist-get item :label))
               (string-match keyword (plist-get item :annotation))))
         acm-backend-telega-items)))))
+
+;;; Emoji: :<name> -> the emoji character
+
+(defun acm-backend-telega-emoji-candidates (keyword)
+  "Return the emoji candidates matching KEYWORD.
+Only in a telega chat buffer and only when a lone \":\" precedes KEYWORD,
+which is what tells an emoji keyword from any other completion."
+  (when (and (derived-mode-p 'telega-chat-mode)
+             (save-excursion
+               (backward-char (length keyword))
+               (= (char-before) ?:)))
+    (telega-emoji-init)
+    (let ((prefix (concat ":" keyword)))
+      (mapcar #'acm-backend-telega--emoji-candidate
+              (cl-remove-if-not
+               (lambda (entry) (string-prefix-p prefix (car entry)))
+               telega-emoji-alist)))))
+
+;;; Slash: /<command> -> the bot commands and the quick replies
+
+(defun acm-backend-telega-slash-candidates (keyword)
+  "Return the bot command and quick reply candidates matching KEYWORD.
+\"/\" is a word constituent, so KEYWORD already carries it and the source is
+recognised by that prefix rather than by the character before point."
+  (when (and (derived-mode-p 'telega-chat-mode)
+             (string-prefix-p "/" keyword))
+    (let ((prefix keyword)
+          result)
+      (dolist (cmd (ignore-errors
+                     (telega-completions--bot-commands telega-chatbuf--chat)))
+        (when (string-prefix-p prefix cmd)
+          (push (list :key cmd
+                      :icon "robot"
+                      :label cmd
+                      :displayLabel cmd
+                      :annotation (get-text-property 0 'telega-annotation cmd)
+                      :slash t
+                      :backend "telega")
+                result)))
+      (when (ignore-errors (telega-chatbuf-match-p '(type private)))
+        (dolist (qr (ignore-errors (telega-completions--quick-replies)))
+          (when (string-prefix-p prefix qr)
+            (push (list :key qr
+                        :icon "reply"
+                        :label qr
+                        :displayLabel qr
+                        :annotation (get-text-property 0 'telega-annotation qr)
+                        :slash t
+                        :backend "telega")
+                  result))))
+      result)))
+
+;;; Precode: ```<lang> -> the language names of the major modes
+
+(defun acm-backend-telega-precode-candidates (keyword)
+  "Return the code fence language candidates matching KEYWORD.
+The keyword is completed inside the fence on the current line, so the
+position where the completion started is compared with the match of the
+fence rather than with the word before point."
+  (when (derived-mode-p 'telega-chat-mode)
+    (let ((orig-point (point)))
+      (save-excursion
+        (beginning-of-line)
+        (when (looking-at "```\\([^`\t\n ]*\\)")
+          (let ((lang-start (match-beginning 1))
+                (lang-end (match-end 1)))
+            (when (and (>= orig-point lang-start)
+                       (<= orig-point lang-end))
+              (mapcar #'acm-backend-telega--precode-candidate
+                      (cl-remove-if-not
+                       (lambda (lang) (string-prefix-p keyword lang))
+                       (ignore-errors (telega-completions--language-names)))))))))))
+
+;;; Hashtag: #<tag> through TDLib searchHashtags
+
+(defun acm-backend-telega-hashtag-candidates (keyword)
+  "Return the hashtag candidates matching KEYWORD.
+TDLib answers asynchronously, so the search is debounced with
+`acm-backend-telega-hashtag-timer' and the popup is refreshed through
+`acm-update' when the answer arrives; the previous results are returned in
+the meantime, with a placeholder while nothing has been searched yet."
+  (when (and (derived-mode-p 'telega-chat-mode)
+             (save-excursion
+               (backward-char (length keyword))
+               (= (char-before) ?#)))
+    (when acm-backend-telega-hashtag-timer
+      (cancel-timer acm-backend-telega-hashtag-timer))
+    (let ((query keyword)
+          (buf (current-buffer)))
+      (setq acm-backend-telega-hashtag-timer
+            (run-with-timer 0.2 nil
+                            (lambda ()
+                              (telega--searchHashtags query
+                                :callback
+                                (lambda (hashtags)
+                                  (with-current-buffer buf
+                                    (setq acm-backend-telega-hashtag-items
+                                          (mapcar #'acm-backend-telega--hashtag-candidate
+                                                  hashtags))
+                                    (acm-update)))))))
+      (or acm-backend-telega-hashtag-items
+          (list (list :key "#..."
+                      :icon "tag"
+                      :label "#..."
+                      :displayLabel "#..."
+                      :annotation "searching..."
+                      :backend "telega"))))))
+
+;;; Telegram emoji: :<name>: through TDLib searchEmojis
+
+(defun acm-backend-telega-tg-emoji-candidates (keyword)
+  "Return the Telegram emoji candidates matching KEYWORD.
+TDLib answers asynchronously, so the search is debounced with
+`acm-backend-telega-tg-emoji-timer' and the popup is refreshed through
+`acm-update' when the answer arrives; the search replaces \"-\" with a space
+because that is how TDLib splits the words of an emoji keyword."
+  (when (and (derived-mode-p 'telega-chat-mode)
+             (> (length keyword) 0)
+             (save-excursion
+               (backward-char (length keyword))
+               (= (char-before) ?:)))
+    (let ((search-text (replace-regexp-in-string "-" " " keyword))
+          (buf (current-buffer)))
+      (when acm-backend-telega-tg-emoji-timer
+        (cancel-timer acm-backend-telega-tg-emoji-timer))
+      (setq acm-backend-telega-tg-emoji-timer
+            (run-with-timer 0.2 nil
+                            (lambda ()
+                              (telega--searchEmojis search-text
+                                :callback
+                                (lambda (emoji-keywords)
+                                  (with-current-buffer buf
+                                    (setq acm-backend-telega-tg-emoji-items
+                                          (mapcar #'acm-backend-telega--tg-emoji-candidate
+                                                  emoji-keywords))
+                                    (acm-update)))))))
+      acm-backend-telega-tg-emoji-items)))
+
+;;; The backend entry points
+
+(defun acm-backend-telega-candidates (keyword)
+  "Return every telega candidate matching KEYWORD.
+The sources are asked in turn: the chat members, then the emoji, the
+Telegram emoji, the bot commands and quick replies, the hashtags and the
+code fence languages.  Each one decides for itself whether it applies, so
+this is a plain append of whatever they answer."
+  (append (acm-backend-telega-mention-candidates keyword)
+          (acm-backend-telega-emoji-candidates keyword)
+          (acm-backend-telega-tg-emoji-candidates keyword)
+          (acm-backend-telega-slash-candidates keyword)
+          (acm-backend-telega-hashtag-candidates keyword)
+          (acm-backend-telega-precode-candidates keyword)))
+
+(defun acm-backend-telega-candidate-expand (candidate-info bound-start &optional preview)
+  "Insert the telega candidate CANDIDATE-INFO, replacing BOUND-START onwards.
+Every source replaces the token at point, and the leading character of that
+token - \"@\", \"/\", \"#\", \":\" or the fence backtick - is part of the
+bound to delete.  A mention of a member without a username becomes a mention
+entity carrying the member id, which is the only way Telegram accepts it.
+PREVIEW non-nil shows the candidate in an overlay instead of inserting it."
+  (cond
+   ;; Emoji, slash, precode and hashtag candidates all replace the token at point.
+   ((plist-get candidate-info :emoji)
+    (let ((text (plist-get candidate-info :emoji-char)))
+      (when (eq (char-before bound-start) ?:)
+        (setq bound-start (1- bound-start)))
+      (if preview
+          (acm-preview-create-overlay bound-start (point) text)
+        (delete-region bound-start (point))
+        (insert text))))
+   ((plist-get candidate-info :slash)
+    (let ((text (plist-get candidate-info :label)))
+      (when (eq (char-before bound-start) ?/)
+        (setq bound-start (1- bound-start)))
+      (if preview
+          (acm-preview-create-overlay bound-start (point) text)
+        (delete-region bound-start (point))
+        (insert text)
+        (insert " "))))
+   ((plist-get candidate-info :precode)
+    (let ((text (plist-get candidate-info :label)))
+      (if preview
+          (acm-preview-create-overlay bound-start (point) text)
+        (delete-region bound-start (point))
+        (insert text)
+        ;; Mirror telega: insert closing ``` on a new line, leave cursor between.
+        (insert "\n\n```")
+        (forward-line -1)
+        (beginning-of-line))))
+   ((plist-get candidate-info :hashtag)
+    (let ((text (plist-get candidate-info :label)))
+      (when (eq (char-before bound-start) ?#)
+        (setq bound-start (1- bound-start)))
+      (if preview
+          (acm-preview-create-overlay bound-start (point) text)
+        (delete-region bound-start (point))
+        (insert text)
+        (insert " "))))
+   ;; Mention candidate: insert @username, or a mention entity when the member
+   ;; has no username (which is also why the member is kept in the candidate).
+   (t
+    (let* ((member (plist-get candidate-info :member))
+           (username (ignore-errors (telega-msg-sender-username member 'with-@)))
+           (title (ignore-errors
+                    (telega-msg-sender-title member
+                      :with-avatar-p nil
+                      :with-badges-p nil
+                      :with-title-faces-p nil)))
+           (label (or username title)))
+      ;; Delete the leading @ prefix (inserted label starts with @ for
+      ;; username users, or is a mention entity for no-username users)
+      (when (eq (char-before bound-start) ?@)
+        (setq bound-start (1- bound-start)))
+      (if preview
+          (acm-preview-create-overlay bound-start (point) label)
+        (delete-region bound-start (point))
+        (if username
+            (insert username)
+          (let ((start (point)))
+            (insert title)
+            (put-text-property start (point) :tl-entity-type
+                               (list :@type "textEntityTypeMentionName"
+                                     :user_id (plist-get member :id)))
+            (put-text-property start (point) 'face 'telega-entity-type-mention)))
+        ;; Append a space right after the mention, mirroring
+        ;; `telega-completions--username-post-completion' behaviour.
+        (insert " "))))))
+
+;;; Keeping telega's own triggers reachable
+
+(with-eval-after-load 'lsp-bridge
+  ;; lsp-bridge hides completion right after ":" by default. Bypass that
+  ;; for ":" in telega-chat-mode so emoji popup triggers immediately.
+  (define-advice lsp-bridge--not-match-hide-characters (:around (orig) telega-colon)
+    "Keep the emoji popup alive right after \":\" in telega chats."
+    (if (and (derived-mode-p 'telega-chat-mode)
+             (eq (char-before) ?:))
+        t
+      (funcall orig)))
+  ;; Allow completion inside strings in telega chat (for ```lang)
+  (define-advice lsp-bridge--not-in-string (:around (orig) telega-chat)
+    "Allow completion inside strings in telega chat (for ```lang)."
+    (if (derived-mode-p 'telega-chat-mode)
+        t
+      (funcall orig))))
 
 ;; Update userlist when first switch to telega buffer.
 (advice-add 'telega-chatbuf--switch-in
