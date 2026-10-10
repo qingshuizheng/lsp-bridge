@@ -48,6 +48,18 @@
 
 ** 进度
 
+- 2026-10-11 **backend registry + candidate 协议**（S3 第一刀）：新增 =acm/acm-backend.el=，
+  =acm-backend= 结构描述一个后端（name/group/fetch-fn/expand-fn/doc-fn/clean-fn/preview/
+  enabled/skip-in-comment/dedupe-against-lsp/short-circuit/template），原先散在
+  =acm-update-candidates= 里的分支规则全部变成数据；菜单只通过 =acm-backends-fetch=、
+  =acm-backend-expand=、=acm-backend-doc=、=acm-backend-clean= 与后端交互，
+  四处 =intern-soft= 命名约定查找（expand/doc/clean/菜单渲染）全部删除。
+  候选协议写进 =acm-candidate-make=／=acm-candidates-normalize=：缺少 label 的候选会被丢弃、
+  缺少 =:backend= 的候选由取它的后端补上（这让只返回裸候选的第三方后端也能正确展开）。
+  =test/acm-backend-test.el= 14 例覆盖注册/协议/取候选的四个门/短路/去重/分组顺序/端到端
+  合并顺序/分发。踩到的坑记两条：=alist-get= 对**字符串键**用 =eq= 比较（分组查找必须用 =assoc=，
+  已收敛到 =acm-backends-group=）；=cl-defstruct= 的槽位访问器与分发函数同名会互相覆盖
+  （槽位因此都带 =-fn= 后缀）。
 - 2026-10-11 =acm-backend-org-roam= → **=acm-backend-vulpea=**（用户要求"匹配 vulpea 包"，
   并"对比 vulpea 本身的 capf 补全机制"）。对照物是第三方包
   [[https://github.com/neonmei/vulpea-capf][=vulpea-capf=]]（vulpea 本体**不提供** capf，其 README 指向它；
@@ -109,7 +121,7 @@
 | **S0** 已完成 | 移除死后端 tabnine / codeium / sdcv；建 =scripts/docstring-report.py=、=scripts/check-elisp.sh=；本文件 | 全仓库 0 处引用；=py_compile= / parse 通过 |
 | **S1** ✅ 完成 | elisp docstring 补全（实际 ~470 处），**只加文档、不搬代码**，按文件切片 | =docstring-report.py --check= 全树通过；=check-elisp.sh= 无 warning 回归（整树 warning 207 → 173） |
 | **S2** ✅ 基本完成 | Python docstring 补全 + =except:= 清理 + ruff/pydocstyle 配置与门禁 | =scripts/check-python.sh --strict= 全绿（py_compile / docstring 存在性 / 硬门禁 / D 门禁）；剩余：=F403/F405= star-import 421 条（需与 =core/utils.py= 的导出面一起决定，见「已做的决定」）与 =E501=（旧行宽） |
-| **S3** | popup 层重构：=acm-popup/acm-session/acm-menu/acm-doc=，popup 状态按父 frame 归位 | =test/acm-test.el= 14 例已就位并通过（=scripts/check-test.sh=）：候选 helper、输入前缀、popup predicates、quick-access 键、update/hide 周期、选择保持；S3 需继续覆盖多父 frame 切换 |
+| **S3** | popup 层重构：=acm-popup/acm-session/acm-menu/acm-doc=，popup 状态按父 frame 归位（**registry + candidate 协议已完成**：=acm/acm-backend.el=） | =test/acm-test.el= 14 例已就位并通过（=scripts/check-test.sh=）：候选 helper、输入前缀、popup predicates、quick-access 键、update/hide 周期、选择保持；S3 需继续覆盖多父 frame 切换 |
 | **S4** | =acm-backend.el=：candidate 协议 + registry；=lsp-bridge.el= 拆分；协议握手 + =lsp-bridge-diagnose= | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
 | **S5** | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
 | **S6** | 测试与 CI：acm 冒烟测试、docstring 门、ruff、Emacs 版本矩阵（现在只跑 Ubuntu + Emacs 28.1，而代码用 30+ 的 child frame 特性） | 进行中：=test/acm-test.el=（14 例，headless）+ =test/lsp-bridge-org-babel-test.el=（9 例）由 =scripts/check-test.sh= 跑通；=--all= 追加 langserver/byte-compile/语言服务器驱动的 Python 测试；剩余：CI 里的 Emacs 版本矩阵 |

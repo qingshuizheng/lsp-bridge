@@ -451,6 +451,8 @@ The candidates of the current mode are collected from the backends below. `acm-c
 
 Each backend also has tuning options of its own (`acm-backend-<name>-*`) and is implemented in `acm/acm-backend-<name>.el`; the options are listed above together with the rest.
 
+A backend is a registration in `acm/acm-backend.el`: its fetch, expand and documentation functions, the option or predicate that enables it, the candidate group it contributes to and the capabilities it has (previews, a cache to clean, candidates to drop when the language server already returned the same label). Adding a backend is adding data there - `acm-backend-register` also lets a third-party package add itself - and the menu code never needs to know its name.
+
 The `vulpea` backend follows what Vulpea itself does when it selects a note: a note is offered under its title and under each of its aliases (`vulpea-note-expand-aliases`), headings that are not notes are skipped, the candidate is annotated by `vulpea-select-annotate` (the tags, plus the primary title when an alias is picked, exactly what `vulpea-find` shows) and the inserted description is the name that was picked. If you prefer the [`vulpea-capf`](https://github.com/neonmei/vulpea-capf) package instead, note that it is a set of `completion-at-point` functions, so it also completes bare words anywhere in an Org buffer; this backend only handles the `[[` brackets. To surface `vulpea-capf` through the acm capf backend, add `org-mode` to `acm-backend-capf-mode-list` — and do not turn both on in the same buffer, or the bracket case is offered twice.
 
 ## Supported language servers
@@ -716,6 +718,7 @@ The following is the directory structure of the lsp-bridge project:
 | lsp_bridge.py                         | Main Python backend, including the event loop, request scheduling, and state management                             |
 | python-lsp-bridge                     | Shell launcher that runs the Python backend through `uv`                                                            |
 | acm/                                  | Async completion menu frontend and completion UI used by lsp-bridge                                                 |
+| acm/acm-backend.el                    | Backend registry and candidate protocol: which backends exist and what each one can do                              |
 | core/fileaction.py                    | Per-file state machine that routes requests, handles responses, and coordinates editor state                        |
 | core/lspserver.py                     | LSP transport layer for each server process, including request/response ordering                                    |
 | core/handler/                         | Concrete handlers for LSP methods and editor actions                                                                |
