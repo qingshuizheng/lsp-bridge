@@ -66,5 +66,27 @@
                          (mapcar (lambda (c) (plist-get c :label)) (ask "ali"))))
           (should (= 1 (length (ask "bob")))))))))
 
+(ert-deftest acm-backend-telega-test-mention-accepts-the-trigger-in-the-keyword ()
+  "The trigger character may be part of the keyword, as the string style gives it."
+  (acm-backend-telega-test--with-telega
+    (with-temp-buffer
+      (setq major-mode 'telega-chat-mode)
+      (setq-local acm-backend-telega-items
+                  (list (list :label "@alice" :annotation "Alice")))
+      (cl-letf (((symbol-function 'acm-backend-telega-enabled-p) (lambda () t)))
+        (cl-flet ((ask (keyword)
+                    (erase-buffer)
+                    (insert "@" (string-remove-prefix "@" keyword))
+                    (goto-char (point-max))
+                    (mapcar (lambda (c) (plist-get c :label))
+                            (acm-backend-telega-mention-candidates keyword))))
+          ;; `acm-input-bound-style' is "string": the prefix starts after the last
+          ;; whitespace, so the "@" is handed over inside the keyword.
+          (should (equal '("@alice") (ask "@al")))
+          ;; the symbol/ascii styles hand over "al" alone, which always worked.
+          (should (equal '("@alice") (ask "al")))
+          (should-not (ask "zz")))))))
+
+
 (provide 'acm-backend-telega-test)
 ;;; acm-backend-telega-test.el ends here

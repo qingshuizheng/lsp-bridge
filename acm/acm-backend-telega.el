@@ -188,6 +188,20 @@ title, and the expansion turns the latter into a mention entity."
                          (with-telega-chatbuf chat
                            (acm-backend-telega-items-set members)))))))))))
 
+(defun acm-backend-telega--typed-prefix-p (keyword char)
+  "Non-nil when KEYWORD was typed right after CHAR.
+`acm-input-bound-style' decides whether the trigger character is part of the
+prefix: with the string style the prefix starts after the last whitespace, so
+the trigger arrives inside KEYWORD, while the symbol and ascii styles hand over
+the symbol at point and it arrives alone.  Both have to be accepted, or every
+source that looks for the trigger character is blind to one of them - which is
+what made only the slash command source complete."
+  (or (and (> (length keyword) 0) (= (aref keyword 0) char))
+      (save-excursion
+        (backward-char (length keyword))
+        (= (char-before) char))))
+
+
 (defun acm-backend-telega-mention-candidates (keyword)
   "Return the chat member candidates matching KEYWORD.
 Return nil unless lsp-bridge is enabled in the current telega chat buffer
@@ -195,9 +209,7 @@ and \"@\" precedes KEYWORD.  When KEYWORD is empty return
 `acm-backend-telega-items' unchanged, otherwise return the items whose label
 or annotation matches KEYWORD, sorted by prefix."
   (when (and (acm-backend-telega-enabled-p)
-             (save-excursion
-               (backward-char (length keyword))
-               (= (char-before) ?@)))
+             (acm-backend-telega--typed-prefix-p keyword ?@))
     ;; The member list is fetched once per chat, asynchronously.
     ;; `telega-chatbuf--switch-in' normally asks for it, but that hook can run
     ;; before lsp-bridge-mode is on in the buffer (or with the mode off), and then
@@ -225,9 +237,7 @@ or annotation matches KEYWORD, sorted by prefix."
 Only in a telega chat buffer and only when a lone \":\" precedes KEYWORD,
 which is what tells an emoji keyword from any other completion."
   (when (and (derived-mode-p 'telega-chat-mode)
-             (save-excursion
-               (backward-char (length keyword))
-               (= (char-before) ?:)))
+             (acm-backend-telega--typed-prefix-p keyword ?:))
     (telega-emoji-init)
     (let ((prefix (concat ":" keyword)))
       (mapcar #'acm-backend-telega--emoji-candidate
@@ -299,9 +309,7 @@ TDLib answers asynchronously, so the search is debounced with
 `acm-update' when the answer arrives; the previous results are returned in
 the meantime, with a placeholder while nothing has been searched yet."
   (when (and (derived-mode-p 'telega-chat-mode)
-             (save-excursion
-               (backward-char (length keyword))
-               (= (char-before) ?#)))
+             (acm-backend-telega--typed-prefix-p keyword ?#))
     (when acm-backend-telega-hashtag-timer
       (cancel-timer acm-backend-telega-hashtag-timer))
     (let ((query keyword)
@@ -335,9 +343,7 @@ TDLib answers asynchronously, so the search is debounced with
 because that is how TDLib splits the words of an emoji keyword."
   (when (and (derived-mode-p 'telega-chat-mode)
              (> (length keyword) 0)
-             (save-excursion
-               (backward-char (length keyword))
-               (= (char-before) ?:)))
+             (acm-backend-telega--typed-prefix-p keyword ?:))
     (let ((search-text (replace-regexp-in-string "-" " " keyword))
           (buf (current-buffer)))
       (when acm-backend-telega-tg-emoji-timer
