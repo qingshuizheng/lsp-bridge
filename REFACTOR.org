@@ -234,6 +234,30 @@ ruff check core lsp_bridge.py          # S2 起接入
    （无值的 defvar = 声明 ✓，docstring 门禁已能识别）；只对**包外**库用 =require=（=cl-lib=／=tramp=／=subr-x=）。
    对包内文件 =require=（例如 =(require 'lsp-bridge-epc)=）会把整个 =lsp-bridge.el= 提前加载，
    从而**改变后续文件的告警画像** ⇒ 一律声明，不 require 包内文件。
+**进度 8（拆分完成）**：第 8 步（=core= 层）已完成 —— =lsp-bridge-core.el=（684 行、44 个定义：
+光标/变更监控与 =--position= 系列、=monitor-*= 六个钩子、elisp 符号同步与 search words 索引、
+=lsp-bridge-mode=／=global-lsp-bridge-mode=／=--enable=／=--disable=／=--turn-off-lsp-feature=、
+模式变量与 keymap、三个 advisor（revert/rename/completion-hide）与 =--cleanup=、
+=enable-in-minibuffer=、=is-org-temp-buffer-p= 与 =--last-buffer=／进度变量）。
+
+**拆分结果**：=lsp-bridge.el= **4115 → 1467 行**（减 64%），只剩文件头、选项
+（defcustom 与各语言 server 配置、语言/工程查找函数）与末尾的 require 链：
+
+| 文件 | 行数 | 职责 |
+|------+------+------|
+| =lsp-bridge.el= | 1467 | 入口、选项、require 链 |
+| =lsp-bridge-core.el= | 684 | 共享缓冲状态、监控、模式、advisor |
+| =lsp-bridge-transport.el= | 612 | EPC、进程、握手、diagnose |
+| =lsp-bridge-completion.el= | 531 | 补全请求/候选/谓词/search backend |
+| =lsp-bridge-workspace.el= | 339 | workspace symbol、格式化、编辑、highlight |
+| =lsp-bridge-remote.el= | 309 | 远程与 tramp |
+| =lsp-bridge-jump.el= | 295 | 跳转、引用、重命名、mark ring |
+| =lsp-bridge-document.el= | 206 | 文档与签名帮助 |
+| =lsp-bridge-ui.el= | 134 | which-func、进度、mode-line |
+
+八步全部满足同一条验收：**归一化 warning 多重集与上一步逐条一致**（152 = 152，每步空 diff），
+外加 checkdoc 0、docstring 100%、测试全绿、加载冒烟。
+
 **进度 7**：第 7 步（=transport= 层）已完成 —— =lsp-bridge-transport.el=（612 行、44 个定义：
 EPC 服务端与其 12 个 =--*-func= 回调、=call-async=／=call-sync=／=call-file-api= 与其前置判断、
 进程启停与日志（=start/kill/restart=、=profile-dump=、=--process-log-output=）、
