@@ -49,35 +49,58 @@ DEFAULT_BUFFER_SIZE = 100000000  # we need make buffer size big enough, avoid pi
 INLAY_HINT_REQUEST_ID_DICT = {}
 
 class MultiFileHandler(FileSystemEventHandler):
+    """Watch the files a server asked for and report their changes to it.
+
+    An instance keeps the watched file paths in `file_path_dict` and the
+    schedules directories in `dir_path_dict`, then forwards create, modify and
+    delete events to the owning LspServer.
+    """
+
     def __init__(self, lsp_server):
+        """Record LSP_SERVER as the owner and start with empty watch lists."""
         self.lsp_server = lsp_server
         self.file_path_dict = {}
         self.dir_path_dict = {}
 
     def add_file(self, file_path):
+        """Add FILE_PATH to the list of watched files."""
         self._add_to_dict(self.file_path_dict, file_path)
 
     def add_dir(self, dir_path):
+        """Add DIR_PATH to the list of watched directories."""
         self._add_to_dict(self.dir_path_dict, dir_path)
 
     def _add_to_dict(self, dictionary, path):
+        """Store PATH in DICTIONARY keyed by its absolute form."""
         dictionary[os.path.abspath(path)] = path
 
     def on_created(self, event):
+        """Report EVENT to the server as a file creation."""
         self._handle_event(event, 1)
 
     def on_modified(self, event):
+        """Report EVENT to the server as a file modification."""
         self._handle_event(event, 2)
 
     def on_deleted(self, event):
+        """Report EVENT to the server as a file deletion."""
         self._handle_event(event, 3)
 
     def _handle_event(self, event, change_type):
+        """Forward EVENT with CHANGE_TYPE when it concerns a watched file."""
         if not event.is_directory and event.src_path in self.file_path_dict:
             self.lsp_server.send_workspace_did_change_watched_files(event.src_path, change_type)
 
 class LspServerSender(MessageSender):
+    """Write JSON-RPC messages to one LSP server process.
+
+    An instance owns the `init_queue` used until the server has answered
+    `initialize`, the `initialized` event that unblocks the send loop, and the
+    server and project names used for logging.
+    """
+
     def __init__(self, process: subprocess.Popen, server_name, project_name):
+        """Send messages to PROCESS, labelled with SERVER_NAME and PROJECT_NAME."""
         super().__init__(process)
 
         self.server_name = server_name
@@ -87,6 +110,7 @@ class LspServerSender(MessageSender):
         self.initialized = threading.Event()
 
     def enqueue_message(self, message: dict, *, init=False):
+        """Queue MESSAGE on the init queue when INIT, else on the normal queue."""
         message["jsonrpc"] = "2.0"
         if init:
             self.init_queue.put(message)
@@ -94,6 +118,7 @@ class LspServerSender(MessageSender):
             self.queue.put(message)
 
     def send_request(self, method, params, request_id, **kwargs):
+        """Queue a METHOD request with PARAMS and REQUEST_ID; KWARGS reach the queue."""
         self.enqueue_message(dict(
             id=request_id,
             method=method,
@@ -102,6 +127,7 @@ class LspServerSender(MessageSender):
         ), **kwargs)
 
     def send_notification(self, method, params, **kwargs):
+        """Queue a METHOD notification with PARAMS; KWARGS reach the queue."""
         self.enqueue_message(dict(
             method=method,
             params=params,
@@ -109,6 +135,7 @@ class LspServerSender(MessageSender):
         ), **kwargs)
 
     def send_response(self, request_id, result, **kwargs):
+        """Queue a response to REQUEST_ID carrying RESULT; KWARGS reach the queue."""
         self.enqueue_message(dict(
             id=request_id,
             result=result,
@@ -116,6 +143,7 @@ class LspServerSender(MessageSender):
         ), **kwargs)
 
     def send_message(self, message: dict):
+        """Frame, write and log MESSAGE on the server's stdin."""
         # message_type is not valid key of JSONRPC, we need remove message_type before send LSP server.
         message_type = message.get("message_type")
         message.pop("message_type")
@@ -156,6 +184,7 @@ class LspServerSender(MessageSender):
         logger.debug(json.dumps(message, indent=3))
 
     def run(self) -> None:
+        """Drain the init queue first, then send queued messages until exit."""
         try:
             # Send "initialize" request.
             self.send_message(self.init_queue.get())
@@ -176,6 +205,7 @@ class LspServerSender(MessageSender):
             logger.error(traceback.format_exc())
 
 def record_inlay_hint_request(message):
+    """Remember the document URI of the inlayHint request in MESSAGE."""
     # InlayHint will got error 'content modified' error if it followed immediately by a didChange request.
     # So we need INLAY_HINT_REQUEST_ID_DICT to contain documentation path to send retry request.
     if message.get("method", "response") == "textDocument/inlayHint":
@@ -187,6 +217,7 @@ def record_inlay_hint_request(message):
             pass
 
 def resend_inlay_hint_request_after_content_modified_error(message):
+    """Ask Emacs to retry the inlayHint request described by MESSAGE."""
     # Get message file path.
     message_id = message.get("id")
     message_documentation = INLAY_HINT_REQUEST_ID_DICT[message_id]
@@ -198,13 +229,20 @@ def resend_inlay_hint_request_after_content_modified_error(message):
     eval_in_emacs("lsp-bridge-inlay-hint-retry", message_documentation)
 
 class LspServerReceiver(MessageReceiver):
+    """Read and frame JSON-RPC messages from one LSP server process.
+
+    An instance parses the Content-Length headers from the process stdout and
+    pushes `lsp_recv_message` payloads on its queue for the owning LspServer.
+    """
 
     def __init__(self, process: subprocess.Popen, server_name):
+        """Read from PROCESS and log the server as SERVER_NAME."""
         super().__init__(process)
 
         self.server_name = server_name
 
     def emit_message(self, line):
+        """Queue LINE as a parsed `lsp_recv_message` payload."""
         if not line:
             return
         try:
@@ -217,6 +255,7 @@ class LspServerReceiver(MessageReceiver):
             logger.error(traceback.format_exc())
 
     def run(self):
+        """Read frames from stdout until the server process exits."""
         try:
             content_length = None
             buffer = bytearray()
@@ -263,7 +302,21 @@ class LspServerReceiver(MessageReceiver):
             logger.error(traceback.format_exc())
 
 class LspServer:
+    """Own one LSP server process and the files it is serving.
+
+    An instance holds the `request_dict` mapping request ids to their handler,
+    the capability flags read from the server's `initialize` result, the open
+    `files` keyed by path, and the sender/receiver threads used to talk to
+    `lsp_subprocess`.
+    """
+
     def __init__(self, message_queue, project_path, server_info, server_name, enable_diagnostics):
+        """Start the SERVER_INFO process for PROJECT_PATH.
+
+        Status is reported back to MESSAGE_QUEUE, SERVER_NAME labels the
+        server and ENABLE_DIAGNOSTICS decides how much diagnostic capability
+        is advertised during the handshake.
+        """
         self.message_queue = message_queue
         self.project_path = project_path
         self.project_name = os.path.basename(project_path)
@@ -343,6 +396,7 @@ class LspServer:
         self.files: Dict[str, "FileAction"] = dict()
 
     def attach(self, fa: "FileAction"):
+        """Track FA and tell the server that its file was opened."""
         if is_in_path_dict(self.files, fa.filepath):
             logger.error(f"File {fa.filepath} opened again before close.")
             return
@@ -360,6 +414,7 @@ class LspServer:
         self.send_did_open_notification(fa)
 
     def lsp_message_dispatcher(self):
+        """Dispatch every message received from the server until it dies."""
         try:
             while True:
                 message = self.receiver.get_message()
@@ -368,6 +423,7 @@ class LspServer:
             logger.error(traceback.format_exc())
 
     def send_initialize_request(self):
+        """Send the `initialize` request with the client capabilities."""
         initialize_options = self.server_info.get("initializationOptions", {})
 
         self.worksplace_folder = get_emacs_func_result("get-workspace-folder", self.project_path)
@@ -385,6 +441,7 @@ class LspServer:
         }, self.initialize_id, init=True)
 
     def get_capabilities(self):
+        """Return the client capabilities merged with the configured ones."""
         server_capabilities = self.server_info.get("capabilities", {})
 
         merge_capabilites = merge(server_capabilities, {
@@ -495,6 +552,7 @@ class LspServer:
         return merge_capabilites
 
     def get_initialization_options(self):
+        """Return the server initialization options, adding the workspace folder."""
         initialization_options = self.server_info.get("initializationOptions", {})
 
         if isinstance(self.worksplace_folder, str):
@@ -543,9 +601,11 @@ class LspServer:
         return uri
 
     def get_server_name(self):
+        """Return the raw server name without its '#' configuration suffix."""
         return self.server_name.split('#')[1] if '#' in self.server_name else self.server_name
 
     def get_language_id(self, fa):
+        """Return the LSP language id to use for the file of FA."""
         # Get extension name.
         _, extension = os.path.splitext(fa.filepath)
         extension_name = extension.split(os.path.extsep)[-1].lower()
@@ -566,6 +626,7 @@ class LspServer:
             return extension_name if language_id == "" else language_id
 
     def send_did_open_notification(self, fa: "FileAction"):
+        """Tell the server that the file of FA was opened, sending its text."""
         self.sender.send_notification("textDocument/didOpen", {
             "textDocument": {
                 "uri": self.parse_document_uri(fa.filepath, fa.external_file_link),
@@ -576,6 +637,7 @@ class LspServer:
         })
 
     def send_did_close_notification(self, filepath):
+        """Tell the server that FILEPATH was closed."""
         self.sender.send_notification("textDocument/didClose", {
             "textDocument": {
                 "uri": self.get_document_uri(filepath),
@@ -583,6 +645,7 @@ class LspServer:
         })
 
     def send_did_rename_files_notification(self, old_filepath, new_filepath):
+        """Tell the server that OLD_FILEPATH was renamed to NEW_FILEPATH."""
         self.sender.send_notification("workspace/renameFiles", {
             "files": [{
                 "oldUri": path_to_uri(old_filepath),
@@ -591,6 +654,11 @@ class LspServer:
         })
 
     def send_did_save_notification(self, filepath, buffer_name):
+        """Tell the server that FILEPATH was saved.
+
+        The whole buffer content is included when the server advertised
+        `includeText`, using BUFFER_NAME to fetch it from Emacs.
+        """
         if self.save_file_provider:
             args = {
                 "textDocument": {
@@ -609,6 +677,7 @@ class LspServer:
             self.sender.send_notification("textDocument/didSave", args)
 
     def send_workspace_did_change_watched_files(self, filepath, change_type):
+        """Report that FILEPATH changed with the LSP CHANGE_TYPE code."""
         self.sender.send_notification("workspace/didChangeWatchedFiles", {
             "changes": [{
                 "uri": path_to_uri(filepath),
@@ -617,6 +686,11 @@ class LspServer:
         })
 
     def send_did_change_notification(self, filepath, version, start, end, range_length, text):
+        """Tell the server that FILEPATH changed.
+
+        The change replaces the range from START to END of length RANGE_LENGTH
+        with TEXT at document VERSION.
+        """
         # STEP 5: Tell LSP server file content is changed.
         # This step is very IMPORTANT, make sure LSP server contain same content as client,
         # otherwise LSP server won't response client request, such as completion, find-define, find-references and rename etc.
@@ -638,6 +712,10 @@ class LspServer:
         })
 
     def send_whole_change_notification(self, filepath, version, file_content=None):
+        """Tell the server the whole content of FILEPATH at VERSION.
+
+        FILE_CONTENT is read from disk when not given.
+        """
         if not file_content:
             with open(filepath, encoding="utf-8", errors="ignore") as f:
                 file_content = f.read()
@@ -654,15 +732,19 @@ class LspServer:
         })
 
     def record_request_id(self, request_id: int, handler: Handler):
+        """Remember HANDLER as the handler waiting for REQUEST_ID."""
         self.request_dict[request_id] = handler
 
     def send_shutdown_request(self):
+        """Send the `shutdown` request to the server."""
         self.sender.send_request("shutdown", {}, generate_request_id())
 
     def send_exit_notification(self):
+        """Send the `exit` notification to the server."""
         self.sender.send_notification("exit", {})
 
     def get_server_workspace_change_configuration(self):
+        """Return the `workspace/didChangeConfiguration` settings for this server."""
         settings = {
             "settings": self.server_info.get("settings", {})
         }
@@ -680,6 +762,11 @@ class LspServer:
         return settings
 
     def handle_workspace_configuration_request(self, name, request_id, params):
+        """Answer a `workspace/configuration` request from the server.
+
+        NAME labels the server, REQUEST_ID is the id to answer and PARAMS lists
+        the requested configuration items.
+        """
         settings = self.server_info.get("settings", {})
 
         # NOTE: We send message fill null with same length of workspace/configuration params and send back to server
@@ -713,6 +800,12 @@ class LspServer:
         self.sender.send_response(request_id, items)
 
     def handle_error_message(self, message):
+        """Log MESSAGE and react to the error it carries.
+
+        The matching capability is disabled for "Unhandled method" errors, the
+        inlay hint request is retried when it failed with content modified, and
+        any other error is shown to the user.
+        """
         logger.error("Recv message (error):")
         logger.error(json.dumps(message, indent=3))
 
@@ -743,6 +836,7 @@ class LspServer:
             message_emacs(error_message)
 
     def record_message(self, message):
+        """Log MESSAGE with a description of the request, response or notification."""
         if "id" in message:
             if "method" in message:
                 # server request
@@ -765,23 +859,27 @@ class LspServer:
                 log_time("Recv message {} from '{}' for project {}".format(message, self.server_info["name"], self.project_name))
 
     def handle_diagnostics_message(self, message):
+        """Route diagnostic MESSAGE to the diagnostics handlers."""
         self.handle_publish_diagnostics(message)
 
         self.handle_dart_publish_closing_labels(message)
 
     def handle_publish_diagnostics(self, message):
+        """Record the diagnostics of MESSAGE on the file it belongs to."""
         if "method" in message and message["method"] == "textDocument/publishDiagnostics":
             filepath = uri_to_path(message["params"]["uri"])
             if self.enable_diagnostics and is_in_path_dict(self.files, filepath):
                 get_from_path_dict(self.files, filepath).record_diagnostics(message["params"]["diagnostics"], self.server_info["name"])
 
     def handle_dart_publish_closing_labels(self, message):
+        """Record the Dart closing labels of MESSAGE on the file it belongs to."""
         if "method" in message and message["method"] == "dart/textDocument/publishClosingLabels":
             filepath = uri_to_path(message["params"]["uri"])
             if is_in_path_dict(self.files, filepath):
                 get_from_path_dict(self.files, filepath).record_dart_closing_lables(message["params"]["labels"])
 
     def handle_log_message(self, message):
+        """Print the server log MESSAGE when it mentions an error."""
         if "method" in message and message["method"] == "window/logMessage":
             try:
                 if "error" in message["params"]["message"].lower():
@@ -790,11 +888,13 @@ class LspServer:
                 pass
 
     def set_attribute_from_message(self, message, attribute_name, key_list):
+        """Set ATTRIBUTE_NAME from MESSAGE when KEY_LIST resolves to a value."""
         value = get_nested_value(message, key_list)
         if value is not None:
             setattr(self, attribute_name, value)
 
     def save_attribute_from_message(self, message):
+        """Store the server capabilities carried by MESSAGE on this instance."""
         # Fetch LSP server's capability provider.
         attributes_to_set = [
             ("completion_trigger_characters", ["result", "capabilities", "completionProvider", "triggerCharacters"]),
@@ -834,6 +934,7 @@ class LspServer:
             self.inlay_hint_provider = True
 
     def send_initialize_response(self, message):
+        """Finish the handshake by sending the initialized notifications."""
         self.sender.send_notification("initialized", {}, init=True)
 
         self.sender.send_notification("workspace/didChangeConfiguration", self.get_server_workspace_change_configuration(), init=True)
@@ -841,6 +942,7 @@ class LspServer:
         self.sender.initialized.set()
 
     def handle_workspace_message(self, message):
+        """Answer the workspace request carried by MESSAGE."""
         if message["method"] == "workspace/configuration":
             self.handle_workspace_configuration_request(message["method"], message["id"], message["params"])
         elif message["method"] == "workspace/applyEdit":
@@ -848,6 +950,12 @@ class LspServer:
             self.sender.send_response(message["id"], { "applied": True })
 
     def handle_id_message(self, message):
+        """Handle MESSAGE that carries an id.
+
+        The initialize response completes the handshake, registered handlers
+        receive their response, and anything else is treated as a server
+        request handled by `handle_workspace_message`.
+        """
         if "id" in message:
             if message["id"] == self.initialize_id:
                 # STEP 2: tell LSP server that client is ready.
@@ -869,6 +977,7 @@ class LspServer:
                     self.handle_workspace_message(message)
 
     def handle_work_done_progress_message(self, message):
+        """Answer work done progress requests and report progress to Emacs."""
         if "method" in message and message["method"] in ["window/workDoneProgress/create", "$/progress"]:
             # We need respond to request 'window/workDoneProgress/create',
             # otherwise LSP server won't respond
@@ -912,6 +1021,7 @@ class LspServer:
                 eval_in_emacs("lsp-bridge--record-work-done-progress", "[LSP-Bridge] " + progress_message, file_paths)
 
     def handle_register_capability_message(self, message):
+        """Answer dynamic registration requests and enable the new features."""
         if "method" in message and message["method"] in ["client/registerCapability"]:
             try:
                 for registration in message["params"]["registrations"]:
@@ -943,6 +1053,7 @@ class LspServer:
     ]
 
     def handle_unanswered_request_message(self, message):
+        """Send a null response for the unhandled server request MESSAGE."""
         # Every server->client *request* needs a response, or servers like
         # gopls block their whole session on the missing reply. Null is a
         # legal response for the requests we can't act on (e.g.
@@ -954,6 +1065,7 @@ class LspServer:
             self.sender.send_response(message["id"], None)
 
     def handle_recv_message(self, message: dict):
+        """Log and route one MESSAGE received from the server."""
         if "error" in message:
             self.handle_error_message(message)
             return
@@ -970,6 +1082,7 @@ class LspServer:
         logger.debug(json.dumps(message, indent=3))
 
     def start_workspace_watch_files(self):
+        """Create and start the workspace file watcher and its handler."""
         if self.workspace_file_watcher is None:
             if platform.system() == "Darwin":
                 self.workspace_file_watcher = KqueueObserver()
@@ -981,6 +1094,7 @@ class LspServer:
             self.workspace_file_watch_handler = MultiFileHandler(self)
 
     def stop_workspace_watch_files(self):
+        """Stop the workspace file watcher and drop its handler."""
         if self.workspace_file_watcher:
             self.workspace_file_watcher.unschedule_all()
             self.workspace_file_watcher.stop()
@@ -989,6 +1103,7 @@ class LspServer:
             self.workspace_file_watch_handler = None
 
     def monitor_workspace_files(self, file_paths):
+        """Watch FILE_PATHS and their parent directories for changes."""
         if len(file_paths) > 0:
             # Init workspace watch files vars.
             self.start_workspace_watch_files()
@@ -1005,6 +1120,7 @@ class LspServer:
                     self.workspace_file_watch_handler.add_dir(target_dir)
 
     def parse_workspace_watch_files(self, params):
+        """Return the existing files matched by the glob watchers in PARAMS."""
         patterns = []
         for registration in params['registrations']:
             if registration.get('method') == 'workspace/didChangeWatchedFiles':
@@ -1050,6 +1166,7 @@ class LspServer:
         return files
 
     def close_file(self, filepath):
+        """Close FILEPATH and shut the server down when it was the last file."""
         # Send didClose notification when client close file.
         if is_in_path_dict(self.files, filepath):
             self.send_did_close_notification(filepath)
@@ -1067,6 +1184,7 @@ class LspServer:
             self.exit()
 
     def exit(self):
+        """Shut the LSP server down and kill its process."""
         self.send_shutdown_request()
         self.send_exit_notification()
         # Don't need to wait LSP server response, kill immediately.
@@ -1077,6 +1195,7 @@ class LspServer:
                 log_time("LSP server {} ({}) already exited!".format(self.server_info["name"], self.lsp_subprocess.pid))
 
     def handle_tsserver_request(self, message):
+            """Forward the Volar tsserver request in MESSAGE and report if handled."""
             # Volar hybrid mode: forward tsserver requests to external TS LSP server.
             # See: https://github.com/vuejs/language-tools/wiki/Neovim
             if (self.server_info.get("name") == "volar" and

@@ -63,6 +63,11 @@ logger.addHandler(logging.StreamHandler())
 
 
 def init_epc_client(emacs_server_port):
+    """Create the EPC client that talks to Emacs on EMACS_SERVER_PORT.
+
+    The client is stored in the module global `epc_client` and a refused
+    connection is only logged.
+    """
     global epc_client
 
     if epc_client is None:
@@ -74,11 +79,17 @@ def init_epc_client(emacs_server_port):
 
 
 def close_epc_client():
+    """Close the module EPC client when one has been created."""
     if epc_client is not None:
         epc_client.close()
 
 
 def handle_arg_types(arg):
+    """Return ARG wrapped as a quoted sexp for sending to Emacs.
+
+    A string starting with a quote becomes a symbol, everything else stays a
+    quoted value.
+    """
     if isinstance(arg, str) and arg.startswith("'"):
         arg = sexpdata.Symbol(arg.partition("'")[2])
 
@@ -86,17 +97,20 @@ def handle_arg_types(arg):
 
 running_in_server = False
 def set_running_in_server():
+    """Mark the module as running inside the LSP bridge server process."""
     global running_in_server
 
     running_in_server = True
 
 def is_running_in_server():
+    """Return non-nil when running inside the LSP bridge server process."""
     global running_in_server
 
     return running_in_server
 
 is_merge_emacs_exec_path = False
 def merge_emacs_exec_path():
+    """Append Emacs `exec-path` entries to the process PATH once."""
     global is_merge_emacs_exec_path
 
     # Only merge once.
@@ -112,10 +126,12 @@ def merge_emacs_exec_path():
 
 lsp_bridge_server = None
 def set_lsp_bridge_server(bridge):
+    """Store BRIDGE as the module level server used by the helpers below."""
     global lsp_bridge_server
     lsp_bridge_server = bridge
 
 def get_lsp_file_host():
+    """Return the remote host the file commands came from, or an empty string."""
     global lsp_bridge_server
     if lsp_bridge_server and lsp_bridge_server.file_command_server:
         return lsp_bridge_server.file_command_server.client_address[0]
@@ -123,6 +139,7 @@ def get_lsp_file_host():
         return ""
 
 def get_buffer_content(filename, buffer_name):
+    """Return the content of FILENAME, asking Emacs for BUFFER_NAME as fallback."""
     global lsp_bridge_server
 
     content = ""
@@ -134,6 +151,7 @@ def get_buffer_content(filename, buffer_name):
     return content
 
 def get_file_content_from_file_server(filename):
+    """Return the content of FILENAME from the file server, or an empty string."""
     global lsp_bridge_server
 
     if lsp_bridge_server and lsp_bridge_server.file_server:
@@ -142,17 +160,21 @@ def get_file_content_from_file_server(filename):
         return ""
 
 def get_current_line():
+    """Return the current line of the active Emacs buffer."""
     return get_emacs_func_result('get-current-line')
 
 def get_ssh_password(user, host, port):
+    """Return the SSH password Emacs holds for USER at HOST on PORT."""
     return get_emacs_func_result('get-ssh-password', user, host, port)
 
 remote_connection_info = ""
 def set_remote_connection_info(remote_info):
+    """Store the tramp method used by the current REMOTE_INFO connection."""
     global remote_connection_info
     remote_connection_info = remote_info
 
 def get_remote_connection_info():
+    """Return the tramp method of the current remote connection."""
     global remote_connection_info
     return remote_connection_info
 
@@ -191,6 +213,11 @@ def local_path_to_tramp_path(path, tramp_method):
     return tramp_path
 
 def eval_in_emacs(method_name, *args):
+    """Call the elisp METHOD_NAME synchronously with ARGS.
+
+    The arguments are encoded as sexps and sent through the file command
+    server when one exists, otherwise through the EPC client.
+    """
     global lsp_bridge_server
 
     if test_interceptor:  # for test purpose, record all eval_in_emacs calls
@@ -249,6 +276,7 @@ def epc_arg_transformer(arg):
 
 
 def convert_emacs_bool(symbol_value, symbol_is_boolean):
+    """Return SYMBOL_VALUE converted to a bool when SYMBOL_IS_BOOLEAN is "t"."""
     if symbol_is_boolean == "t":
         return symbol_value is True
     else:
@@ -256,6 +284,7 @@ def convert_emacs_bool(symbol_value, symbol_is_boolean):
 
 
 def get_emacs_vars(args):
+    """Return the values of the Emacs variables named in ARGS."""
     global lsp_bridge_server
 
     if lsp_bridge_server and lsp_bridge_server.file_elisp_server:
@@ -282,6 +311,10 @@ def get_emacs_func_result(method_name, *args):
         return result
 
 def get_command_result(command_string, cwd):
+    """Run COMMAND_STRING in CWD and return its stripped output.
+
+    The stdout is returned when the command succeeds, otherwise its stderr.
+    """
     import subprocess
 
     major, minor = sys.version_info[:2]
@@ -300,12 +333,14 @@ def get_command_result(command_string, cwd):
 
 
 def generate_request_id():
+    """Return a new random JSON-RPC request id."""
     import random
     return abs(random.getrandbits(16))
 
 
 # modified from Lib/pathlib.py
 def _make_uri_win32(path):
+    """Return the file URI for the Windows PATH, as vscode encodes it."""
     from urllib.parse import quote_from_bytes as urlquote_from_bytes
     # Under Windows, file URIs use the UTF-8 encoding.
     drive = path.drive
@@ -320,6 +355,7 @@ def _make_uri_win32(path):
 
 # From jedi/api/helpers.py
 def _fuzzy_match(string, like_name):
+    """Return whether LIKE_NAME appears in order inside STRING."""
     if len(like_name) <= 1:
         return like_name in string
     pos = string.find(like_name[0])
@@ -328,14 +364,21 @@ def _fuzzy_match(string, like_name):
     return False
 
 def _start_match(string, like_name):
+    """Return non-nil when STRING starts with LIKE_NAME."""
     return string.startswith(like_name)
 
 def _substring_match(string, like_name):
+    """Return non-nil when LIKE_NAME appears inside STRING."""
     if len(like_name) <= 1:
         return like_name in string
     return string.find(like_name) >= 0
 
 def string_match(string, like_name, match_mode="prefix", case_mode="ignore"):
+    """Return non-nil when STRING matches LIKE_NAME for completion.
+
+    MATCH_MODE is "prefix", "substring", "prefixCaseSensitive" or anything else
+    for fuzzy matching, and CASE_MODE is "smart", "ignore" or "sensitive".
+    """
     # For compatibility reasons: match_mode can be prefixCaseSensitiv
     if match_mode == "prefixCaseSensitive":
         case_mode = "sensitive"
@@ -358,6 +401,7 @@ def string_match(string, like_name, match_mode="prefix", case_mode="ignore"):
             return _fuzzy_match(string, like_name)
 
 def path_to_uri(path):
+    """Return the file URI of PATH, encoded for Windows when needed."""
     path = pathlib.Path(path)
     if get_os_name() != "windows":
         uri = path.as_uri()
@@ -370,6 +414,7 @@ def path_to_uri(path):
 
 
 def uri_to_path(uri):
+    """Return the local file path encoded in URI."""
     from urllib.parse import unquote
     # parse first, '#' may be part of filepath(encoded)
     parsed = urlparse(uri)
@@ -381,6 +426,7 @@ def uri_to_path(uri):
 
 
 def path_as_key(path):
+    """Return PATH normalised into the key used by the path dictionaries."""
     key = path
     # NOTE: (buffer-file-name) return "d:/Case/a.go", gopls return "file:///D:/Case/a.go"
     if sys.platform == "win32":
@@ -390,23 +436,32 @@ def path_as_key(path):
 
 
 def add_to_path_dict(path_dict, filepath, value):
+    """Store VALUE in PATH_DICT under the key of FILEPATH."""
     path_dict[path_as_key(filepath)] = value
 
 
 def is_in_path_dict(path_dict, path):
+    """Return non-nil when the key of PATH is present in PATH_DICT."""
     path_key = path_as_key(path)
     return path_key in path_dict
 
 
 def remove_from_path_dict(path_dict, path):
+    """Delete the entry of PATH from PATH_DICT."""
     del path_dict[path_as_key(path)]
 
 
 def get_from_path_dict(path_dict, filepath):
+    """Return the value PATH_DICT holds for FILEPATH."""
     return path_dict[path_as_key(filepath)]
 
 
 def get_project_path(filepath):
+    """Return the project root that contains FILEPATH.
+
+    Emacs decides the root first; git is asked when Emacs returns nothing, and
+    FILEPATH itself is used when it is not inside a git work tree.
+    """
     project_path = get_emacs_func_result("get-project-path", filepath)
 
     if isinstance(project_path, str):
@@ -430,17 +485,21 @@ def get_project_path(filepath):
             return filepath
 
 def log_time(message):
+    """Log MESSAGE with a timestamp prefix."""
     import datetime
     logger.info("\n--- [{}] {}".format(datetime.datetime.now().time(), message))
 
 def log_time_debug(message):
+    """Log MESSAGE with a timestamp prefix at debug level."""
     import datetime
     logger.debug("\n--- [{}] {}".format(datetime.datetime.now().time(), message))
 
 def get_os_name():
+    """Return the lower case name of the current platform."""
     return platform.system().lower()
 
 def parse_json_content(content):
+    """Return the Python object decoded from the JSON CONTENT."""
     return json_parser.loads(content)
 
 def windows_get_env_value(var_name: str) -> str:
@@ -451,6 +510,7 @@ def windows_get_env_value(var_name: str) -> str:
         return os.environ[var_name]
 
 def cmp(x, y):
+    """Compare X and Y, returning -1, 0 or 1."""
     if x < y:
         return -1
     elif x > y:
@@ -459,6 +519,7 @@ def cmp(x, y):
         return 0
 
 def is_valid_ip(ip):
+    """Return non-nil when IP is a dotted IPv4 address."""
     m = re.match(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$", ip)
     return bool(m) and all(map(lambda n: 0 <= int(n) <= 255, m.groups()))
 
@@ -484,6 +545,7 @@ def split_ssh_path(ssh_path):
         return None
 
 def split_docker_path(docker_path):
+    """Return (username, container_name, path) parsed from DOCKER_PATH."""
     # Pattern to extract username, container name, and path
     pattern = r"^/docker:(?P<username>[^@]+)@(?P<container_name>[^:]+):(?P<path>/.*)$"
     match = re.match(pattern, docker_path)
@@ -496,15 +558,18 @@ def split_docker_path(docker_path):
         return None
 
 def is_remote_path(filepath):
+    """Return non-nil when FILEPATH points at an ssh or docker remote."""
     return filepath.startswith("/ssh:") or filepath.startswith("/docker:")
 
 def eval_sexps_in_emacs(sexps: List[str]):
+    """Send the SEXPS list to Emacs for evaluation."""
     if isinstance(sexps, str):
         sexps = [sexps]
         logger.warning(f"Fixed argument type. The sexp argument should be a list of sexps but got: {sexps}")
     epc_client.call("eval-in-emacs", sexps)
 
 def string_to_base64(text):
+    """Return TEXT encoded as a base64 string."""
     import base64
 
     base64_bytes = base64.b64encode(text.encode("utf-8"))
@@ -513,11 +578,17 @@ def string_to_base64(text):
     return base64_string
 
 def get_position(content, line, character):
+    """Return the absolute offset of LINE and CHARACTER inside CONTENT."""
     lines = content.split('\n')
     position = sum(len(lines[i]) + 1 for i in range(line)) + character
     return position
 
 def replace_template(arg, project_path=None):
+    """Return ARG with its supported %...% placeholders expanded.
+
+    PROJECT_PATH is accepted for callers but is not used by the current
+    replacements.
+    """
     if "%USER_EMACS_DIRECTORY%" in arg:
         if get_os_name() == "windows":
             user_emacs_dir = get_emacs_func_result("get-user-emacs-directory").replace("/", "\\")
@@ -537,6 +608,7 @@ def replace_template(arg, project_path=None):
         return arg
 
 def find_csharp_solution_file(directory):
+    """Return the first .sln file found under DIRECTORY, or None."""
     for root, dirs, files in os.walk(directory):
         for file in files:
             if file.endswith(".sln"):
@@ -545,6 +617,7 @@ def find_csharp_solution_file(directory):
     return None
 
 def touch(path):
+    """Create the empty file PATH, including its parent directories."""
     import os
 
     if not os.path.exists(path):
@@ -557,6 +630,7 @@ def touch(path):
             os.utime(path)
 
 def rebuild_content_from_diff(content, start_pos, end_pos, change_text):
+    """Return CONTENT with the START_POS..END_POS range replaced by CHANGE_TEXT."""
     start_line = start_pos['line']
     start_char = start_pos['character']
     end_line = end_pos['line']
@@ -568,6 +642,7 @@ def rebuild_content_from_diff(content, start_pos, end_pos, change_text):
     return content[:start_pos] + change_text + content[end_pos:]
 
 def remove_duplicate_references(data):
+    """Return the items of DATA without duplicated uri and range pairs."""
     seen = set()
     result = []
     for item in data:
@@ -604,22 +679,30 @@ def get_nested_value(json_data, attribute_path):
 
 class MessageSender(Thread):
 
+    """Base class for the threads that write messages to a process."""
+
     def __init__(self, process: subprocess.Popen):
+        """Keep PROCESS and create the queue its messages are sent from."""
         super().__init__()
 
         self.process = process
         self.queue = queue.Queue()
 
     def send_request(self, message):
+        """Queue MESSAGE for sending to the process."""
         self.queue.put(message)
 
 class MessageReceiver(Thread):
 
+    """Base class for the threads that read messages from a process."""
+
     def __init__(self, process: subprocess.Popen):
+        """Keep PROCESS and create the queue its messages are read into."""
         super().__init__()
 
         self.process = process
         self.queue = queue.Queue()
 
     def get_message(self):
+        """Block until the next message arrives and return it."""
         return self.queue.get(block=True)
