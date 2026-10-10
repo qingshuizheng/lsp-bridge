@@ -194,7 +194,7 @@ sit inside the string for this test."
         (should (equal (acm-test--labels acm-menu-candidates) '("abcd"))))
       (acm-hide)
       (should-not (bound-and-true-p acm-mode))
-      (should (= acm-menu-max-length-cache 0)))))
+      (should (= (acm-popup menu-max-length-cache) 0)))))
 
 (ert-deftest acm-test-update-hides-on-single-exact-match ()
   "One candidate identical to the prefix hides the menu, templates excepted."

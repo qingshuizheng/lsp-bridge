@@ -29,6 +29,9 @@ run_python() {
 echo "== ERT: acm menu (test/acm-test.el)"
 run_ert test/acm-test.el
 
+echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
+run_ert test/acm-session-test.el
+
 echo "== ERT: backend registry (test/acm-backend-test.el)"
 run_ert test/acm-backend-test.el
 

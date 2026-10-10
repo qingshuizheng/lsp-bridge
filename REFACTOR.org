@@ -48,6 +48,21 @@
 
 ** 进度
 
+- 2026-10-11 **popup 状态按父 frame 归位**（S3 第二刀，用户最初报的 macOS 全屏跳 space 那一类问题的结构性收口）：
+  新增 =acm/acm-session.el=，=acm-session= 结构持有 =menu-frame/doc-frame/menu-buffer/
+  doc-buffer/popup-point/popup-position/menu-max-length-cache/menu-number-cache/doc-hide-p/
+  markdown-doc/markdown-timer/call-hierarchy-frame=，存在以父 frame 为 =eq= 键的 =acm-sessions= 里；
+  读用宏 =acm-popup=，写用 =acm-popup-set=；=acm-session-drop=（挂在 =delete-frame-functions=）
+  在父 frame 被删时连 frame 与 buffer 一起回收；=acm-session-all= 让换主题能覆盖**每个** frame 的 popup。
+  被删掉的权宜之计：=acm-update= 里"父 frame 变了就删子 frame"（=acm-frame-new= 里同样的一段，
+  而 =acm-frame-new= 本身是死代码，一并删除）；=lsp-bridge.el= 的两处 =acm-menu-frame= 与
+  "当前 buffer 是不是 acm buffer"的字符串比较改走 session；=lsp-bridge-call-hierarchy.el=
+  自己的全局 frame 也搬进 session（同一个 bug 的第三个受害者）。
+  踩到的坑：=gv-define-setter= 会把槽位的**字面量**当表达式求值（展开成 =(let* ((v menu-frame)) ...)=），
+  所以改用 =acm-popup-set= + =cl-struct-slot-value=；frame 创建宏必须从 =setq ,frame= 改成传**槽位名**；
+  =acm-popup-set= 收到的槽位名要在宏里加引号；=defvar= 的删除要连 docstring 一起删。
+  =test/acm-session-test.el= 7 例覆盖：一 key 一会话、槽位互相隔离、子 frame 归父 frame、drop 回收、
+  hook、popup buffer 识别、全量遍历（batch 无法 =make-frame=，所以会话表按任意 =eq= 键设计，测试用假键）。
 - 2026-10-11 **backend registry + candidate 协议**（S3 第一刀）：新增 =acm/acm-backend.el=，
   =acm-backend= 结构描述一个后端（name/group/fetch-fn/expand-fn/doc-fn/clean-fn/preview/
   enabled/skip-in-comment/dedupe-against-lsp/short-circuit/template），原先散在
@@ -121,7 +136,7 @@
 | **S0** 已完成 | 移除死后端 tabnine / codeium / sdcv；建 =scripts/docstring-report.py=、=scripts/check-elisp.sh=；本文件 | 全仓库 0 处引用；=py_compile= / parse 通过 |
 | **S1** ✅ 完成 | elisp docstring 补全（实际 ~470 处），**只加文档、不搬代码**，按文件切片 | =docstring-report.py --check= 全树通过；=check-elisp.sh= 无 warning 回归（整树 warning 207 → 173） |
 | **S2** ✅ 基本完成 | Python docstring 补全 + =except:= 清理 + ruff/pydocstyle 配置与门禁 | =scripts/check-python.sh --strict= 全绿（py_compile / docstring 存在性 / 硬门禁 / D 门禁）；剩余：=F403/F405= star-import 421 条（需与 =core/utils.py= 的导出面一起决定，见「已做的决定」）与 =E501=（旧行宽） |
-| **S3** | popup 层重构：=acm-popup/acm-session/acm-menu/acm-doc=，popup 状态按父 frame 归位（**registry + candidate 协议已完成**：=acm/acm-backend.el=） | =test/acm-test.el= 14 例已就位并通过（=scripts/check-test.sh=）：候选 helper、输入前缀、popup predicates、quick-access 键、update/hide 周期、选择保持；S3 需继续覆盖多父 frame 切换 |
+| **S3** ✅ 完成 | popup 层重构：popup 状态按父 frame 归位（=acm/acm-session.el=）+ registry + candidate 协议（=acm/acm-backend.el=） | =test/acm-test.el= 14 例已就位并通过（=scripts/check-test.sh=）：候选 helper、输入前缀、popup predicates、quick-access 键、update/hide 周期、选择保持；S3 需继续覆盖多父 frame 切换 |
 | **S4** | =acm-backend.el=：candidate 协议 + registry；=lsp-bridge.el= 拆分；协议握手 + =lsp-bridge-diagnose= | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
 | **S5** | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
 | **S6** | 测试与 CI：acm 冒烟测试、docstring 门、ruff、Emacs 版本矩阵（现在只跑 Ubuntu + Emacs 28.1，而代码用 30+ 的 child frame 特性） | 进行中：=test/acm-test.el=（14 例，headless）+ =test/lsp-bridge-org-babel-test.el=（9 例）由 =scripts/check-test.sh= 跑通；=--all= 追加 langserver/byte-compile/语言服务器驱动的 Python 测试；剩余：CI 里的 Emacs 版本矩阵 |
