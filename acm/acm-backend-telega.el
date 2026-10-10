@@ -287,7 +287,13 @@ The keyword is completed inside the fence on the current line, so the
 position where the completion started is compared with the match of the
 fence rather than with the word before point."
   (when (derived-mode-p 'telega-chat-mode)
-    (let ((orig-point (point)))
+    ;; `acm-input-bound-style' decides whether the fence belongs to the prefix:
+    ;; the string style has no whitespace to stop at before the backticks, so
+    ;; KEYWORD arrives as the fence plus what was typed, while the symbol styles
+    ;; hand over the language alone.  Strip it, since the languages are compared
+    ;; without it - and the expansion puts it back when the prefix includes it.
+    (let ((keyword (string-remove-prefix "```" keyword))
+          (orig-point (point)))
       (save-excursion
         (beginning-of-line)
         (when (looking-at "```\\([^`\t\n ]*\\)")
@@ -403,7 +409,14 @@ PREVIEW non-nil shows the candidate in an overlay instead of inserting it."
         (insert text)
         (insert " "))))
    ((plist-get candidate-info :precode)
-    (let ((text (plist-get candidate-info :label)))
+    (let* ((text (plist-get candidate-info :label))
+           ;; `bound-start' begins the prefix.  With the string style that is the
+           ;; first backtick, so the fence is inside the replaced region and has to
+           ;; be inserted again; with the symbol styles it sits right after the
+           ;; fence, which the buffer already has.
+           (text (if (eq (char-before bound-start) ?`)
+                     text
+                   (concat "```" text))))
       (if preview
           (acm-preview-create-overlay bound-start (point) text)
         (delete-region bound-start (point))

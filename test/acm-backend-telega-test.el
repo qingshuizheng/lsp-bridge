@@ -88,5 +88,35 @@
           (should-not (ask "zz")))))))
 
 
+(ert-deftest acm-backend-telega-test-precode-accepts-the-fence-in-the-keyword ()
+  "The fence may be part of the keyword, as the string style gives it."
+  (acm-backend-telega-test--with-telega
+    (with-temp-buffer
+      (setq major-mode 'telega-chat-mode)
+      (cl-letf (((symbol-function 'telega-completions--language-names)
+                 (lambda () '("python" "purescript" "rust"))))
+        (insert "```py")
+        (goto-char (point-max))
+        (cl-flet ((labels (keyword)
+                    (mapcar (lambda (c) (plist-get c :label))
+                            (acm-backend-telega-precode-candidates keyword))))
+          (should (equal '("python") (labels "```py")))
+          (should (equal '("python") (labels "py"))))))))
+
+(ert-deftest acm-backend-telega-test-precode-expansion-keeps-the-fence ()
+  "Completing a language replaces the fence only when the prefix held it."
+  (acm-backend-telega-test--with-telega
+    (cl-flet ((complete (start)
+                (with-temp-buffer
+                  (insert "```py")
+                  (goto-char (point-max))
+                  (acm-backend-telega-candidate-expand (list :label "python" :precode t) start nil)
+                  (buffer-string))))
+      ;; the string style: the prefix starts at the fence, so it is inserted back
+      (should (equal "```python\n\n```" (complete (point-min))))
+      ;; the symbol styles: the fence is already before the prefix
+      (should (equal (complete (point-min)) (complete 4))))))
+
+
 (provide 'acm-backend-telega-test)
 ;;; acm-backend-telega-test.el ends here
