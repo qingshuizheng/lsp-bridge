@@ -5,6 +5,10 @@
 (require 'lsp-bridge)
 
 (defmacro lsp-bridge-test-with-org-block (language &rest body)
+  "Run BODY in a temporary Org buffer with one LANGUAGE source block.
+The buffer holds a single `#+begin_src LANGUAGE' block, point starts on
+its first line, `buffer-file-name' points at a temporary .org file and
+the language-server lookup is exercised with Org Babel support enabled."
   (declare (indent 1))
   `(let ((lsp-bridge-enable-org-babel t)
          (lsp-bridge-use-wenls-in-org-mode nil)

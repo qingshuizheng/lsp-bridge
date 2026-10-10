@@ -89,18 +89,29 @@
   "Face for dart closing tab."
   :group 'lsp-bridge-dart)
 
-(defvar-local lsp-bridge-dart-closing-label-overlays '())
+(defvar-local lsp-bridge-dart-closing-label-overlays '()
+  "Overlays of the `// }' closing labels shown in the current buffer.
+Buffer-local, so the labels of one file never leak into another.")
 
 (defun lsp-bridge-dart-hide-closing-label-overlays ()
+  "Delete every closing-label overlay of the current buffer and forget them."
   (when lsp-bridge-dart-closing-label-overlays
     (dolist (dart-overlay lsp-bridge-dart-closing-label-overlays)
       (delete-overlay dart-overlay)))
 
   (setq-local lsp-bridge-dart-closing-label-overlays nil))
 
-(defvar lsp-bridge-dart-closing-labels-lock (make-mutex "lsp-bridge-dart-closing-labels-lock"))
+(defvar lsp-bridge-dart-closing-labels-lock (make-mutex "lsp-bridge-dart-closing-labels-lock")
+  "Mutex serialising closing-label rendering.
+Dart sends labels while the editor may still be rendering the previous
+response; without the lock the overlays interleave and end up in a
+random order.")
 
 (defun lsp-bridge-dart-closing-labels--render (filepath filehost closing-labels)
+  "Render the Dart CLOSING-LABELS in the buffer visiting FILEPATH.
+FILEHOST identifies the (possibly remote) host of that buffer.  Overlays
+of the previous response are removed first, and the whole render runs
+under `lsp-bridge-dart-closing-labels-lock'."
   ;; lsp-bridge is too fast, use locks to avoid interface disorder issues caused by multi-threaded rendering of overlays
   (with-mutex lsp-bridge-dart-closing-labels-lock
     (lsp-bridge--with-file-buffer

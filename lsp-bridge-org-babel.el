@@ -27,10 +27,18 @@
   :type '(repeat string))
 
 ;; org babel cache
-(defvar-local lsp-bridge-org-babel--info-cache nil)
-(defvar-local lsp-bridge-org-babel--block-bop nil)
-(defvar-local lsp-bridge-org-babel--block-eop nil)
-(defvar-local lsp-bridge-org-babel--update-file-before-change nil)
+(defvar-local lsp-bridge-org-babel--info-cache nil
+  "`org-element-context' of the source block around point, or nil.
+Cached so that point motion inside a block does not re-parse the whole
+Org buffer; `lsp-bridge-org-babel-in-block-p' keys off it.")
+(defvar-local lsp-bridge-org-babel--block-bop nil
+  "Buffer position of the first line of the source block's body.")
+(defvar-local lsp-bridge-org-babel--block-eop nil
+  "Buffer position just past the last line of the source block's body.")
+(defvar-local lsp-bridge-org-babel--update-file-before-change nil
+  "Non-nil when the cached source block was rebuilt and must be re-sent.
+`lsp-bridge-org-babel-send-src-block-to-lsp-server' clears it once the
+block has been pushed to the language server.")
 
 (defun lsp-bridge-org-babel-in-block-p (pos)
   "Check if POS is in org babel block."
@@ -96,6 +104,9 @@
       (lsp-bridge-org-babel-clean-cache))))
 
 (defun lsp-bridge-org-babel-send-src-block-to-lsp-server ()
+  "Push the cached Org source block to its language server.
+Does nothing outside Org buffers, when `lsp-bridge-enable-org-babel' is
+off, or when the block has not changed since the last push."
   (when (and lsp-bridge-enable-org-babel (eq major-mode 'org-mode)
              lsp-bridge-org-babel--block-bop
              lsp-bridge-org-babel--update-file-before-change)

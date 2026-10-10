@@ -84,6 +84,10 @@
 ;;; Code:
 
 (defun lsp-bridge-install-omnisharp ()
+  "Download OmniSharp for this platform and unpack it into .cache/omnisharp.
+The release archive comes from OmniSharp/omnisharp-roslyn and is
+extracted under `user-emacs-directory', which is where the
+langserver/omnisharp-*.json configurations look for the server."
   (interactive)
   (let* ((to-append (if (string= lsp-bridge-csharp-lsp-server "omnisharp-dotnet")
                         (cond
@@ -107,14 +111,17 @@
     ))
 
 (defun lsp-bridge-copilot-login ()
+  "Ask the Python side to log in to the Copilot language server."
   (interactive)
   (lsp-bridge-call-async "copilot_login"))
 
 (defun lsp-bridge-copilot-logout ()
+  "Ask the Python side to log out of Copilot."
   (interactive)
   (lsp-bridge-call-async "copilot_logout"))
 
 (defun lsp-bridge-copilot-status ()
+  "Ask the Python side for the Copilot login status."
   (interactive)
   (lsp-bridge-call-async "copilot_status"))
 
