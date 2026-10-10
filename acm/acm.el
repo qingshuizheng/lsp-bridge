@@ -481,8 +481,9 @@ insensitive; when that function is nil every candidate matches."
 
 (defun acm-candidate-sort-by-prefix (keyword candidates)
   "Sort CANDIDATES so that those starting with KEYWORD come first.
-Candidates are then ordered by length.  Return CANDIDATES unchanged
-when it is nil, is not a cons, or when KEYWORD is the empty string."
+Candidates are then ordered by the length of their label.  Return
+CANDIDATES unchanged when it is nil, is not a cons, or when KEYWORD
+is nil."
   (when (and candidates
              (consp candidates))
     (if keyword
@@ -497,7 +498,8 @@ when it is nil, is not a cons, or when KEYWORD is the empty string."
                                   t)
                                  ;; Then sort by candidate length.
                                  (t
-                                  (< (length a) (length b)))))))
+                                  (< (length (plist-get a :label))
+                                     (length (plist-get b :label))))))))
       ;; Don't sort candidates is keyword is empty string.
       candidates)))
 
@@ -741,7 +743,7 @@ the menu or renders it.  Return nil."
 
         ;; Adjust candidates.
         (setq-local acm-menu-offset 0)  ;init offset to 0
-        (if (zerop (length acm-menu-candidates))
+        (if (zerop (length menu-candidates))
             ;; Adjust `acm-menu-index' to -1 if no candidates found.
             (setq-local acm-menu-index -1)
           ;; First init `acm-menu-index' to 0.

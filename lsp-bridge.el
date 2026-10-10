@@ -1979,9 +1979,10 @@ syncs an org src block when Babel is enabled and sends a
 
 (defun lsp-bridge--not-match-stop-commands ()
   "Return non-nil if the last command is not a completion stop command.
-The last change command and `last-command' are both checked against
-`lsp-bridge-completion-stop-commands'."
-  (not (or (member lsp-bridge-last-change-command lsp-bridge-completion-stop-commands)
+`lsp-bridge-last-change-command' and `last-command' are both checked,
+as command names, against `lsp-bridge-completion-stop-commands'."
+  (not (or (member (format "%s" lsp-bridge-last-change-command)
+                   lsp-bridge-completion-stop-commands)
            (member (format "%s" last-command) lsp-bridge-completion-stop-commands))))
 
 (defun lsp-bridge-string-interpolation-p (string-interpolation-open-chars-alist)

@@ -91,10 +91,10 @@
 | **S0** 已完成 | 移除死后端 tabnine / codeium / sdcv；建 =scripts/docstring-report.py=、=scripts/check-elisp.sh=；本文件 | 全仓库 0 处引用；=py_compile= / parse 通过 |
 | **S1** ✅ 完成 | elisp docstring 补全（实际 ~470 处），**只加文档、不搬代码**，按文件切片 | =docstring-report.py --check= 全树通过；=check-elisp.sh= 无 warning 回归（整树 warning 207 → 173） |
 | **S2** ✅ 基本完成 | Python docstring 补全 + =except:= 清理 + ruff/pydocstyle 配置与门禁 | =scripts/check-python.sh --strict= 全绿（py_compile / docstring 存在性 / 硬门禁 / D 门禁）；剩余：=F403/F405= star-import 421 条（需与 =core/utils.py= 的导出面一起决定，见「已做的决定」）与 =E501=（旧行宽） |
-| **S3** | popup 层重构：=acm-popup/acm-session/acm-menu/acm-doc=，popup 状态按父 frame 归位 | 新增 =test/acm-test.el=（ERT，frame 层打桩）覆盖：候选合并顺序、expand、predicates、wrap-around、多 frame 切换 |
+| **S3** | popup 层重构：=acm-popup/acm-session/acm-menu/acm-doc=，popup 状态按父 frame 归位 | =test/acm-test.el= 14 例已就位并通过（=scripts/check-test.sh=）：候选 helper、输入前缀、popup predicates、quick-access 键、update/hide 周期、选择保持；S3 需继续覆盖多父 frame 切换 |
 | **S4** | =acm-backend.el=：candidate 协议 + registry；=lsp-bridge.el= 拆分；协议握手 + =lsp-bridge-diagnose= | 同上 + 手工验收清单（全屏弹窗、多 frame、posframe 混用） |
 | **S5** | Python 结构：=find_define_base= 与 =lsp_bridge.py= 拆分、handler 模式补齐 | =test/test_find_define.py= 等既有测试通过；新增 textpos 单测 |
-| **S6** | 测试与 CI：acm 冒烟测试、docstring 门、ruff、Emacs 版本矩阵（现在只跑 Ubuntu + Emacs 28.1，而代码用 30+ 的 child frame 特性） | CI 全绿；本地 =scripts/check-elisp.sh= + =docstring-report.py --check= 全绿 |
+| **S6** | 测试与 CI：acm 冒烟测试、docstring 门、ruff、Emacs 版本矩阵（现在只跑 Ubuntu + Emacs 28.1，而代码用 30+ 的 child frame 特性） | 进行中：=test/acm-test.el=（14 例，headless）+ =test/lsp-bridge-org-babel-test.el=（9 例）由 =scripts/check-test.sh= 跑通；=--all= 追加 langserver/byte-compile/语言服务器驱动的 Python 测试；剩余：CI 里的 Emacs 版本矩阵 |
 | **S7** | 文档（README/架构说明）+ 同步 emacs-config（5 处 advice、选项改名、删除已移除后端的 setup 块） | 用户日常使用回归；=emacs-config= 单独提交 |
 
 ** 验收命令
@@ -144,6 +144,9 @@ ruff check core lsp_bridge.py          # S2 起接入
 | =core/remote_file.py= | =self.sock.fileno == -1= 从未调用 =fileno()=，重连分支是死的；=RemoteFileServer.send_message= 的 =raise= 落在 =else:= 里，"没连接"时反而什么都不抛；=completion_item_resolve= 对未知 server 也写入 resolve key | 远程文件的重连/报错路径可能从未生效 |
 | =core/search_list.py= | =update= 只在首次见到 backend 时存 =max_number=，之后改限制无效；=sort_symbols= 返回 bool 而非三值比较 | 选项静默失效 / 排序语义偏弱 |
 | =core/lsp_bridge.py= | =lsp_client_dict= 初始化后无人读；=close_all_files= 全仓库无调用者；=close_client= 只杀暴露 =kill_lsp_bridge_process= 的客户端，Docker 客户端被静默跳过 | 死代码 + 远程客户端退出不干净 |
+| =acm/acm.el= =acm-candidate-sort-by-prefix= | 注释与 docstring 说"先按前缀、再按候选长度"排序，实际比较的是**plist 的长度**（恒等），第二级排序是空操作 | 已修（改比 =:label= 长度）并加了测试 |
+| =lsp-bridge.el= =lsp-bridge--not-match-stop-commands= | 第一个分支拿 =lsp-bridge-last-change-command=（symbol）去 =member= 一个**字符串**列表，永远不匹配；只有 =last-command= 那支有效 | 已修（同样用 =format "%s"=）并加了测试 |
+| =acm/acm.el= =acm-update= | =acm-menu-index= 是按**上一次**的 =acm-menu-candidates= 判断的，新 buffer 首次弹菜单时存成 -1（被 =nth= 接受负下标掩盖，表现上仍选中第一个） | 已修（按新列表判断）并加了测试 |
 | =core/handler/find_define_base.py= | =jar://=（Clojure）走 =NotImplementedError=；另有 12 处既有 docstring 风格问题（有的行宽 146 列） | 需要专门的一轮整理（文件本身 1799 行、含 Solidity 专用逻辑，见 S5） |
 
 跨仓库的一条：=acm-frame.el= 的契约里写着"macOS 上隐藏子 frame 会断开父子关系"，
