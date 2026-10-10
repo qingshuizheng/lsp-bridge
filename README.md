@@ -738,6 +738,7 @@ Every change to this tree is expected to pass the local gates (they need `emacs`
 - `CHECKDOC=1 scripts/check-elisp.sh` does the same and prints the checkdoc findings; the tree is checkdoc-clean, except for the vendored `lsp-bridge-epc.el`.
 - `scripts/check-python.sh --strict` runs `py_compile`, the docstring presence gate and ruff (the hard gate plus pydocstyle).
 - `python3 scripts/docstring-report.py [--list]` reports how many definitions still miss a docstring; the tree is at 100%.
+- `scripts/check-test.sh` runs the ERT suites (`test/acm-test.el`, `test/lsp-bridge-org-babel-test.el`) and the pure Python tests; `--all` adds the language-server driven ones. It loads the sources rather than stale byte code.
 
 `REFACTOR.org` (Chinese) records the plan, the state and the decisions of this tree's refactor, including the list of latent bugs found while documenting it.
 

@@ -734,6 +734,7 @@ lsp-bridge 每种语言的服务器配置存储在 [lsp-bridge/langserver](https
 - `CHECKDOC=1 scripts/check-elisp.sh` 做同样的事， 并打印 checkdoc 的检查结果； 整棵树是 checkdoc 干净的， 只有 vendored 的 `lsp-bridge-epc.el` 例外。
 - `scripts/check-python.sh --strict` 跑 `py_compile`、 docstring 存在性门禁和 ruff（ 硬门禁 + pydocstyle） 。
 - `python3 scripts/docstring-report.py [--list]` 报告还有多少定义没有 docstring； 目前是 100%。
+- `scripts/check-test.sh` 跑 ERT（ `test/acm-test.el`、 `test/lsp-bridge-org-babel-test.el`） 和纯 Python 测试； 加 `--all` 会额外跑需要语言服务器的那些。 它强制读源码而不是陈旧的 byte code。
 
 `REFACTOR.org` 记录了这棵树重构的计划、 进度和决定， 包括写文档过程中发现的潜在 bug 清单。
 
