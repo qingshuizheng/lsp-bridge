@@ -2,20 +2,20 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2022 Andy Stewart
-# 
+#
 # Author:     Andy Stewart <lazycat.manatee@gmail.com>
 # Maintainer: <lazycat.manatee@gmail.com> <lazycat.manatee@gmail.com>
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -58,13 +58,13 @@ class SearchFileWords:
         """
         for filepath in filepaths:
             self.search_files.add(filepath)
-        
+
         add_queue = False
         for filepath in filepaths:
             if filepath not in self.files:
                 self.files[filepath] = set()
                 add_queue = True
-                
+
         if add_queue:
             self.search_words_queue.put("search_words")
 
@@ -96,7 +96,7 @@ class SearchFileWords:
             else:
                 with open(filepath) as f:
                     content = f.read()
-        except:
+        except Exception:
             return
 
         self.index_file(filepath, content)
@@ -126,17 +126,17 @@ class SearchFileWords:
         if filepath in self.files:
             if filepath in self.search_files:
                 self.search_files.remove(filepath)
-                
+
             if filepath in self.search_content_dict:
                 del self.search_content_dict[filepath]
-                
+
             del self.files[filepath]
-    
+
     def search(self, prefix: str):
         """Start a threaded search for PREFIX over all indexed words."""
         self.search_words_thread = threading.Thread(target=lambda : self.search_words_from_files(prefix))
         self.search_words_thread.start()
-        
+
     def search_words_from_files(self, prefix: str):
         """Search every indexed word for PREFIX and report the candidates.
 
@@ -157,14 +157,14 @@ class SearchFileWords:
             elif ("-" in prefix) and (not prefix.endswith("-")):
                 search_prefix = prefix.split("-")[-1]
                 candidates = self.search_word(search_prefix, all_words)
-                
+
                 candidates = list(map(lambda word: prefix[:-len(search_prefix)] + word, candidates))
             elif ("_" in prefix and (not prefix.endswith("_"))):
                 search_prefix = prefix.split("_")[-1]
                 candidates = self.search_word(search_prefix, all_words)
-                
+
                 candidates = list(map(lambda word: prefix[:-len(search_prefix)] + word, candidates))
-                
+
             eval_in_emacs("lsp-bridge-search-backend--record-items", "search-file-words",
                           list(map(lambda word: {
                               "key": word,
@@ -174,9 +174,9 @@ class SearchFileWords:
                               "annotation": "Search Word",
                               "backend": "search-file-words"
                           }, candidates[:min(self.max_number, len(candidates))])))
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
-            
+
     def search_word(self, prefix, all_words):
         """Return the words of ALL_WORDS that match PREFIX.
 
@@ -202,7 +202,7 @@ class SearchFileWords:
                 candidates = list(map(lambda word: prefix + word[len(prefix):], match_words))
             candidates.sort(key=len, reverse=False)
         return candidates
-            
+
     def search_dispatcher(self):
         """Re-extract the words of every file waiting on `search_words_queue`.
 
@@ -217,7 +217,7 @@ class SearchFileWords:
                 if message == "search_words":
                     search_files = copy.deepcopy(self.search_files)
                     search_content_dict = copy.deepcopy(self.search_content_dict)
-                    
+
                     for search_file in search_files:
                         try:
                             if search_file in search_content_dict:
@@ -230,9 +230,9 @@ class SearchFileWords:
                                                set(filter(self.filter_word, words))))
                         filter_words.discard("")
                         self.files[search_file] = filter_words
-                        
+
                     self.search_files.clear()
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
 
     def filter_word(self, word: str):

@@ -155,7 +155,7 @@ class RemoteFileClient(threading.Thread):
                 # disable searching for discoverable private key files in ~/.ssh/
                 look_for_keys = not self.user_ssh_private_key
                 ssh.connect(self.ssh_host, port=self.ssh_port, username=self.ssh_user, key_filename=ssh_private_key, look_for_keys=look_for_keys, sock=proxy)
-        except:
+        except Exception:
             print(traceback.format_exc())
 
             # Try login server with password if private key is not available.
@@ -168,7 +168,7 @@ class RemoteFileClient(threading.Thread):
                 # Only remeber server's login password after login server successfully.
                 # Password only record in memory for session login, not save in file.
                 RemoteFileClient.remote_password_dict[self.ssh_host] = password
-            except:
+            except Exception:
                 print(traceback.format_exc())
                 raise paramiko.AuthenticationException()
 
@@ -303,7 +303,7 @@ class RemoteFileClient(threading.Thread):
                 fi'
             """
             )
-        except:
+        except Exception:
             pass
 
 

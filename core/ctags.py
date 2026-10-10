@@ -37,7 +37,7 @@ def remove_prefix(text, prefix):
         return text[len(prefix):]
     return text
 
-class Ctags:    
+class Ctags:
     """Complete project symbols from the ctags `tags` file.
 
     Every query shells out to `readtags` in the directory of the file being
@@ -122,8 +122,8 @@ class Ctags:
         typeref = re.sub(r'(^|:)(__anon[^:]+)(:|$)', r'\1__anon\3', typeref)
         scope = re.sub(r'(^|:)(__anon[^:]+)(:|$)', r'\1__anon\3', scope)
 
-        annotation = (reference, 
-                      kind, 
+        annotation = (reference,
+                      kind,
                       "/" if (kind != "" and typeref != "") else "",
                       typeref,
                       "@" if (scope != "") else "",
@@ -156,16 +156,16 @@ class Ctags:
         it.  This is how the `tags` file governing a project is found.
         """
         current_dir = os.path.abspath(file_or_dir)
-        
+
         while True:
             if os.path.exists(os.path.join(current_dir, filename)):
                 return os.path.join(current_dir, filename)
-            
+
             if current_dir == os.path.dirname(current_dir):
                 break
 
             current_dir = os.path.dirname(current_dir)
-            
+
         return None
 
     def make_complete(self, symbol, filename, max_lines, cursor_offset):
@@ -187,12 +187,12 @@ class Ctags:
         tagsfile = self.locate_dominating_file(filename, "tags")
         if not tagsfile:
             return
-        
+
         cmd = self.readtags_get_cmd(tagsfile, symbol, "prefix", False, DEFAULT_FILTER_CMD, DEFAULT_SORTER_CMD, "")
 
         lines = self.run_cmd_in_path(cmd, filename)
         lines = lines[0:max_lines]
-        
+
         tags = map(self.parse_tag_line, lines)
         candidates = map(self.make_ctags_acm_candidate, tags)
 
@@ -267,7 +267,7 @@ class Ctags:
                   ("i" if case_fold else ""))
         cmd = []
 
-        # program name        
+        # program name
         cmd.append("readtags")
 
         # read from this tags file

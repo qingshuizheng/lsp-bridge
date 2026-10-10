@@ -41,6 +41,6 @@ class DocumentSymbol(Handler):
                     if "children" in symbol and symbol["children"]:
                         response.extend(reversed(symbol["children"]))
                 eval_in_emacs("lsp-bridge-symbols--record-current-defun", current_defun)
-            except:
+            except Exception:
                 import traceback
                 logger.error(traceback.format_exc())

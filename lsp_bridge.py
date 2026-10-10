@@ -510,7 +510,7 @@ class LspBridge:
                     logger.exception(e)
                 finally:
                     queue.task_done()
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
 
     def receive_remote_message(self, message, server_port):
@@ -544,7 +544,7 @@ class LspBridge:
                 message = queue.get(True)
                 handle_remote_message(message)
                 queue.task_done()
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
 
     def remote_sync(self, host, remote_connection_info):
@@ -1000,7 +1000,7 @@ class LspBridge:
                     getattr(self, func_name)(*func_args)
 
                 self.event_queue.task_done()
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
 
     def message_dispatcher(self):
@@ -1019,7 +1019,7 @@ class LspBridge:
                     logger.error("Unhandled lsp-bridge message: %s" % message)
 
                 self.message_queue.task_done()
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
 
     def rename_file(self, old_filepath, new_filepath):
@@ -1660,7 +1660,7 @@ class LspBridge:
             global profiler
             profiler.dump_stats(os.path.expanduser("~/lsp-bridge.prof"))
             message_emacs("Output profile data to ~/lsp-bridge.prof, please use snakeviz open it.")
-        except:
+        except Exception:
             message_emacs("Set option 'lsp-bridge-enable-profile' to 't' and call lsp-bridge-restart-process, then call lsp-bridge-profile-dump again.")
 
 def read_lang_server_info(lang_server_path):

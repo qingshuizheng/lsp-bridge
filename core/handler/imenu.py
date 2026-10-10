@@ -38,6 +38,6 @@ class IMenu(Handler):
                     new_response.append({'name': SYMBOL_MAP[kind], 'children': items})
 
                 eval_in_emacs("lsp-bridge--imenu-show", self.file_action.filepath, get_lsp_file_host(), new_response)
-            except:
+            except Exception:
                 import traceback
                 logger.error(traceback.format_exc())

@@ -51,7 +51,7 @@ class Handler(abc.ABC):
 
         try:
             self.process_response(response)
-        except:
+        except Exception:
             logger.error("Error when processing response %d", request_id)
             import traceback
             logger.error(traceback.format_exc())

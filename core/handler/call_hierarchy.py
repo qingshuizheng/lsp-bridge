@@ -26,7 +26,7 @@ class PrepareCallHierarchy(Handler):
             message_emacs("No call hierarchies found")
         else:
             self.file_action.call(self.method_call_hierarchy, response[0], self.response_prefix)
-            
+
 class CallHierarchy(Handler):
     """Collect the incoming or outgoing calls of one callable.
 
@@ -81,7 +81,7 @@ class CallHierarchy(Handler):
                 call['rel_path'] = call['path']
 
         eval_in_emacs("lsp-bridge-call-hierarchy--popup", self.call_contents)
-        
+
         self.call_contents = []
 
 class PrepareCallHierarchyIncomingCalls(PrepareCallHierarchy, Handler):
@@ -109,4 +109,4 @@ class CallHierarchyOutgoingCalls(CallHierarchy, Handler):
 
     name = "call_hierarchy_outgoing"
     method = "callHierarchy/outgoingCalls"
-    
+

@@ -73,7 +73,7 @@ class Copilot:
             major_version = int(version.split('.')[0].lstrip('v'))
             if major_version < 20:
                 return False, "Node version < 20"
-        except:
+        except Exception:
             return False, "Node not found"
 
         # 2. Check npm and copilot-language-server package
@@ -86,7 +86,7 @@ class Copilot:
             self.node_path = node_path
             self.agent_path = agent_path
             return True, None
-        except:
+        except Exception:
             return False, "npm not found"
 
     def check_binary_launch_environment(self):
@@ -343,7 +343,7 @@ class Copilot:
                         }
 
                     eval_in_emacs("lsp-bridge-search-backend--record-items", "copilot", completion_candidates)
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
 
     def sync_file(self, text, file_path, language_id):

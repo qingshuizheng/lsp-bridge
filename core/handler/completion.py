@@ -143,7 +143,7 @@ class Completion(Handler):
                         detail_label = match.group(1)
                 else:
                     detail_label = function_name
-        except:
+        except Exception:
             pass
 
         # Avoid label length not longer than display_label_max_length.
@@ -224,7 +224,7 @@ class Completion(Handler):
                 try:
                     if self.file_action.completion_block_kind_list is not False and kind in self.file_action.completion_block_kind_list:
                         continue
-                except:
+                except Exception:
                     pass
 
                 # The lsp-bridge will continuously filter candidates on the Python side.

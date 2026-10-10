@@ -201,7 +201,7 @@ class LspServerSender(MessageSender):
             while self.process.poll() is None:
                 message = self.queue.get()
                 self.send_message(message)
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
 
 def record_inlay_hint_request(message):
@@ -213,7 +213,7 @@ def record_inlay_hint_request(message):
             message_id = message.get("id")
             message_documentation = message["params"]["textDocument"]["uri"]
             INLAY_HINT_REQUEST_ID_DICT[message_id] = message_documentation
-        except:
+        except Exception:
             pass
 
 def resend_inlay_hint_request_after_content_modified_error(message):
@@ -251,7 +251,7 @@ class LspServerReceiver(MessageReceiver):
                 "name": "lsp_recv_message",
                 "content": parse_json_content(line)
             })
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
 
     def run(self):
@@ -298,7 +298,7 @@ class LspServerReceiver(MessageReceiver):
             logger.info(self.process.stdout.read())    # type: ignore
             if self.process.stderr:
                 logger.info(self.process.stderr.read())
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
 
 class LspServer:
@@ -419,7 +419,7 @@ class LspServer:
             while True:
                 message = self.receiver.get_message()
                 self.handle_recv_message(message["content"])
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
 
     def send_initialize_request(self):
@@ -884,7 +884,7 @@ class LspServer:
             try:
                 if "error" in message["params"]["message"].lower():
                     print("{} ({}): {}".format(self.project_name, self.server_info["name"], message["params"]["message"]))
-            except:
+            except Exception:
                 pass
 
     def set_attribute_from_message(self, message, attribute_name, key_list):
@@ -1033,7 +1033,7 @@ class LspServer:
                         self.code_format_provider = True
                     elif registration["method"] == "textDocument/rangeFormatting":
                         self.range_format_provider = True
-            except:
+            except Exception:
                 log_time(traceback.format_exc())
 
             self.sender.send_response(message["id"], None)

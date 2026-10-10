@@ -2,20 +2,20 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2022 Andy Stewart
-# 
+#
 # Author:     Andy Stewart <lazycat.manatee@gmail.com>
 # Maintainer: <lazycat.manatee@gmail.com> <lazycat.manatee@gmail.com>
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -32,13 +32,13 @@ class SearchPaths:
     `search` while the user types, and the matches are pushed back through
     `lsp-bridge-search-backend--record-items` on the "path" backend.
     """
-    
+
     def __init__(self) -> None:
         """Set up the ticker that discards stale results and the thread queue."""
         self.search_ticker = 0
         self.search_thread_queue = []
         self.search_max_number = 300
-        
+
     def search(self, filename: str, prefix: str):
         """Search the directory FILENAME for entries matching PREFIX.
 
@@ -48,7 +48,7 @@ class SearchPaths:
         """
         ticker = self.search_ticker + 1
         self.search_ticker = ticker
-                
+
         search_thread = threading.Thread(target=lambda: self.search_symbols(filename, prefix, ticker))
         search_thread.start()
         self.search_thread_queue.append(search_thread)
@@ -60,7 +60,7 @@ class SearchPaths:
         PREFIX after its dashes are removed, or when it merely contains PREFIX.
         """
         return symbol.startswith(prefix) or symbol.replace("-", "").startswith(prefix) or prefix in symbol
-        
+
     def search_symbols(self, filename: str, prefix: str, ticker: int):
         """Collect the candidates of FILENAME for PREFIX and report them.
 
@@ -82,10 +82,10 @@ class SearchPaths:
                     "annotation": file_type.upper(),
                     "backend": "path"
                 })
-                    
+
                 if len(candidates) > self.search_max_number:
                     break
-                
+
         if ticker == self.search_ticker:
             eval_in_emacs("lsp-bridge-search-backend--record-items", "path", sorted(candidates, key=functools.cmp_to_key(lambda a, b: self.sort_files(prefix, a, b))))
 

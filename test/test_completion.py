@@ -139,7 +139,7 @@ class AcceptCompletion(unittest.TestCase):
             self.assertIn(expected, result)
 
         go()
-    
+
     # def test_python(self):
     #     self.accept_completion([SingleFile(
     #         filename="t.py",

@@ -28,7 +28,7 @@ class CompletionItem(Handler):
         """Merge the documentation in RESPONSE into the pending candidate."""
         response_doc = ""
         additional_text_edits = []
-        
+
         if response is not None:
             if "documentation" in response:
                 response_doc = response["documentation"]

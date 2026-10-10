@@ -86,7 +86,7 @@ class Breadcrumb(Handler):
                 current = parents[id(current)]
 
             eval_in_emacs(fn, filepath, filehost, reversed(segments))
-        except:
+        except Exception:
             import traceback
 
             logger.error(traceback.format_exc())

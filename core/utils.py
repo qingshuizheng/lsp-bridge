@@ -35,7 +35,7 @@ from epc.client import EPCClient
 
 try:
     import orjson as json_parser
-except:
+except Exception:
     import json as json_parser
 
 KIND_MAP = ["", "Text", "Method", "Function", "Constructor", "Field",
