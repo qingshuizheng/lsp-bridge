@@ -33,6 +33,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
+import platform
 import queue
 import shutil
 import threading
@@ -95,6 +96,73 @@ def threaded(func):
 REMOTE_FILE_SYNC_CHANNEL = 9999
 REMOTE_FILE_COMMAND_CHANNEL = 9998
 REMOTE_FILE_ELISP_CHANNEL = 9997
+
+
+PROTOCOL_VERSION = 2
+"""Version of the Emacs <-> Python protocol.
+
+Both halves declare it and compare it during the handshake
+(`build_handshake`); `scripts/check-protocol.py` refuses to let them drift
+apart, and `lsp-bridge-diagnose` reports the pair.  Bump it whenever a change
+makes an old Emacs side and a new Python side (or the other way round)
+incompatible.
+"""
+
+CAPABILITIES = [
+    "completion",
+    "diagnostics",
+    "code-action",
+    "formatting",
+    "call-hierarchy",
+    "rename",
+    "copilot",
+    "ctags",
+    "remote-file",
+    "diagnose",
+]
+"""Feature groups the Python side provides over EPC.
+
+A capability is only listed here when the Emacs side has a counterpart that
+needs it, so the handshake can be used to tell a user why a command is
+unavailable rather than failing somewhere in the middle of it.
+"""
+
+
+def build_handshake(emacs_protocol_version):
+    """Return the reply of a handshake with EMACS_PROTOCOL_VERSION.
+
+    The reply is a dict: ``protocol_version`` is what this side speaks,
+    ``compatible`` says whether the two versions can talk at all,
+    ``capabilities`` lists the feature groups of ``CAPABILITIES`` and the last
+    two entries describe the process that answered.
+
+    Args:
+        emacs_protocol_version: Protocol version the Emacs side announced.
+    """
+    return {
+        "protocol_version": PROTOCOL_VERSION,
+        "compatible": int(emacs_protocol_version) == PROTOCOL_VERSION,
+        "capabilities": list(CAPABILITIES),
+        "python_version": platform.python_version(),
+        "pid": os.getpid(),
+    }
+
+
+def build_diagnose(lsp_server_count, file_action_count):
+    """Return the runtime facts `lsp-bridge-diagnose' reports.
+
+    Args:
+        lsp_server_count: Number of running language servers.
+        file_action_count: Number of files the server currently tracks.
+    """
+    return {
+        "protocol_version": PROTOCOL_VERSION,
+        "capabilities": list(CAPABILITIES),
+        "python_version": platform.python_version(),
+        "pid": os.getpid(),
+        "lsp_server_count": lsp_server_count,
+        "file_action_count": file_action_count,
+    }
 
 
 class LspBridge:
@@ -168,6 +236,25 @@ class LspBridge:
 
         # event_loop never exit, simulation event loop.
         self.event_loop.join()
+
+    def handshake(self, emacs_protocol_version):
+        """Answer the protocol handshake, as a JSON string.
+
+        Exported over EPC; called by `lsp-bridge--handshake' while the Emacs
+        side starts the process.  See `build_handshake` for the reply.
+
+        Args:
+            emacs_protocol_version: Protocol version the Emacs side announced.
+        """
+        return json.dumps(build_handshake(emacs_protocol_version))
+
+    def diagnose(self):
+        """Report the runtime facts of this server, as a JSON string.
+
+        Exported over EPC; called by the `lsp-bridge-diagnose' command.  See
+        `build_diagnose` for the reply.
+        """
+        return json.dumps(build_diagnose(len(LSP_SERVER_DICT), len(FILE_ACTION_DICT)))
 
     def message_hostnames(self):
         """Send the known remote host names to Emacs as a message.

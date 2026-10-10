@@ -240,6 +240,7 @@ more detail about using lsp-bridge in devcontainer please refer to [emacs-devcon
 - `lsp-bridge-signature-help-fetch`: show signature help in minibuffer manually (move cursor to parameters area will show signature help automatically)
 - `lsp-bridge-popup-complete-menu`: Manually popup the completion menu, you only need this command when turn on option `lsp-bridge-complete-manually`
 - `lsp-bridge-restart-process`: restart lsp-bridge process (only used for development)
+- `lsp-bridge-diagnose`: report the protocol versions of the Emacs and Python halves, the result of their handshake, whether the process is alive and the runtime facts of the server; made for a bug report
 - `lsp-bridge-peek`: Show the definition and references at point in the peek window
 - `lsp-bridge-peek-abort`: Close peek window (default binding to `C-g`)
 - `lsp-bridge-peek-list-next-line`: Select the next definition or reference (default binding to `M-S-n`)
@@ -745,6 +746,7 @@ Every change to this tree is expected to pass the local gates (they need `emacs`
 - `scripts/check-elisp.sh` reads every `.el` file to the end first — a form with a missing closing paren must not hide behind a "no warnings" result — and then byte-compiles all of them into `/tmp/lsp-bridge-elc`, so the working tree stays clean.
 - `CHECKDOC=1 scripts/check-elisp.sh` does the same and prints the checkdoc findings; the tree is checkdoc-clean, except for the vendored `lsp-bridge-epc.el`.
 - `scripts/check-python.sh --strict` runs `py_compile`, the docstring presence gate and ruff (the hard gate plus pydocstyle).
+- `scripts/check-protocol.py` compares the protocol version the Emacs side declares with the one the Python side declares; they have to move together, since `lsp-bridge--handshake` refuses to talk to a server that speaks another one.
 - `python3 scripts/docstring-report.py [--list]` reports how many definitions still miss a docstring; the tree is at 100%.
 - `scripts/check-test.sh` runs the ERT suites (`test/acm-test.el`, `test/lsp-bridge-org-babel-test.el`) and the pure Python tests; `--all` adds the language-server driven ones. It loads the sources rather than stale byte code.
 
@@ -770,6 +772,8 @@ If the problem still exists:
 1. Set option `lsp-bridge-log-level` to `debug`
 2. Use `lsp-bridge-restart-process` to restart the `LSP-BRIDGE` process
 3. Report issue with `*lsp-bridge*` buffer content, it contains many clues that can help us locate the problem faster
+
+If lsp-bridge does not work at all, run `M-x lsp-bridge-diagnose` first and include its report: it says which lsp-bridge.el is loaded, which Python command runs, whether the two halves agreed on a protocol version and what the server reports about itself.
 
 If you get a segfault error, please use the following way to collect crash information:
 

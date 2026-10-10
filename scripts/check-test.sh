@@ -26,6 +26,12 @@ run_python() {
     fi
 }
 
+echo "== protocol: the two halves declare the same version (scripts/check-protocol.py)"
+python3 scripts/check-protocol.py
+
+echo "== ERT: protocol handshake (test/lsp-bridge-protocol-test.el)"
+run_ert test/lsp-bridge-protocol-test.el
+
 echo "== ERT: acm menu (test/acm-test.el)"
 run_ert test/acm-test.el
 
@@ -41,8 +47,8 @@ run_ert test/acm-backend-vulpea-test.el
 echo "== ERT: Org Babel server lookup (test/lsp-bridge-org-babel-test.el)"
 run_ert test/lsp-bridge-org-babel-test.el
 
-echo "== Python: pure tests (langserver JSON)"
-run_python test.test_langserver
+echo "== Python: pure tests (langserver JSON, protocol)"
+run_python test.test_langserver test.test_protocol
 
 if [ "${1:-}" = "--all" ]; then
     echo "== Python: language server driven tests"

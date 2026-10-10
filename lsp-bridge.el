@@ -1516,6 +1516,74 @@ the file name through the multi and single lang server rules."
                lang-server-by-name)
              )))))
 
+(defconst lsp-bridge-protocol-version 2
+  "Version of the Emacs <-> Python protocol this file speaks.
+The Python side declares the same number, `PROTOCOL_VERSION' in
+lsp_bridge.py, and `lsp-bridge--handshake' compares the two when the process
+starts.  `scripts/check-protocol.py' refuses to let the two constants drift
+apart, and `lsp-bridge-diagnose' reports them.")
+
+(defvar lsp-bridge--server-handshake nil
+  "Reply of the protocol handshake, as an alist, or nil before it ran.
+Holds the protocol version, the capabilities and the Python version and pid of
+the server that answered.")
+
+(defvar lsp-bridge--protocol-error nil
+  "Why the handshake with the Python side failed, or nil when it agreed.
+Set by `lsp-bridge--handshake' and reported by `lsp-bridge-diagnose'.")
+
+(defun lsp-bridge-call-sync (method &rest args)
+  "Call the Python EPC function METHOD with ARGS and return its result.
+Blocks until the reply arrives, which is only acceptable while the process is
+starting or for a command the user asked for, never on the typing path."
+  (lsp-bridge-epc-call-sync lsp-bridge-epc-process (read method) args))
+
+(defun lsp-bridge--handshake ()
+  "Exchange protocol versions with the Python side.
+Return non-nil when the two halves can talk to each other, and store the reply
+in `lsp-bridge--server-handshake'.  When they cannot - the server does not know
+the handshake, does not answer, or speaks another protocol - store the reason in
+`lsp-bridge--protocol-error' and return nil, so that the caller can leave the
+server alone instead of sending it data it cannot understand."
+  (setq lsp-bridge--server-handshake nil
+        lsp-bridge--protocol-error nil)
+  (let (reply failure)
+    (condition-case err
+        (setq reply (lsp-bridge-call-sync "handshake" lsp-bridge-protocol-version))
+      (error (setq failure (format "the server did not answer the handshake (%s)"
+                                   (error-message-string err)))))
+    (cond
+     ;; The call itself failed: an older server, or one that died on us.
+     (failure
+      (setq lsp-bridge--protocol-error failure)
+      nil)
+     ;; A reply is only useful when it is the JSON string the server sends.
+     ((not (stringp reply))
+      (setq lsp-bridge--protocol-error
+            (format "the server answered the handshake with %S" reply))
+      nil)
+     (t
+      (let ((handshake (condition-case err
+                           (json-parse-string reply :object-type 'alist :array-type 'list)
+                         (error (format "the handshake reply is not JSON (%s)"
+                                        (error-message-string err))))))
+        (cond
+         ;; The reply could not be read.
+         ((stringp handshake)
+          (setq lsp-bridge--protocol-error handshake)
+          nil)
+         ;; The server answered but speaks another protocol version.
+         ((not (eq (alist-get 'compatible handshake) t))
+          (setq lsp-bridge--server-handshake handshake
+                lsp-bridge--protocol-error
+                (format "protocol mismatch: Emacs speaks %s, the server speaks %s"
+                        lsp-bridge-protocol-version
+                        (alist-get 'protocol_version handshake)))
+          nil)
+         (t
+          (setq lsp-bridge--server-handshake handshake)
+          t)))))))
+
 (defun lsp-bridge-call-async (method &rest args)
   "Call Python EPC function METHOD and ARGS asynchronously."
   (lsp-bridge-deferred-chain
@@ -1700,9 +1768,93 @@ Each function is called with no argument from
     (setq lsp-bridge-internal-process nil)
     (message "[LSP-Bridge] Process terminated.")))
 
+(defun lsp-bridge-diagnose--report (state)
+  "Return the diagnose report of STATE as a string.
+STATE is a plist of the facts `lsp-bridge-diagnose' collected: `:elisp-file',
+`:protocol-version', `:python-args', `:python-file', `:process', `:handshake',
+`:handshake-error', `:server', `:log-buffer', `:log-lines' and `:log-level'.
+Keeping the report a pure function of that plist is what makes it testable
+without a running server."
+  (let* ((handshake (plist-get state :handshake))
+         (server (plist-get state :server))
+         (capabilities (alist-get 'capabilities handshake)))
+    (concat
+     "LSP-Bridge diagnose\n"
+     "===================\n"
+     (format "Emacs side   : %s (protocol %s)\n"
+             (or (plist-get state :elisp-file) "not found on `load-path'")
+             (plist-get state :protocol-version))
+     (format "Python side  : %s\n"
+             (mapconcat #'identity (plist-get state :python-args) " "))
+     (format "Process      : %s\n"
+             (if (plist-get state :process) "live" "not running"))
+     (format "Handshake    : %s\n"
+             (if (plist-get state :handshake-error)
+                 (plist-get state :handshake-error)
+               (format "agreed (server protocol %s, python %s, pid %s)"
+                       (alist-get 'protocol_version handshake)
+                       (alist-get 'python_version handshake)
+                       (alist-get 'pid handshake))))
+     (format "Capabilities : %s\n"
+             (if capabilities
+                 (mapconcat #'symbol-name capabilities ", ")
+               "unknown"))
+     (format "Server facts : %s\n"
+             (if server
+                 (format "%s language server(s), %s tracked file(s), python %s, pid %s"
+                         (alist-get 'lsp_server_count server)
+                         (alist-get 'file_action_count server)
+                         (alist-get 'python_version server)
+                         (alist-get 'pid server))
+               "unavailable"))
+     (format "Log          : %s (%s lines, level %s)\n"
+             (or (plist-get state :log-buffer) "no log buffer")
+             (or (plist-get state :log-lines) 0)
+             (plist-get state :log-level)))))
+
+(defun lsp-bridge-diagnose ()
+  "Report what the Emacs and Python halves of lsp-bridge are doing.
+Write into the `*lsp-bridge-diagnose*' buffer the protocol versions of the two
+halves and the result of their handshake, whether the process is alive, the
+runtime facts the server reports - its Python version, pid, language servers
+and tracked files - and where the log goes.  Made for a bug report: the buffer
+can be copied as it is."
+  (interactive)
+  (let* ((server (when (lsp-bridge-process-live-p)
+                   (condition-case nil
+                       (json-parse-string (lsp-bridge-call-sync "diagnose")
+                                          :object-type 'alist :array-type 'list)
+                     (error nil))))
+         (log-buffer (get-buffer lsp-bridge-name))
+         (report (lsp-bridge-diagnose--report
+                  (list :elisp-file (locate-library "lsp-bridge")
+                        :protocol-version lsp-bridge-protocol-version
+                        :python-args (cons lsp-bridge-internal-process-prog
+                                           lsp-bridge-internal-process-args)
+                        :python-file lsp-bridge-python-file
+                        :process (lsp-bridge-process-live-p)
+                        :handshake lsp-bridge--server-handshake
+                        :handshake-error lsp-bridge--protocol-error
+                        :server server
+                        :log-buffer (and log-buffer (buffer-name log-buffer))
+                        :log-lines (and log-buffer
+                                        (with-current-buffer log-buffer
+                                          (line-number-at-pos (point-max))))
+                        :log-level lsp-bridge-log-level))))
+    (with-current-buffer (get-buffer-create "*lsp-bridge-diagnose*")
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert report))
+      (special-mode)
+      (goto-char (point-min))
+      (display-buffer (current-buffer)))))
+
 (defun lsp-bridge--first-start (lsp-bridge-epc-port)
   "Create the EPC manager for the server at LSP-BRIDGE-EPC-PORT.
-Also indexes search words and syncs the elisp symbols to the server."
+Then exchanges the protocol handshake and, when the two halves agree on it,
+indexes search words and syncs the elisp symbols to the server.  A server that
+does not answer the handshake or speaks another protocol is reported and left
+alone, so that a mismatched pair fails loudly instead of mysteriously."
   ;; Make EPC process.
   (setq lsp-bridge-epc-process (make-lsp-bridge-epc-manager
                                 :server-process lsp-bridge-internal-process
@@ -1713,11 +1865,15 @@ Also indexes search words and syncs the elisp symbols to the server."
                                 ))
   (lsp-bridge-epc-init-epc-layer lsp-bridge-epc-process)
 
-  ;; Search words from opened files.
-  (lsp-bridge-search-words-index-files)
+  (if (lsp-bridge--handshake)
+      (progn
+        ;; Search words from opened files.
+        (lsp-bridge-search-words-index-files)
 
-  ;; Synchronize elisp symbol to Python side.
-  (lsp-bridge-elisp-symbols-update))
+        ;; Synchronize elisp symbol to Python side.
+        (lsp-bridge-elisp-symbols-update))
+    (message "[LSP-Bridge] %s; see `lsp-bridge-diagnose'."
+             lsp-bridge--protocol-error)))
 
 (defvar-local lsp-bridge-last-cursor-position 0
   "Cursor position seen by the last `post-command-hook' call.")
