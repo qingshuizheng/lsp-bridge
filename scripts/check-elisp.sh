@@ -30,6 +30,14 @@ redir="(progn
         (lambda (f) (expand-file-name (concat (file-name-nondirectory f) \"c\")
                                       \"$ELC_DIR\"))))"
 
+# A file whose last form is missing a closing paren still reads the forms
+# before it, so its warning count silently drops instead of failing.  Walk the
+# top level of every file first and stop on the first unbalanced one.
+echo "== read every top-level form"
+# shellcheck disable=SC2086
+$EMACS -Q --batch -L . -L acm -l scripts/check-forms.el \
+    --eval "(z/check-forms $FILES_LISP)"
+
 echo "== byte-compile $COUNT file(s) -> $ELC_DIR"
 # shellcheck disable=SC2086
 $EMACS -Q --batch -L . -L acm --eval "$redir" -f batch-byte-compile $FILES

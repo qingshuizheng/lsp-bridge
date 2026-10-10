@@ -58,6 +58,8 @@ ELISP_PROGRAM = r"""
   (let ((forms 0) (missing 0))
     (princ (format "FILE\t%s\n" file))
     (with-temp-buffer
+      (set-syntax-table emacs-lisp-mode-syntax-table)
+      (setq-local parse-sexp-ignore-comments t)
       (insert-file-contents file)
       (goto-char (point-min))
       (condition-case nil
