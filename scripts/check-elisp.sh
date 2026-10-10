@@ -16,7 +16,10 @@ ELC_DIR=${ELC_DIR:-/tmp/lsp-bridge-elc}
 if [ "$#" -gt 0 ]; then
     FILES=$*
 else
-    FILES=$(git ls-files '*.el')
+    # Tracked files plus the ones that are new but not committed yet, so that a
+    # file added by a refactor step is compiled by the same run that reviews it;
+    # --exclude-standard keeps ignored files (byte code, .venv) out.
+    FILES=$(git ls-files --cached --others --exclude-standard '*.el')
 fi
 COUNT=$(echo "$FILES" | wc -w | tr -d ' ')
 

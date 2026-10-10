@@ -67,9 +67,16 @@ ELISP_PROGRAM = r"""
             (let ((form (read (current-buffer))))
               (when (and (consp form) (symbolp (car form)))
                 (let* ((head (symbol-name (car form)))
+                       ;; A `defvar' without a value is a declaration of a
+                       ;; variable that another file defines; it cannot carry a
+                       ;; docstring without also giving the variable a value, so
+                       ;; it is not counted here.  A `defvar' with a value still
+                       ;; needs one.
+                       (declaration (and (member head '("defvar" "defvar-local"))
+                                         (<= (length form) 2)))
                        (idx (cdr (assoc head z/doc-index)))
                        (name (nth 1 form)))
-                  (when (and idx (symbolp name))
+                  (when (and idx (symbolp name) (not declaration))
                     (setq forms (1+ forms))
                     (unless (stringp (nth idx form))
                       (setq missing (1+ missing))
