@@ -93,7 +93,7 @@ and run `doom sync` to install it.
 Please note:
 
 1. When using lsp-bridge, please first disable other completion plugins, such as lsp-mode, eglot, company, corfu, etc. lsp-bridge provides a complete solution from the completion backend, completion frontend to multi-backend integration
-2. In addition to providing LSP completion, lsp-bridge also provides many non-LSP completion backends, including capf, file words, paths, Yas/Tempel, Copilot, Tabby, Ctags, Org roam and other completion backends. If you expect to provide these completions in a certain mode, please add the corresponding mode to `lsp-bridge-default-mode-hooks`. Customize the order of backend, please check `acm-backend-order`.
+2. In addition to providing LSP completion, lsp-bridge also provides many non-LSP completion backends, including capf, file words, paths, Yas/Tempel, Ctags, Org-roam, Jupyter, telega, Copilot, Tabby and LSP workspace symbols. If you expect to provide these completions in a certain mode, please add the corresponding mode to `lsp-bridge-default-mode-hooks`. See [Completion backends](#completion-backends) for how to turn each backend on, and `acm-backend-order` for the order in which their candidates are merged.
 3. Please do not perform ```byte compilation``` or ```native compilation``` for lsp-bridge as it will result in a difference in API and the latest version after upgrading compiling afterwards, Lsp-bridge is designed with multi-threading that does not require compilation to speed it up
 
 ## Local Usage
@@ -240,6 +240,7 @@ more detail about using lsp-bridge in devcontainer please refer to [emacs-devcon
 - `lsp-bridge-signature-help-fetch`: show signature help in minibuffer manually (move cursor to parameters area will show signature help automatically)
 - `lsp-bridge-popup-complete-menu`: Manually popup the completion menu, you only need this command when turn on option `lsp-bridge-complete-manually`
 - `lsp-bridge-restart-process`: restart lsp-bridge process (only used for development)
+- `lsp-bridge-peek`: Show the definition and references at point in the peek window
 - `lsp-bridge-peek-abort`: Close peek window (default binding to `C-g`)
 - `lsp-bridge-peek-list-next-line`: Select the next definition or reference (default binding to `M-S-n`)
 - `lsp-bridge-peek-list-prev-line`: Select the previous definition or reference (default binding to `M-S-p`)
@@ -322,7 +323,7 @@ lsp-bridge provides support for more than two language servers for many language
 - `lsp-bridge-peek-list-height`: Select the next option for definition and reference
 - `lsp-bridge-peek-ace-keys`: Keys to press when performing `lsp-bridge-peek-through`
 - `lsp-bridge-peek-ace-cancel-keys`: Keys to exit `lsp-bridge-peek-through`
-- `acm-backend-order`: Customize the order of the completion backends
+- `acm-backend-order`: How the candidate groups are concatenated in the menu (the first and second part of the mode candidates, the templates and the Copilot candidates). The default is: mode first part, template first part, Copilot, template second part, mode second part
 - `acm-frame-background-dark-color`: Menu background color in dark theme
 - `acm-frame-background-light-color`: Menu background color in light theme
 - `acm-enable-capf`: Provides capf completion support for non-LSP backends, it is disabled by default
@@ -338,9 +339,9 @@ lsp-bridge provides support for more than two language servers for many language
 - `acm-doc-frame-max-lines`: Max line number of help documentation, default is 20
 - `acm-doc-frame-boundary`: Boundary constraint for documentation frame positioning, options include `'parent-frame`, `'display`, default is `'parent-frame`. `'parent-frame` constrains the doc frame within the parent Emacs frame, `'display` allows the doc frame to extend beyond Emacs frame but within display screen boundaries
 - `acm-candidate-match-function`: lsp-bridge frontend filter algorithm for candidates, options include `'regexp-quote`, `'orderless-flex`, `'orderless-literal`, `'orderless-prefixes`, `'orderless-regexp`, `'orderless-initialism`, default is `regexp-quote`, orderless-* started algorithms require additional installation of [orderless](https://github.com/oantolin/orderless)
-- `acm-completion-mode-candidates-merge-order`: Customize the order of the mode candidates, the display order for mode candidates, default order: Elisp、 LSP、 Jupyter、 Tabby Ctags、 ROAM、 Word、 Telegra
+- `acm-completion-mode-candidates-merge-order`: The order in which the backends are asked for candidates of the current mode, which is also the order in which those candidates are displayed. The default is Elisp, LSP, LSP workspace symbol, capf, Jupyter, Tabby, ctags, Org-roam, file words and telega
 - `acm-backend-lsp-candidate-min-length`: The minimum characters to trigger lsp completion, default is 0
-- `acm-backend-lsp-block-kind-list`: Filters certain types of LSP completion candidates. By default, it's a empty list. When the value is set to `'(Snippet Enum)`, this means that Snippet and Enum completions will not be shown.
+- `acm-backend-lsp-block-kind-list`: Filters certain types of LSP completion candidates. By default it is an empty list. When the value is set to `'(Snippet Enum)`, this means that Snippet and Enum completions will not be shown.
 - `acm-backend-elisp-candidate-min-length`: The minimum characters to trigger elisp completion, default is 0
 - `acm-backend-yas-candidate-min-length`: The minimum characters to trigger yasnippet completion, default is 0
 - `acm-backend-search-file-words-candidate-min-length`: The minimum characters to trigger search file words completion, default is 0
@@ -349,12 +350,106 @@ lsp-bridge provides support for more than two language servers for many language
 - `acm-backend-search-file-words-enable-fuzzy-match-threshold`: Search Words completion candidate fuzzy match threshold, Filter out words with a ratio lower than the threshold, default is 50
 - `acm-backend-lsp-enable-auto-import`: Automatic insert import code, enable by default
 - `acm-backend-lsp-candidate-max-length`: Maximum length of LSP candidate, some language, such as Java, argument list is very long, you can increase the value of this option to see clear argument list
-- `acm-backend-yas-candidates-number`: yasnippet display number， 2 by default
-- `acm-backend-lsp-match-mode`: The filtering mode for candidates in LSP backend, there are six options: "prefix", "prefixCaseSensitive", "substring" and "fuzzy". By default it is "fuzzy"
+- `acm-backend-yas-candidates-number`: The number of yasnippet candidates displayed, 2 by default
+- `acm-backend-lsp-match-mode`: The filtering mode for candidates in the LSP backend, there are four options: "prefix", "prefixCaseSensitive", "substring" and "fuzzy". By default it is "fuzzy"
 - `acm-backend-lsp-case-mode`: The case sensitive mode for filtering candidates in LSP backend, there are three options: "ignore", "sensitive" and "smart". By default it is "ignore"
 - `acm-backend-lsp-frontend-filter-p`: Since LSP candidates have been filtered in the Python backend, it's not necessary to perform an additional filter on the frontend (refer to option `acm-candidate-match-function`), disable by default, when set to `t`, this option will call the `acm-candidate-match-function` function on the frontend to filter LSP candidates again
 - `acm-backend-lsp-show-progress`: show working progress, disable by default
 - `acm-enable-preview`: enable Tab-and-Go completion, commands like acm-select-* will select and preview other candidate and further input will then commit this candidate, disable by default
+
+- `acm-menu-length`: Maximal number of candidates shown in the menu, default is 10
+- `acm-string-width-function`: The function used to measure the width of a candidate; set it when your font is not monospaced
+- `acm-continue-commands`: The commands after which the completion menu keeps its state instead of being refreshed
+- `acm-icon-dir`: The directory holding the SVG icons used by `acm-icon`
+- `acm-icon-width`: Width of a rendered icon, measured in frame character widths, default is 4
+- `acm-quick-access-keys`: The character strings used as part of the quick-access key sequences, default is `("1" "2" ...)`
+- `acm-quick-access-modifier`: The modifier used for the quick-access sequences, default is `meta`
+- `acm-markdown-render-doc`: Whether to render markdown styling in the documentation frame
+- `acm-backend-capf-mode-list`: The modes in which the capf backend is enabled
+- `acm-backend-capf-mode-hooks`: The hooks derived from `acm-backend-capf-mode-list`; customize the mode list instead of this option
+- `acm-backend-ctags-candidate-min-length`: The minimum characters to trigger ctags completion, default is 3
+- `acm-backend-ctags-max-candidates`: The maximum number of ctags candidates, default is 10
+- `acm-backend-elisp-parse-depth`: How many enclosing lists to walk when looking for the local bindings around point, default is 100
+- `acm-backend-elisp-parse-limit`: How many bindings to scan inside a single binding form, default is 30
+- `acm-backend-elisp-search-max-number`: The maximum number of elisp symbol candidates, default is 300
+- `acm-backend-lsp-candidates-max-number`: The maximum number of LSP candidates, default is 100
+- `acm-backend-lsp-fetch-completion-item-func`: The function used to fetch extra information, such as the documentation, of a candidate
+- `acm-backend-lsp-workspace-symbol-candidate-min-length`: The minimum characters to trigger workspace symbol completion, default is 0
+- `acm-backend-lsp-workspace-symbol-candidates-max-number`: The maximum number of workspace symbol candidates, default is 100
+- `acm-backend-lsp-workspace-symbol-frontend-filter-p`: Filter the workspace symbol candidates on the frontend again, disabled by default because the Python backend already filtered them
+- `acm-backend-org-roam-candidates-number`: The maximum number of Org-roam candidates, default is 10
+- `acm-backend-tempel-candidates-number`: The maximum number of tempel candidates, default is 2
+- `acm-backend-yas-match-by-trigger-keyword`: Match yasnippet candidates by their trigger keyword instead of their name, disabled by default
+- `acm-backend-yas-show-trigger-keyword`: The format string of the extra information shown next to a yasnippet candidate, default is `" (%s)"`
+- `acm-backend-copilot-candidate-max-length`: Maximum length of the label shown for a Copilot candidate, default is 50
+- `acm-backend-copilot-show-trailing`: Show only the trailing part of a Copilot candidate, like VSCode
+- `acm-backend-copilot-network-proxy`: The network proxy used to reach Copilot, `nil` means no proxy
+- `acm-backend-copilot-accept`: Send the accept request to the Copilot server, disabled by default
+- `lsp-bridge-enable-mode-line`: Whether the server information is shown in the mode line, enabled by default
+- `lsp-bridge-enable-predicates`: The predicate functions that decide whether lsp-bridge may start in a buffer
+- `lsp-bridge-enable-profile`: Write performance data to `~/lsp-bridge.prof`, disabled by default
+- `lsp-bridge-auto-format-code-idle`: The idle seconds before the code is formatted automatically, default is 1
+- `lsp-bridge-diagnostic-enable-overlays`: Render the diagnostic overlays, enabled by default
+- `lsp-bridge-diagnostic-max-number`: The maximum number of diagnostics rendered at once, default is 50
+- `lsp-bridge-diagnostic-hide-severities`: The severities that are not rendered, `nil` by default
+- `lsp-bridge-diagnostic-display-errors-delay`: The delay in seconds before errors are displayed, default is 0.25
+- `lsp-bridge-diagnostic-tooltip-border-width`: Border width of the diagnostic tooltip, in pixels, default is 20
+- `lsp-bridge-diagnostic-update-hook`: The hook run after the diagnostics are updated
+- `lsp-bridge-breadcrumb-idle-delay`: The idle seconds before the breadcrumb is updated, default is 0.5
+- `lsp-bridge-breadcrumb-separator`: The breadcrumb separator
+- `lsp-bridge-breadcrumb-show-icon`: Whether the breadcrumb shows icons, enabled by default in a graphical Emacs
+- `lsp-bridge-breadcrumb-max-segment-length`: The maximum character length of one breadcrumb segment, default is 20
+- `lsp-bridge-breadcrumb-bar-height`: The height of the breadcrumb bar in a graphical Emacs
+- `lsp-bridge-call-hierarchy-name-width`: Width of the call name column, default is 40
+- `lsp-bridge-call-hierarchy-path-width`: Width of the path column, default is 60
+- `lsp-bridge-call-hierarchy-preview-height`: Height of the preview window, 0 disables the preview, default is 30
+- `lsp-bridge-call-hierarchy-call-max-height`: Maximum height of the call hierarchy buffer, default is 30
+- `lsp-bridge-code-action-preview-delay`: The delay in seconds before the code action diff preview is shown, default is 0.5
+- `lsp-bridge-semantic-tokens-auto-update`: How the semantic tokens are updated automatically, `'timer` by default
+- `lsp-bridge-semantic-tokens-delay`: The seconds to wait before requesting semantic tokens again, default is 0.5
+- `lsp-bridge-semantic-tokens-timer-update-interval`: The seconds between the automatic semantic token requests, default is 1
+- `lsp-bridge-semantic-tokens-ignore-modifier-limit-types`: The token types that ignore the modifier limit
+- `lsp-bridge-ref-show-function-name-p`: Show the function name while navigating the reference buffer, enabled by default
+- `lsp-bridge-ref-delete-other-windows`: Delete the other windows when the references are displayed, enabled by default
+- `lsp-bridge-ref-kill-temp-buffer-p`: Kill the temp buffer when the reference buffer is quit, enabled by default
+- `lsp-bridge-remote-start-automatically`: Start the remote `lsp_bridge.py` automatically, disabled by default
+- `lsp-bridge-remote-python-command`: The Python command used on the remote host, `"python3"` by default
+- `lsp-bridge-remote-log`: Full path of the log file on the remote host
+- `lsp-bridge-user-ssh-agent`: The ssh-agent used for remote connections
+- `lsp-bridge-user-ssh-private-key`: The ssh private key used for remote connections
+- `lsp-bridge-tramp-alias-alist`: Maps tramp host aliases to their canonical host names
+- `lsp-bridge-tramp-blacklist`: The tramp hosts for which lsp-bridge is not started
+- `lsp-bridge-search-words-prohibit-file-extensions`: The file extensions whose words are not indexed, `("png" "jpg" ...)` by default
+- `lsp-bridge-indent-two-level`: The indentation width used by the modes that indent by two, default is 2
+- `lsp-bridge-indent-four-level`: The indentation width used by the modes that indent by four, default is 4
+- `lsp-bridge-tsdk-path`: The directory holding the Tsserver `lib*.d.ts` files, needed by some language servers
+- `lsp-bridge-imenu-function`: Which Imenu function is used, `'imenu` by default
+- `lsp-bridge-raw-imenu-modes`: The modes that use plain `imenu` instead of the LSP one, `(emacs-lisp-mode org-mode)` by default
+- `lsp-bridge-jdtls-workspace`: The jdtls workspace directory, `~/.cache/lsp-bridge-jdtls` by default
+- `lsp-bridge-jdtls-jvm-args`: Additional VM parameters for the Java language server
+
+### Completion backends
+
+The candidates of the current mode are collected from the backends below. `acm-completion-mode-candidates-merge-order` decides the order in which they are asked for candidates, `acm-backend-order` how the candidate groups are concatenated, and the major mode has to be listed in `lsp-bridge-default-mode-hooks` before lsp-bridge runs at all.
+
+| Backend | Turn it on with | What it completes |
+|:--------|:----------------|:------------------|
+| `lsp` | always on | the language server of the project |
+| `elisp` | always on | elisp symbols, including the local bindings around point |
+| `search-file-words` | `acm-enable-search-file-words` (on) | the words that appear in the files of the project |
+| `path` | `acm-enable-path` (on) | file paths around point |
+| `yas` | `acm-enable-yas` (on) | yasnippet templates |
+| `ctags` | `acm-enable-ctags` (on) | symbols from a ctags `tags` file |
+| `telega` | `acm-enable-telega` (on) | Telegram user names from telega |
+| `capf` | `acm-enable-capf` (off) | `completion-at-point-functions` of the buffer |
+| `tempel` | `acm-enable-tempel` (off) | tempel templates |
+| `copilot` | `acm-enable-copilot` (off) | GitHub Copilot inline completions |
+| `tabby` | `acm-enable-tabby` (off) | a Tabby server |
+| `jupyter` | `acm-enable-jupyter` (off) | the Jupyter kernel of the buffer |
+| `org-roam` | `acm-enable-org-roam` (off) | Org-roam node titles |
+| `lsp-workspace-symbol` | `acm-enable-lsp-workspace-symbol` (off) | the symbols of the whole workspace |
+
+Each backend also has tuning options of its own (`acm-backend-<name>-*`) and is implemented in `acm/acm-backend-<name>.el`; the options are listed above together with the rest.
 
 ## Supported language servers
 
@@ -631,7 +726,20 @@ The following is the directory structure of the lsp-bridge project:
 | resources/                            | Dictionary and auxiliary data files                                                                                 |
 | test/                                 | Python and Elisp tests for completion, jump-to-definition, byte compilation, and related flows                      |
 | pyproject.toml, uv.lock               | Python dependency and environment metadata used by `uv`                                                             |
+| scripts/                              | Local gates: the elisp and Python docstring/lint checks, and the top-level form reader                              |
+| REFACTOR.org                          | (Chinese) plan, progress and findings of this tree's refactor                                                        |
 | .github/                              | CI workflows and repository automation                                                                              |
+
+### Checks
+
+Every change to this tree is expected to pass the local gates (they need `emacs`, `python3` and `ruff` on the path):
+
+- `scripts/check-elisp.sh` reads every `.el` file to the end first — a form with a missing closing paren must not hide behind a "no warnings" result — and then byte-compiles all of them into `/tmp/lsp-bridge-elc`, so the working tree stays clean.
+- `CHECKDOC=1 scripts/check-elisp.sh` does the same and prints the checkdoc findings; the tree is checkdoc-clean, except for the vendored `lsp-bridge-epc.el`.
+- `scripts/check-python.sh --strict` runs `py_compile`, the docstring presence gate and ruff (the hard gate plus pydocstyle).
+- `python3 scripts/docstring-report.py [--list]` reports how many definitions still miss a docstring; the tree is at 100%.
+
+`REFACTOR.org` (Chinese) records the plan, the state and the decisions of this tree's refactor, including the list of latent bugs found while documenting it.
 
 Please read below articles first:
 

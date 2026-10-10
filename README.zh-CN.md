@@ -90,7 +90,7 @@ lsp-bridge 的优势：
 请注意:
 
 1. 使用 lsp-bridge 时， 请先关闭其他补全插件， 比如 lsp-mode, eglot, company, corfu 等等， lsp-bridge 提供从补全后端、 补全前端到多后端融合的全套解决方案。
-2. lsp-bridge 除了提供 LSP 补全以外， 也提供了很多非 LSP 的补全后端， 包括 capf、 文件单词、 路径、 Yas/Tempel、 Copilot、 Tabby、 Ctags, Org roam 等补全后端， 如果你期望在某个模式提供这些补全， 请把对应的模式添加到 `lsp-bridge-default-mode-hooks`, 定义补全顺序请查看 `acm-backend-order`
+2. lsp-bridge 除了提供 LSP 补全以外， 也提供了很多非 LSP 的补全后端， 包括 capf、 文件单词、 路径、 Yas/Tempel、 Ctags、 Org-roam、 Jupyter、 telega、 Copilot、 Tabby、 LSP 工作区符号等补全后端， 如果你期望在某个模式提供这些补全， 请把对应的模式添加到 `lsp-bridge-default-mode-hooks`。 各后端如何开启请看 [补全后端](#补全后端)， 候选词合并顺序请看 `acm-backend-order`
 3. 请不要对 lsp-bridge 执行 ```byte compile``` 或者 ```native comp```， 会导致升级后， compile 后的版本 API 和最新版不一样， lsp-bridge 多线程设计， 不需要 compile 来加速
 
 ## 本地使用
@@ -322,7 +322,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 - `lsp-bridge-peek-list-height`: 选择下一个定义和引用的备选项
 - `lsp-bridge-peek-ace-keys`: 进行 `lsp-bridge-peek-through` 时待按的按键
 - `lsp-bridge-peek-ace-cancel-keys`: 退出 `lsp-bridge-peek-through` 的按键
-- `acm-backend-order`: 补全后端的显示顺序
+- `acm-backend-order`: 候选词组在菜单里的拼接顺序（ 模式候选的前半和后半、 模板候选、 Copilot 候选） ， 默认是： 模式前半、 模板前半、 Copilot、 模板后半、 模式后半
 - `acm-frame-background-dark-color`: 暗色主题下的菜单背景颜色
 - `acm-frame-background-light-color`: 亮色主题下的菜单背景颜色
 - `acm-enable-capf`: 针对非 LSP 后端提供 capf 补全支持， 默认是关闭的
@@ -339,7 +339,7 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 - `acm-doc-frame-max-lines`: 帮助窗口的最大行数， 默认是 20
 - `acm-doc-frame-boundary`: 文档框架的边界约束策略，选项包括 `'parent-frame`、`'display`，默认为 `'parent-frame`。`'parent-frame` 将文档框架限制在父 Emacs 窗口内，`'display` 允许文档框架超出 Emacs 窗口但不超出显示器边界
 - `acm-candidate-match-function`: lsp-bridge 前端对补全候选词的过滤算法， 选项有 `'regexp-quote`, `'orderless-flex`, `'orderless-literal`, `'orderless-prefixes`, `'orderless-regexp`, `'orderless-initialism`, 默认为 `regexp-quote`， orderless-\* 开头的算法需要额外安装 [orderless](https://github.com/oantolin/orderless)
-- `acm-completion-mode-candidates-merge-order`: 模式补全的显示顺序， 默认是按照 Elisp、 LSP、 Jupyter、 Ctags、 ROAM、 单词、 Telegra 的顺序显示， 你可以根据你的需求调整模式补全的显示顺序
+- `acm-completion-mode-candidates-merge-order`: 向各后端索取当前模式候选词的顺序， 也是这些候选词的显示顺序， 默认是 Elisp、 LSP、 LSP 工作区符号、 capf、 Jupyter、 Tabby、 ctags、 Org-roam、 文件单词、 telega
 - `acm-backend-lsp-candidate-min-length`: LSP 补全最小的触发字符数, 默认是 0
 - `acm-backend-lsp-block-kind-list`: 过滤某些类型的 LSP 候选词， 默认是列表， 当值为 `'("Snippet" "Enum")` 的时候， 意味着 Snippet Enum 这两种类型的补全不会显示
 - `acm-backend-elisp-candidate-min-length`: Elisp 补全最小的触发字符数, 默认是 0
@@ -356,6 +356,100 @@ lsp-bridge 针对许多语言都提供 2 个以上的语言服务器支持， �
 - `acm-backend-lsp-frontend-filter-p`: 因为 LSP 候选词已经在 Python 后端进行了过滤， 所以没有必要在前端再进行一次过滤（参考选项 acm-candidate-match-function）, 默认为 nil, 该选项设置为 t 的时候会调用 `acm-candidate-match-function` 函数在前端对 LSP 候选词进行二次过滤
 - `acm-backend-lsp-show-progress`: 是否显示 LSP Server 工作进度, 默认关闭
 - `acm-enable-preview`: 开启 Tab-and-Go completion， 当改变当前候选时， 可以预览候选， 并且后续输入会选择预览候选， 默认关闭
+
+- `acm-menu-length`: 补全菜单最多显示多少个候选词， 默认 10 个
+- `acm-string-width-function`: 计算候选词显示宽度的函数， 字体不等宽时需要自定义
+- `acm-continue-commands`: 执行这些命令后保留补全菜单的当前状态， 而不是重新刷新
+- `acm-icon-dir`: `acm-icon` 使用的 SVG 图标目录
+- `acm-icon-width`: 图标的显示宽度， 以 frame 字符宽度为单位， 默认 4
+- `acm-quick-access-keys`: 快速选择按键序列里用到的字符， 默认 `("1" "2" ...)`
+- `acm-quick-access-modifier`: 快速选择按键序列使用的修饰键， 默认 `meta`
+- `acm-markdown-render-doc`: 是否在文档 frame 中渲染 markdown 样式
+- `acm-backend-capf-mode-list`: 在哪些模式下启用 capf 后端
+- `acm-backend-capf-mode-hooks`: 由 `acm-backend-capf-mode-list` 推导出来的 hook， 请改模式列表而不是这个选项
+- `acm-backend-ctags-candidate-min-length`: 触发 ctags 补全的最少字符数， 默认 3
+- `acm-backend-ctags-max-candidates`: ctags 候选词的最大数量， 默认 10
+- `acm-backend-elisp-parse-depth`: 查找光标处局部绑定时向上遍历多少层括号， 默认 100
+- `acm-backend-elisp-parse-limit`: 单个绑定形式里最多扫描多少个绑定， 默认 30
+- `acm-backend-elisp-search-max-number`: elisp 符号候选词的最大数量， 默认 300
+- `acm-backend-lsp-candidates-max-number`: LSP 候选词的最大数量， 默认 100
+- `acm-backend-lsp-fetch-completion-item-func`: 获取候选词附加信息（ 例如文档） 的函数
+- `acm-backend-lsp-workspace-symbol-candidate-min-length`: 触发工作区符号补全的最少字符数， 默认 0
+- `acm-backend-lsp-workspace-symbol-candidates-max-number`: 工作区符号候选词的最大数量， 默认 100
+- `acm-backend-lsp-workspace-symbol-frontend-filter-p`: 是否在前端再次过滤工作区符号候选词， 默认关闭（ Python 后端已经过滤过）
+- `acm-backend-org-roam-candidates-number`: Org-roam 候选词的最大数量， 默认 10
+- `acm-backend-tempel-candidates-number`: tempel 候选词的最大数量， 默认 2
+- `acm-backend-yas-match-by-trigger-keyword`: 按触发关键字而不是名字匹配 yasnippet 候选词， 默认关闭
+- `acm-backend-yas-show-trigger-keyword`: yasnippet 候选词附加信息的格式字符串， 默认 `" (%s)"`
+- `acm-backend-copilot-candidate-max-length`: Copilot 候选词显示标签的最大长度， 默认 50
+- `acm-backend-copilot-show-trailing`: 只显示 Copilot 候选词的尾部， 与 VSCode 一致
+- `acm-backend-copilot-network-proxy`: 访问 Copilot 使用的网络代理， `nil` 表示不使用代理
+- `acm-backend-copilot-accept`: 是否向 Copilot 服务端发送 accept 请求， 默认关闭
+- `lsp-bridge-enable-mode-line`: 是否在 mode-line 显示 server 信息， 默认开启
+- `lsp-bridge-enable-predicates`: 决定某个 buffer 是否允许启动 lsp-bridge 的谓词函数
+- `lsp-bridge-enable-profile`: 把性能数据写入 `~/lsp-bridge.prof`， 默认关闭
+- `lsp-bridge-auto-format-code-idle`: 停止输入多少秒后自动格式化代码， 默认 1 秒
+- `lsp-bridge-diagnostic-enable-overlays`: 是否自己渲染诊断 overlay， 默认开启
+- `lsp-bridge-diagnostic-max-number`: 一次最多渲染多少条诊断信息， 默认 50
+- `lsp-bridge-diagnostic-hide-severities`: 不渲染哪些级别的诊断信息， 默认 `nil`
+- `lsp-bridge-diagnostic-display-errors-delay`: 显示错误信息的延迟秒数， 默认 0.25
+- `lsp-bridge-diagnostic-tooltip-border-width`: 诊断 tooltip 的边框宽度（ 像素） ， 默认 20
+- `lsp-bridge-diagnostic-update-hook`: 诊断信息更新后运行的 hook
+- `lsp-bridge-breadcrumb-idle-delay`: 更新 breadcrumb 的空闲秒数， 默认 0.5
+- `lsp-bridge-breadcrumb-separator`: breadcrumb 的分隔符
+- `lsp-bridge-breadcrumb-show-icon`: 是否在 breadcrumb 中显示图标， 图形化 Emacs 下默认开启
+- `lsp-bridge-breadcrumb-max-segment-length`: 单个 breadcrumb 片段的最大字符数， 默认 20
+- `lsp-bridge-breadcrumb-bar-height`: 图形化 Emacs 下 breadcrumb 栏的高度
+- `lsp-bridge-call-hierarchy-name-width`: 调用层级里函数名一列的宽度， 默认 40
+- `lsp-bridge-call-hierarchy-path-width`: 调用层级里路径一列的宽度， 默认 60
+- `lsp-bridge-call-hierarchy-preview-height`: 预览窗口的高度， 0 表示关闭预览， 默认 30
+- `lsp-bridge-call-hierarchy-call-max-height`: 调用层级 buffer 的最大高度， 默认 30
+- `lsp-bridge-code-action-preview-delay`: 显示 code action diff 预览的延迟秒数， 默认 0.5
+- `lsp-bridge-semantic-tokens-auto-update`: 语义高亮自动更新的方式， 默认 `'timer`
+- `lsp-bridge-semantic-tokens-delay`: 再次请求语义高亮前等待的秒数， 默认 0.5
+- `lsp-bridge-semantic-tokens-timer-update-interval`: 定时自动请求语义高亮的间隔秒数， 默认 1
+- `lsp-bridge-semantic-tokens-ignore-modifier-limit-types`: 忽略修饰符限制的 token 类型
+- `lsp-bridge-ref-show-function-name-p`: 在引用 buffer 中跳转时显示函数名， 默认开启
+- `lsp-bridge-ref-delete-other-windows`: 显示引用时删除其它窗口， 默认开启
+- `lsp-bridge-ref-kill-temp-buffer-p`: 退出引用 buffer 时杀掉临时 buffer， 默认开启
+- `lsp-bridge-remote-start-automatically`: 是否自动启动远端的 `lsp_bridge.py`， 默认关闭
+- `lsp-bridge-remote-python-command`: 远端主机上使用的 Python 命令， 默认 `"python3"`
+- `lsp-bridge-remote-log`: 远端主机上日志文件的完整路径
+- `lsp-bridge-user-ssh-agent`: 远程连接使用的 ssh-agent
+- `lsp-bridge-user-ssh-private-key`: 远程连接使用的 ssh 私钥
+- `lsp-bridge-tramp-alias-alist`: 把 tramp 主机别名映射到真实主机名
+- `lsp-bridge-tramp-blacklist`: 不启动 lsp-bridge 的 tramp 主机
+- `lsp-bridge-search-words-prohibit-file-extensions`: 不索引哪些扩展名文件里的单词， 默认 `("png" "jpg" ...)`
+- `lsp-bridge-indent-two-level`: 按两格缩进的模式使用的缩进宽度， 默认 2
+- `lsp-bridge-indent-four-level`: 按四格缩进的模式使用的缩进宽度， 默认 4
+- `lsp-bridge-tsdk-path`: Tsserver `lib*.d.ts` 文件所在目录， 某些语言服务器需要
+- `lsp-bridge-imenu-function`: 使用哪个 Imenu 函数， 默认 `'imenu`
+- `lsp-bridge-raw-imenu-modes`: 使用原生 `imenu` 而不是 LSP imenu 的模式， 默认 `(emacs-lisp-mode org-mode)`
+- `lsp-bridge-jdtls-workspace`: jdtls 的工作目录， 默认 `~/.cache/lsp-bridge-jdtls`
+- `lsp-bridge-jdtls-jvm-args`: 启动 Java 语言服务器时附加的 VM 参数
+
+### 补全后端
+
+当前模式的候选词来自下面这些后端。 `acm-completion-mode-candidates-merge-order` 决定向它们索取候选词的顺序， `acm-backend-order` 决定候选词组在菜单里的拼接顺序， 而主模式必须先出现在 `lsp-bridge-default-mode-hooks` 里， lsp-bridge 才会工作。
+
+| 后端 | 开启方式 | 补什么 |
+|:-----|:---------|:-------|
+| `lsp` | 始终开启 | 项目对应的语言服务器 |
+| `elisp` | 始终开启 | elisp 符号， 以及光标处的局部绑定 |
+| `search-file-words` | `acm-enable-search-file-words`（ 开） | 项目文件里出现过的单词 |
+| `path` | `acm-enable-path`（ 开） | 光标附近的文件路径 |
+| `yas` | `acm-enable-yas`（ 开） | yasnippet 模板 |
+| `ctags` | `acm-enable-ctags`（ 开） | ctags `tags` 文件里的符号 |
+| `telega` | `acm-enable-telega`（ 开） | telega 里的 Telegram 用户名 |
+| `capf` | `acm-enable-capf`（ 关） | buffer 的 `completion-at-point-functions` |
+| `tempel` | `acm-enable-tempel`（ 关） | tempel 模板 |
+| `copilot` | `acm-enable-copilot`（ 关） | GitHub Copilot 的行内补全 |
+| `tabby` | `acm-enable-tabby`（ 关） | Tabby 服务端 |
+| `jupyter` | `acm-enable-jupyter`（ 关） | buffer 对应的 Jupyter kernel |
+| `org-roam` | `acm-enable-org-roam`（ 关） | Org-roam 节点标题 |
+| `lsp-workspace-symbol` | `acm-enable-lsp-workspace-symbol`（ 关） | 整个工作区的符号 |
+
+每个后端还有自己的微调选项（ `acm-backend-<名字>-*`） ， 实现都在 `acm/acm-backend-<名字>.el`， 选项和上面的其它选项列在一起。
 
 ## 已经支持的语言服务器
 
@@ -628,7 +722,20 @@ lsp-bridge 每种语言的服务器配置存储在 [lsp-bridge/langserver](https
 | resources/                          | 词典和其他辅助数据文件                                                                                               |
 | test/                               | Python 和 Elisp 测试， 覆盖补全、跳转、字节编译等流程                                                                |
 | pyproject.toml, uv.lock             | `uv` 使用的 Python 依赖和环境元数据                                                                                  |
+| scripts/                            | 本地门禁： elisp/Python 的 docstring 与 lint 检查， 以及顶层 form 读取器                              |
+| REFACTOR.org                        | 这棵树重构的计划、 进度与发现                                                                        |
 | .github/                            | CI 工作流和仓库自动化配置                                                                                            |
+
+### 检查
+
+这棵树的每次改动都应该通过本地门禁（ 需要 `emacs`、 `python3` 和 `ruff` 在 PATH 上） ：
+
+- `scripts/check-elisp.sh` 先确认每个 `.el` 文件都能读到文件末尾 —— 少一个右括号不能藏在"没有 warning"的结果后面 —— 然后把它们全部 byte-compile 到 `/tmp/lsp-bridge-elc`， 保持工作树干净。
+- `CHECKDOC=1 scripts/check-elisp.sh` 做同样的事， 并打印 checkdoc 的检查结果； 整棵树是 checkdoc 干净的， 只有 vendored 的 `lsp-bridge-epc.el` 例外。
+- `scripts/check-python.sh --strict` 跑 `py_compile`、 docstring 存在性门禁和 ruff（ 硬门禁 + pydocstyle） 。
+- `python3 scripts/docstring-report.py [--list]` 报告还有多少定义没有 docstring； 目前是 100%。
+
+`REFACTOR.org` 记录了这棵树重构的计划、 进度和决定， 包括写文档过程中发现的潜在 bug 清单。
 
 请先阅读下面的文章:
 
