@@ -234,6 +234,16 @@ ruff check core lsp_bridge.py          # S2 起接入
    （无值的 defvar = 声明 ✓，docstring 门禁已能识别）；只对**包外**库用 =require=（=cl-lib=／=tramp=／=subr-x=）。
    对包内文件 =require=（例如 =(require 'lsp-bridge-epc)=）会把整个 =lsp-bridge.el= 提前加载，
    从而**改变后续文件的告警画像** ⇒ 一律声明，不 require 包内文件。
+**进度 7**：第 7 步（=transport= 层）已完成 —— =lsp-bridge-transport.el=（612 行、44 个定义：
+EPC 服务端与其 12 个 =--*-func= 回调、=call-async=／=call-sync=／=call-file-api= 与其前置判断、
+进程启停与日志（=start/kill/restart=、=profile-dump=、=--process-log-output=）、
+协议握手三件（=protocol-version=／=--server-handshake=／=--protocol-error=／=--handshake=）、
+=lsp-bridge-diagnose= 与报告构造器、以及进程/端口/名字等状态变量），
+=lsp-bridge.el= 2600 → 2052 行。踩到并修掉：=lsp-bridge-name= 这个 =defcustom= 换文件后丢了
+=:group 'lsp-bridge=（与之前两个 defface 同类问题，已在生成器规则里强调）。
+验收：归一化 warning 多重集**完全一致**（152 = 152，空 diff），且 =lsp-bridge-diagnose= 仍是交互命令、
+协议版本读取正常。剩最后一步 =core=（共享缓冲状态、模式、monitor、advisor、elisp 符号与 search words）。
+
 **进度 6**：第 6 步（=completion= 层）已完成 —— =lsp-bridge-completion.el=（531 行、32 个定义：
 请求准备（=set-prefix-style=／=set-server-names=）、=completion--record-items=、
 =try-completion=／=popup-complete-menu=／=record-last-change-position=、15 个补全谓词全套、

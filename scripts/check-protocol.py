@@ -2,7 +2,8 @@
 """Check that the two halves of lsp-bridge speak the same protocol version.
 
 The Emacs side declares the version in `lsp-bridge-protocol-version' (in
-lsp-bridge.el) and the Python side in `PROTOCOL_VERSION' (in lsp_bridge.py).
+lsp-bridge-transport.el, where the transport and the handshake live) and the
+Python side in `PROTOCOL_VERSION' (in lsp_bridge.py).
 `lsp-bridge--handshake' compares them whenever the process starts and refuses to
 send the server anything when they differ, so a mismatch has to be caught in a
 commit rather than by a user: this is the script that does it.
@@ -24,19 +25,23 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ELISP_FILE = ROOT / "lsp-bridge.el"
+# The constant is searched for rather than hard coded to one file, so that
+# moving the transport to another file cannot break this gate silently.
+ELISP_FILES = sorted(ROOT.glob("lsp-bridge*.el"))
 PYTHON_FILE = ROOT / "lsp_bridge.py"
 
 ELISP_RE = re.compile(r"^\(defconst lsp-bridge-protocol-version (\d+)", re.M)
 
 
 def elisp_protocol_version() -> int:
-    """Return the protocol version lsp-bridge.el declares."""
-    match = ELISP_RE.search(ELISP_FILE.read_text(encoding="utf-8"))
-    if not match:
-        print(f"no lsp-bridge-protocol-version in {ELISP_FILE.name}", file=sys.stderr)
-        raise SystemExit(1)
-    return int(match.group(1))
+    """Return the protocol version the Emacs side declares, and where."""
+    for path in ELISP_FILES:
+        match = ELISP_RE.search(path.read_text(encoding="utf-8"))
+        if match:
+            return int(match.group(1))
+    print("no lsp-bridge-protocol-version in "
+          + ", ".join(path.name for path in ELISP_FILES), file=sys.stderr)
+    raise SystemExit(1)
 
 
 def python_protocol_version() -> int:
