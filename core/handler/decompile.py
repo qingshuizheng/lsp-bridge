@@ -1,7 +1,8 @@
 """Materialise a decompiled source so it can be jumped to.
 
 The C# and Deno resolvers turn a compiled artefact into a temporary file
-that the editor can open like any other source."""
+that the editor can open like any other source.
+"""
 
 import hashlib
 import os

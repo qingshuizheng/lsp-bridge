@@ -3,7 +3,8 @@
 These work on the text of a file and its offsets only: they know nothing
 about a language, so the Solidity, C# and TypeScript fallbacks can all use
 them.  The names lose the leading underscore they had as private helpers of
-the Solidity fallback, because they are shared now."""
+the Solidity fallback, because they are shared now.
+"""
 
 import os
 

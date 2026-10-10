@@ -3,7 +3,8 @@
 The language server answers most questions; when it does not - an import
 that resolves to another file, a struct field, a method brought in by
 `using for', a function inherited from a base contract - the helpers here
-read the sources of the project and work the definition out."""
+read the sources of the project and work the definition out.
+"""
 
 import json
 import os
