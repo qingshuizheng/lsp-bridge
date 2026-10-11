@@ -92,6 +92,7 @@
 (require 'cl-lib)
 (require 'subr-x)
 
+(declare-function lsp-bridge--not-match-hide-characters "lsp-bridge-completion")
 (declare-function acm-preview-create-overlay "acm")
 (declare-function acm-update "acm")
 
@@ -311,14 +312,18 @@ style.  PREVIEW non-nil shows the link in an overlay instead of inserting it."
   ;; ":" is in `lsp-bridge-completion-hide-characters', which would keep the menu
   ;; from appearing right after the trigger.  The exception is as narrow as the
   ;; trigger itself, so no other ":" is affected.
-  (define-advice lsp-bridge--not-match-hide-characters (:around (orig) devonthink-trigger)
-    "Keep the popup alive right after the DEVONthink trigger."
-    ;; The popup is asked for on every keystroke, so the trigger does not have to
-    ;; be the last thing before point: "dt:", "dt:f" and "dt:foo" all count.
-    (if (looking-back (concat (regexp-quote acm-backend-devonthink-trigger) "[^ \t\n]*")
-                      (line-beginning-position))
-        t
-      (funcall orig))))
+  ;; Emacs warns about every `define-advice' name it does not know yet, and the
+  ;; advice is added here on purpose before lsp-bridge is loaded.
+  (with-no-warnings
+    (define-advice lsp-bridge--not-match-hide-characters (:around (orig) devonthink-trigger)
+      "Keep the popup alive right after the DEVONthink trigger."
+      ;; The popup is asked for on every keystroke, so the trigger does not have to
+      ;; be the last thing before point: "dt:", "dt:f" and "dt:foo" all count.
+      (if (looking-back (concat (regexp-quote acm-backend-devonthink-trigger) "[^ \t\n]*")
+                        (line-beginning-position))
+          t
+        (funcall orig))))
+    )
 
 (provide 'acm-backend-devonthink)
 

@@ -102,9 +102,9 @@ read from."
 (ert-deftest acm-backend-test-built-ins-are-registered ()
   "The backends of this tree are all registered, with their capabilities."
   (should (equal (sort (acm-backend-names) #'string<)
-                 '("capf" "copilot" "ctags" "elisp" "jupyter" "lsp"
-                   "lsp-workspace-symbol" "path" "search-file-words" "tabby"
-                   "telega" "tempel" "vulpea" "yas")))
+                 '("capf" "copilot" "ctags" "devonthink" "elisp" "jupyter"
+                   "lsp" "lsp-workspace-symbol" "path" "search-file-words"
+                   "tabby" "telega" "tempel" "vulpea" "yas")))
   (let ((path (acm-backend-find "path"))
         (lsp (acm-backend-find "lsp"))
         (yas (acm-backend-find "yas"))
