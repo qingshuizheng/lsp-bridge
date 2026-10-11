@@ -111,11 +111,11 @@ Nothing is asked of DEVONthink while this is nil."
 
 (defcustom acm-backend-devonthink-application-id "DNtp"
   "AppleScript id of the DEVONthink application to ask.
-The application has been renamed over the years - DEVONthink Pro, DEVONthink 3,
-DEVONthink - while this id stayed the same, which is why the search addresses the
-application by id instead of by name.  The bundle identifier that the system
-reports (com.devon-technologies.think) is a different thing and DEVONthink does
-not answer to it here."
+The application has been renamed over the years - DEVONthink Pro,
+DEVONthink 3, DEVONthink - while this id stayed the same, which is why
+the search addresses the application by id instead of by name.  The
+bundle identifier the system reports, com.devon-technologies.think, is
+a different thing and DEVONthink does not answer to it here."
   :type 'string
   :group 'acm-backend-devonthink)
 
