@@ -29,7 +29,26 @@ AppleScript process."
     (let ((script (acm-backend-devonthink--script "foo")))
       (should (string-match-p (regexp-quote "tell application \"DEVONthink\"") script))
       (should (string-match-p (regexp-quote "search \"name:foo*\"") script))
-      (should (string-match-p (regexp-quote "uuid of theRecord") script)))))
+      (should (string-match-p (regexp-quote "uuid of theRecord") script))
+      ;; `tab' inside DEVONthink's tell block answers with the letters of its
+      ;; name, so the separator is spelled out
+      (should (string-match-p (regexp-quote "(ASCII character 9)") script))
+      (should-not (string-match-p "& tab &" script)))))
+
+(ert-deftest acm-backend-devonthink-test-a-running-search-offers-a-placeholder ()
+  (acm-backend-devonthink-test--with-backend
+    (setq acm-backend-devonthink--pending "foo")
+    ;; the menu has to appear on the keystroke that starts the search
+    (should (equal '("Searching DEVONthink...")
+                   (mapcar (lambda (candidate) (plist-get candidate :label))
+                           (acm-backend-devonthink-candidates "dt:foo"))))
+    ;; and the placeholder cannot become a link
+    (with-temp-buffer
+      (insert "dt:foo")
+      (goto-char (point-max))
+      (acm-backend-devonthink-candidate-expand
+       (car (acm-backend-devonthink-candidates "dt:foo")) (point-min) nil)
+      (should (equal "dt:foo" (buffer-string))))))
 
 (ert-deftest acm-backend-devonthink-test-script-escapes-the-query ()
   (acm-backend-devonthink-test--with-backend

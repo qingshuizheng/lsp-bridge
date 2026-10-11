@@ -184,14 +184,16 @@ literal early."
 The `name:' key and the trailing wildcard make DEVONthink do a prefix search on
 the record names, which is what completion needs, and the loop stops at
 `acm-backend-devonthink-limit' records.  Each record is written as
-UUID, name and kind, separated by tabs."
+UUID, name and kind, separated by tabs - written as `(ASCII character 9)'
+rather than the `tab' constant, which DEVONthink's own tell block answers with
+the four letters of its name."
   (format "tell application \"%s\"
   set theRecords to search \"name:%s*\"
   set theOutput to \"\"
   set theCount to 0
   repeat with theRecord in theRecords
     if theCount is greater than or equal to %d then exit repeat
-    set theOutput to theOutput & (uuid of theRecord) & tab & (name of theRecord) & tab & (kind of theRecord) & linefeed
+    set theOutput to theOutput & (uuid of theRecord) & (ASCII character 9) & (name of theRecord) & (ASCII character 9) & (kind of theRecord) & linefeed
     set theCount to theCount + 1
   end repeat
   return theOutput
@@ -199,6 +201,18 @@ end tell"
           (acm-backend-devonthink--quote-applescript acm-backend-devonthink-application)
           (acm-backend-devonthink--quote-applescript query)
           acm-backend-devonthink-limit))
+
+(defun acm-backend-devonthink--placeholder ()
+  "Return the candidate that stands in while DEVONthink is being asked.
+The answer needs an AppleScript round trip, and the menu has to appear on the
+keystroke that starts the search, so this is shown until the answer arrives."
+  (list :key "acm-devonthink-searching"
+        :icon "note"
+        :label "Searching DEVONthink..."
+        :displayLabel "Searching DEVONthink..."
+        :annotation "searching"
+        :uuid nil
+        :backend "devonthink"))
 
 (defun acm-backend-devonthink--parse (output)
   "Turn the tab separated OUTPUT of a search into candidates."
@@ -233,13 +247,21 @@ EVENT is ignored unless the process finished, so that the answer of a process
 that was replaced by a newer search is not mistaken for one."
   (when (string-prefix-p "finished" event)
     (unwind-protect
-        (let ((output (with-current-buffer (process-buffer process)
-                        (buffer-substring-no-properties (point-min) (point-max)))))
+        (let* ((completion (with-current-buffer (process-buffer process)
+                             (buffer-substring-no-properties (point-min) (point-max))))
+               (failure (process-exit-status process)))
           (setq acm-backend-devonthink--pending nil)
-          (acm-backend-devonthink--remember query (acm-backend-devonthink--parse output))
-          (when (buffer-live-p buffer)
-            (with-current-buffer buffer
-              (acm-update))))
+          (if (/= failure 0)
+              ;; osascript writes the reason - a refused automation permission,
+              ;; for instance - to its error stream, and saying it out loud is
+              ;; the only way to tell the user why nothing came back.
+              (message "DEVONthink search failed (%d): %s" failure
+                       (string-trim completion))
+            (acm-backend-devonthink--remember
+             query (acm-backend-devonthink--parse completion))
+            (when (buffer-live-p buffer)
+              (with-current-buffer buffer
+                (acm-update)))))
       (when (buffer-live-p (process-buffer process))
         (kill-buffer (process-buffer process))))))
 
@@ -255,6 +277,9 @@ already typed past."
          :name "acm-devonthink"
          :noquery t
          :buffer (generate-new-buffer " *acm-devonthink*")
+         ;; The error stream goes to the same buffer: osascript puts the reason
+         ;; there, and the sentinel reports it when the exit status is not zero.
+         :stderr (generate-new-buffer " *acm-devonthink-errors*")
          :command (list "osascript" "-e" (acm-backend-devonthink--script query))
          :sentinel (lambda (process event)
                      (acm-backend-devonthink--sentinel buffer query process event)))))
@@ -283,30 +308,37 @@ menu through `acm-update'."
                                 (lambda ()
                                   (setq acm-backend-devonthink--timer nil)
                                   (acm-backend-devonthink--search query buffer))))))
-      (cdr answer))))
+      (or (cdr answer)
+          ;; The menu has to come up on the keystroke that starts the search, so
+          ;; something is offered until the answer arrives.
+          (when (equal query acm-backend-devonthink--pending)
+            (list (acm-backend-devonthink--placeholder)))))))
 
 (defun acm-backend-devonthink-candidate-expand (candidate-info bound-start &optional preview)
   "Insert the org link of the DEVONthink record CANDIDATE-INFO.
 The link points at the record through its UUID, which is the identifier the URL
 scheme uses.  BOUND-START is where the prefix began; the trigger is removed as
 well when it sits right before it, which is the case with the string prefix
-style.  PREVIEW non-nil shows the link in an overlay instead of inserting it."
-  (let* ((text (format "[[%s://%s][%s]]"
-                       acm-backend-devonthink-url-scheme
-                       (plist-get candidate-info :uuid)
-                       (plist-get candidate-info :label)))
-         (trigger (length acm-backend-devonthink-trigger))
-         (start (if (and (>= bound-start (1+ trigger))
-                         (save-excursion
-                           (goto-char bound-start)
-                           (backward-char trigger)
-                           (looking-at (regexp-quote acm-backend-devonthink-trigger))))
-                    (- bound-start trigger)
-                  bound-start)))
-    (if preview
-        (acm-preview-create-overlay start (point) text)
-      (delete-region start (point))
-      (insert text))))
+style.  PREVIEW non-nil shows the link in an overlay instead of inserting it.
+The placeholder that stands in while a search is in flight has no UUID, and
+inserting it would put a link to nothing in the buffer, so it is ignored."
+  (when (plist-get candidate-info :uuid)
+    (let* ((text (format "[[%s://%s][%s]]"
+                         acm-backend-devonthink-url-scheme
+                         (plist-get candidate-info :uuid)
+                         (plist-get candidate-info :label)))
+           (trigger (length acm-backend-devonthink-trigger))
+           (start (if (and (>= bound-start (1+ trigger))
+                           (save-excursion
+                             (goto-char bound-start)
+                             (backward-char trigger)
+                             (looking-at (regexp-quote acm-backend-devonthink-trigger))))
+                      (- bound-start trigger)
+                    bound-start)))
+      (if preview
+          (acm-preview-create-overlay start (point) text)
+        (delete-region start (point))
+        (insert text)))))
 
 (with-eval-after-load 'lsp-bridge
   ;; ":" is in `lsp-bridge-completion-hide-characters', which would keep the menu
