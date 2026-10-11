@@ -49,5 +49,23 @@
       (should (equal ">tFoo" (buffer-string)))
       (should (equal '("Foo" finished) got)))))
 
+(ert-deftest acm-backend-capf-test-exit-function-errors-are-reported ()
+  "A failing exit function must not undo the completion."
+  (with-temp-buffer
+    (insert ">tFo")
+    (let ((acm-backend-capf-mode-list '(acm-backend-capf-test-mode))
+          (got nil) (reported nil) bounds)
+      (setq bounds (acm-backend-capf-test--setup
+                    (lambda (string status) (setq got (list string status))
+                      (error "ekg would signal here"))))
+      (cl-letf (((symbol-function 'message)
+                 (lambda (format &rest args) (setq reported (apply #'format format args)))))
+        (acm-backend-capf-candidate-expand (list :label "Foo") (car bounds) nil))
+      ;; the text is in the buffer, the string handed over is the completed text
+      (should (equal ">tFoo" (buffer-string)))
+      (should (equal '("Foo" finished) got))
+      (should (string-match-p "exit-function signalled" reported)))))
+
+
 (provide 'acm-backend-capf-test)
 ;;; acm-backend-capf-test.el ends here

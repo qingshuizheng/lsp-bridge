@@ -153,7 +153,15 @@ inserting it."
       (delete-region start end)
       (insert label)
       (when exit-fn
-        (funcall exit-fn label 'finished)))))
+        ;; The exit function does post completion work on text that is already in
+        ;; the buffer - ekg wraps a tag in brackets, for instance.  It is called
+        ;; with the text that was completed, and an error inside it is reported
+        ;; rather than allowed to abort the completion the user just made: a
+        ;; backend that signals here (ekg's transclusion does when it cannot find
+        ;; the title it was given) must not leave the selection half applied.
+        (condition-case error
+            (funcall exit-fn (buffer-substring-no-properties start (point)) 'finished)
+          (error (message "CAPF :exit-function signalled: %S" error)))))))
 
 (defun acm-backend-capf-candidates (_keyword)
   "Return CAPF completion candidates matching KEYWORD.
