@@ -47,6 +47,7 @@
 (require 'acm-backend-elisp)
 (require 'acm-backend-jupyter)
 (require 'acm-backend-lsp)
+(require 'acm-backend-devonthink)
 (require 'acm-backend-lsp-workspace-symbol)
 (require 'acm-backend-path)
 (require 'acm-backend-search-file-words)
@@ -312,6 +313,11 @@ name, so a user can re-register one of them with different fields."
                     :expand-fn acm-backend-capf-candidate-expand
                     :preview t
                     :enabled (lambda () acm-enable-capf))
+             (:name "devonthink" :group "devonthink-candidates"
+                    :fetch-fn acm-backend-devonthink-candidates
+                    :expand-fn acm-backend-devonthink-candidate-expand
+                    :preview t
+                    :enabled (lambda () acm-enable-devonthink))
              (:name "path" :group "path-candidates"
                     :fetch-fn acm-backend-path-candidates
                     :clean-fn acm-backend-path-clean

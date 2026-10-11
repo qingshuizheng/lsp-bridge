@@ -48,6 +48,7 @@ echo "== ERT: CAPF backend and exit function (test/acm-backend-capf-test.el)"
 run_ert test/acm-backend-capf-test.el
 
 echo "== ERT: telega backend logic (test/acm-backend-telega-test.el)"
+run_ert test/acm-backend-devonthink-test.el
 run_ert test/acm-backend-telega-test.el
 
 echo "== ERT: Vulpea backend (test/acm-backend-vulpea-test.el)"
