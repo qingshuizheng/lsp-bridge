@@ -167,18 +167,34 @@ backend that returns bare candidates still gets its expand function called."
                              (plist-put candidate :backend backend)))))
                 candidates)))
 
+(defvar acm-backend--reported-error nil
+  "The last error `acm-backend-fetch' reported, so that it is only said once.")
+
 (defun acm-backend-fetch (backend keyword)
   "Return the candidates BACKEND offers for the input KEYWORD.
 Return nil when the backend is disabled - `enabled' returns nil - or when it
 must not run inside a comment and point is in one.  The result goes through
-`acm-candidates-normalize'."
-  (when (and (or (null (acm-backend-enabled backend))
-                 (funcall (acm-backend-enabled backend)))
-             (or (null (acm-backend-skip-in-comment backend))
-                 (not (acm-in-comment-p))))
-    (acm-candidates-normalize
-     (funcall (acm-backend-fetch-fn backend) keyword)
-     (acm-backend-name backend))))
+`acm-candidates-normalize'.
+
+A backend that signals returns nil, and the error is reported once.  One backend
+must not be able to abort the fetching of all the others: ekg's tag completion
+signals with stale match data when it is asked from a background refresh, and
+that error used to break the whole update, which is how a DEVONthink candidate
+that had arrived perfectly well never reached the menu."
+  (condition-case error
+      (when (and (or (null (acm-backend-enabled backend))
+                     (funcall (acm-backend-enabled backend)))
+                 (or (null (acm-backend-skip-in-comment backend))
+                     (not (acm-in-comment-p))))
+        (acm-candidates-normalize
+         (funcall (acm-backend-fetch-fn backend) keyword)
+         (acm-backend-name backend)))
+    (error
+     (unless (equal error acm-backend--reported-error)
+       (setq acm-backend--reported-error error)
+       (message "Backend %s signalled and was skipped: %S"
+                (acm-backend-name backend) error))
+     nil)))
 
 (defun acm-backend-candidates (name keyword)
   "Return the candidates the backend NAME offers for KEYWORD, or nil.

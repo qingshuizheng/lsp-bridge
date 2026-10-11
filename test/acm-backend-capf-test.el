@@ -67,5 +67,20 @@
       (should (string-match-p "exit-function signalled" reported)))))
 
 
+(ert-deftest acm-backend-capf-test-a-signalling-capf-is-skipped ()
+  "A CAPF that signals must not take the backend down with it."
+  (with-temp-buffer
+    (insert "Foo")
+    (let ((acm-backend-capf-mode-list '(acm-backend-capf-test-mode))
+          reported)
+      (setq-local major-mode 'acm-backend-capf-test-mode)
+      (setq-local completion-at-point-functions
+                  (list (lambda () (error "stale match data"))))
+      (cl-letf (((symbol-function 'message)
+                 (lambda (format &rest args) (setq reported (apply #'format format args)))))
+        (should-not (acm-backend-capf-candidates "Foo")))
+      (should (string-match-p "CAPF signalled" reported)))))
+
+
 (provide 'acm-backend-capf-test)
 ;;; acm-backend-capf-test.el ends here

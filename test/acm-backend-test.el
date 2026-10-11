@@ -308,5 +308,30 @@ read from."
       (should-not (acm-backend-expand plain 3))
       (should-not (acm-backend-clean "unknown")))))
 
+(ert-deftest acm-backend-test-a-signalling-backend-does-not-stop-the-others ()
+  "One buggy backend must not hide what the others return.
+This is the shape of the ekg report: its tag completion signalled with stale
+match data when a background refresh asked for candidates, and the error aborted
+the whole update, so a candidate another backend had already fetched never
+reached the menu."
+  (let ((acm-backends nil)
+        (acm-backend-test--candidates '(("good" . ("Alpha"))))
+        (acm-backend--reported-error nil)
+        reported)
+    (acm-backend-register
+     (make-acm-backend :name "broken" :group "broken-candidates"
+                       :fetch-fn (lambda (_keyword) (error "stale match data"))
+                       :enabled (lambda () t)))
+    (acm-backend-register (acm-backend-test--backend "good" "good-candidates"))
+    (cl-letf (((symbol-function 'message)
+               (lambda (format &rest args) (setq reported (apply #'format format args)))))
+      (let ((queries (acm-backends-fetch "x")))
+        (should (equal '("Alpha")
+                       (mapcar (lambda (candidate) (plist-get candidate :label))
+                               (cdr (assoc "good-candidates" queries)))))
+        (should-not (assoc "broken-candidates" queries))))
+    (should (string-match-p "broken" reported))))
+
+
 (provide 'acm-backend-test)
 ;;; acm-backend-test.el ends here

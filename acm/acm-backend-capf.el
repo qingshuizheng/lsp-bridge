@@ -128,6 +128,16 @@ addition to `lsp-bridge-default-mode-hooks'.")
 
 (declare-function acm-preview-create-overlay "acm")
 
+(defun acm-backend-capf--hook-candidates ()
+  "Ask `completion-at-point-functions' for the completions at point.
+A CAPF that signals - ekg's tag completion does, with stale match data, when it
+is asked from a background refresh - is skipped and reported, so that it cannot
+hide what the other entries of `completion-at-point-functions' offer."
+  (condition-case error
+      (run-hook-wrapped 'completion-at-point-functions
+                        #'completion--capf-wrapper 'all)
+    (error (message "CAPF signalled and was skipped: %S" error) nil)))
+
 (defun acm-backend-capf-candidate-expand (candidate-info bound-start &optional preview)
   "Expand the CAPF candidate CANDIDATE-INFO, replacing BOUND-START onwards.
 The completion bounds and the `:exit-function' are asked from CAPF again
@@ -136,8 +146,7 @@ after the label is inserted, which is what CAPF backends use for their post
 completion work.  PREVIEW non-nil shows the candidate in an overlay instead of
 inserting it."
   (let* ((label (plist-get candidate-info :label))
-         (res (run-hook-wrapped 'completion-at-point-functions
-                                #'completion--capf-wrapper 'all))
+         (res (acm-backend-capf--hook-candidates))
          (plist (pcase res
                   (`(,_ . ,(and (pred functionp) _f)) nil)
                   (`(,_hookfun . (,_start ,_end ,_collection . ,plist)) plist)))
@@ -172,8 +181,7 @@ plist.  Return nil unless the major mode is a member of
 candidate already is the complete text that replaces the region its entry
 returned."
   (when (member major-mode acm-backend-capf-mode-list)
-    (let ((res (run-hook-wrapped 'completion-at-point-functions
-                                 #'completion--capf-wrapper 'all))
+      (let ((res (acm-backend-capf--hook-candidates))
           annotation-function)
       (mapcar (lambda (candidate)
                 (list :key candidate
