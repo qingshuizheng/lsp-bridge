@@ -27,7 +27,9 @@ AppleScript process."
 (ert-deftest acm-backend-devonthink-test-script-searches-record-names ()
   (acm-backend-devonthink-test--with-backend
     (let ((script (acm-backend-devonthink--script "foo")))
-      (should (string-match-p (regexp-quote "tell application \"DEVONthink\"") script))
+      ;; the application is addressed by its AppleScript id, which the renames
+      ;; from DEVONthink Pro to DEVONthink 3 to DEVONthink left alone
+      (should (string-match-p (regexp-quote "tell application id \"DNtp\"") script))
       (should (string-match-p (regexp-quote "search \"name:foo*\"") script))
       (should (string-match-p (regexp-quote "uuid of theRecord") script))
       ;; `tab' inside DEVONthink's tell block answers with the letters of its

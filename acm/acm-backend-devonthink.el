@@ -66,8 +66,8 @@
 ;;; Customize:
 ;;
 ;; `acm-enable-devonthink' is off by default, so nothing runs until it is set.
-;; `acm-backend-devonthink-application' is worth checking when a DEVONthink
-;; version 3 is in use: the application is called "DEVONthink 3" there.
+;; `acm-backend-devonthink-application-id' is the AppleScript id the search
+;; addresses, "DNtp", which did not change when the application was renamed.
 ;;
 ;; All of the above can customize by:
 ;;      M-x customize-group RET acm-backend-devonthink RET
@@ -109,10 +109,13 @@ Nothing is asked of DEVONthink while this is nil."
   :type 'string
   :group 'acm-backend-devonthink)
 
-(defcustom acm-backend-devonthink-application "DEVONthink"
-  "Name of the DEVONthink application to ask.
-DEVONthink 3 is called \"DEVONthink 3\", and from version 4 on the
-application is called \"DEVONthink\"."
+(defcustom acm-backend-devonthink-application-id "DNtp"
+  "AppleScript id of the DEVONthink application to ask.
+The application has been renamed over the years - DEVONthink Pro, DEVONthink 3,
+DEVONthink - while this id stayed the same, which is why the search addresses the
+application by id instead of by name.  The bundle identifier that the system
+reports (com.devon-technologies.think) is a different thing and DEVONthink does
+not answer to it here."
   :type 'string
   :group 'acm-backend-devonthink)
 
@@ -187,7 +190,7 @@ the record names, which is what completion needs, and the loop stops at
 UUID, name and kind, separated by tabs - written as `(ASCII character 9)'
 rather than the `tab' constant, which DEVONthink's own tell block answers with
 the four letters of its name."
-  (format "tell application \"%s\"
+  (format "tell application id \"%s\"
   set theRecords to search \"name:%s*\"
   set theOutput to \"\"
   set theCount to 0
@@ -198,7 +201,7 @@ the four letters of its name."
   end repeat
   return theOutput
 end tell"
-          (acm-backend-devonthink--quote-applescript acm-backend-devonthink-application)
+          (acm-backend-devonthink--quote-applescript acm-backend-devonthink-application-id)
           (acm-backend-devonthink--quote-applescript query)
           acm-backend-devonthink-limit))
 
