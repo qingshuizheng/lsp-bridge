@@ -91,8 +91,10 @@ AppleScript process."
     (should (equal '("Notes")
                    (mapcar (lambda (candidate) (plist-get candidate :label))
                            (acm-backend-devonthink-candidates "dt:foo"))))
-    ;; an empty query asks DEVONthink for nothing, and so does a disabled backend
-    (should-not (acm-backend-devonthink-candidates "dt:"))
+    ;; the trigger on its own asks DEVONthink for nothing, but says so
+    (should (equal '("Type to search DEVONthink")
+                   (mapcar (lambda (candidate) (plist-get candidate :label))
+                           (acm-backend-devonthink-candidates "dt:"))))
     (should-not acm-backend-devonthink--timer)))
 
 (ert-deftest acm-backend-devonthink-test-expand-inserts-an-org-link ()

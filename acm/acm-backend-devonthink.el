@@ -205,6 +205,18 @@ end tell"
           (acm-backend-devonthink--quote-applescript query)
           acm-backend-devonthink-limit))
 
+(defun acm-backend-devonthink--hint ()
+  "Return the candidate shown when the trigger has just been typed.
+There is nothing to search for yet, and showing this is what makes the menu
+appear on the trigger itself rather than only after the next character."
+  (list :key "acm-devonthink-hint"
+        :icon "note"
+        :label "Type to search DEVONthink"
+        :displayLabel "Type to search DEVONthink"
+        :annotation "dt:"
+        :uuid nil
+        :backend "devonthink"))
+
 (defun acm-backend-devonthink--placeholder ()
   "Return the candidate that stands in while DEVONthink is being asked.
 The answer needs an AppleScript round trip, and the menu has to appear on the
@@ -311,11 +323,18 @@ menu through `acm-update'."
                                 (lambda ()
                                   (setq acm-backend-devonthink--timer nil)
                                   (acm-backend-devonthink--search query buffer))))))
-      (or (cdr answer)
-          ;; The menu has to come up on the keystroke that starts the search, so
-          ;; something is offered until the answer arrives.
-          (when (equal query acm-backend-devonthink--pending)
-            (list (acm-backend-devonthink--placeholder)))))))
+      (cond
+       ;; The trigger on its own has nothing to search for, and answering nil
+       ;; would leave the user with no menu and no reason for it.
+       ((and (string-empty-p query)
+             (not (cdr answer)))
+        (list (acm-backend-devonthink--hint)))
+       (t
+        (or (cdr answer)
+            ;; The menu has to come up on the keystroke that starts the search,
+            ;; so something is offered until the answer arrives.
+            (when (equal query acm-backend-devonthink--pending)
+              (list (acm-backend-devonthink--placeholder)))))))))
 
 (defun acm-backend-devonthink-candidate-expand (candidate-info bound-start &optional preview)
   "Insert the org link of the DEVONthink record CANDIDATE-INFO.
