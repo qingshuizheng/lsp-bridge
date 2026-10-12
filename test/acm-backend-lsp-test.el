@@ -5,9 +5,11 @@
 ;; buffer, and the edits it sends back have to be applied from the last one to the
 ;; first, otherwise the earlier ones shift the later ones.  Both are arithmetic on
 ;; a buffer, and are what is checked here, together with the reset that clears the
-;; candidates of the buffer.  What is not here is the request itself, the fetching
-;; of a completion item's documentation, and the expansion of a snippet into the
-;; buffer, all of which need a server.
+;; candidates of the buffer.  Applying the edits of an answer is asked here too,
+;; and so is the documentation of a completion item, which is read from what the
+;; buffer already holds and fetched when it does not.  What is not here is the
+;; request itself and the expansion of a snippet, which pull in the completion
+;; framework and a server.
 
 ;;; Code:
 
@@ -62,6 +64,82 @@ void variable before they were declared."
     (should (hash-table-p acm-backend-lsp-items))
     (should (equal (hash-table-count acm-backend-lsp-items) 0))
     (should-not acm-backend-lsp-cache-candidates)))
+
+(ert-deftest acm-backend-lsp-test-insert-new-text-replaces-and-keeps-point ()
+  "The text of a range is replaced, and point is left where it was."
+  (with-temp-buffer
+    (insert "one two three\n")
+    (goto-char 5)
+    (acm-backend-lsp-insert-new-text '(:line 0 :character 4) '(:line 0 :character 7) "TWO")
+    (should (equal (buffer-string) "one TWO three\n"))
+    (should (equal (point) 5))))
+
+(ert-deftest acm-backend-lsp-test-apply-text-edits ()
+  "Edits are applied from the last position to the first."
+  (with-temp-buffer
+    (insert "alpha beta gamma\n")
+    ;; Two edits in increasing order: the first one must not shift the second.
+    (acm-backend-lsp-apply-text-edits
+     (list (list :range (list :start (list :line 0 :character 0)
+                              :end (list :line 0 :character 5))
+                 :newText "ALPHA")
+           (list :range (list :start (list :line 0 :character 11)
+                              :end (list :line 0 :character 16))
+                 :newText "GAMMA")))
+    (should (equal (buffer-string) "ALPHA beta GAMMA\n"))))
+
+(ert-deftest acm-backend-lsp-test-apply-text-edits-inserts ()
+  "An edit whose range is empty inserts without deleting."
+  (with-temp-buffer
+    (insert "one three\n")
+    (acm-backend-lsp-apply-text-edits
+     (list (list :range (list :start (list :line 0 :character 4)
+                              :end (list :line 0 :character 4))
+                 :newText "two ")))
+    (should (equal (buffer-string) "one two three\n"))))
+
+(defun acm-backend-lsp-test--items (server key documentation)
+  "Return an items table holding DOCUMENTATION for KEY under SERVER."
+  (let ((by-key (make-hash-table :test 'equal)))
+    (puthash key (list :documentation documentation) by-key)
+    (let ((items (make-hash-table :test 'equal)))
+      (puthash server by-key items)
+      items)))
+
+(ert-deftest acm-backend-lsp-test-candidate-doc-is-read-from-the-items ()
+  "The documentation of a candidate is what the buffer holds for it."
+  (with-temp-buffer
+    (setq-local acm-backend-lsp-items (acm-backend-lsp-test--items "server" "candidate" "The doc."))
+    (let (fetched)
+      (let ((acm-backend-lsp-fetch-completion-item-func
+             (lambda (candidate) (setq fetched candidate))))
+        (should (equal (acm-backend-lsp-candidate-doc
+                        (list :key "candidate" :server "server"))
+                       "The doc."))
+        ;; Nothing is asked of the server when the answer is already here.
+        (should-not fetched)))))
+
+(ert-deftest acm-backend-lsp-test-candidate-doc-is-fetched-when-missing ()
+  "A missing documentation is asked for, and the ticker is cleared first."
+  (with-temp-buffer
+    (setq-local acm-backend-lsp-items (acm-backend-lsp-test--items "server" "candidate" nil))
+    (setq-local acm-backend-lsp-fetch-completion-item-ticker 'something)
+    (let (fetched)
+      (let ((acm-backend-lsp-fetch-completion-item-func
+             (lambda (candidate) (setq fetched candidate))))
+        (should-not (acm-backend-lsp-candidate-doc (list :key "candidate" :server "server")))
+        (should (equal fetched (list :key "candidate" :server "server")))
+        (should-not acm-backend-lsp-fetch-completion-item-ticker)))))
+
+(ert-deftest acm-backend-lsp-test-candidate-doc-of-an-empty-one-is-fetched ()
+  "An empty documentation counts as a missing one."
+  (with-temp-buffer
+    (setq-local acm-backend-lsp-items (acm-backend-lsp-test--items "server" "candidate" ""))
+    (let (fetched)
+      (let ((acm-backend-lsp-fetch-completion-item-func
+             (lambda (candidate) (setq fetched candidate))))
+        (acm-backend-lsp-candidate-doc (list :key "candidate" :server "server"))
+        (should fetched)))))
 
 (provide 'acm-backend-lsp-test)
 ;;; acm-backend-lsp-test.el ends here

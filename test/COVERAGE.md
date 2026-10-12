@@ -24,7 +24,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-elisp.el` | 18 | 6 |
 | `acm/acm-backend-jupyter.el` | 5 | 3 |
 | `acm/acm-backend-lsp-workspace-symbol.el` | 7 | 3 |
-| `acm/acm-backend-lsp.el` | 24 | 6 |
+| `acm/acm-backend-lsp.el` | 24 | 11 |
 | `acm/acm-backend-path.el` | 5 | 5 |
 | `acm/acm-backend-search-file-words.el` | 11 | 5 |
 | `acm/acm-backend-tabby.el` | 7 | 4 |
@@ -93,8 +93,8 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-breadcrumb.el` | 21 | 3 |
 | `lsp-bridge-call-hierarchy.el` | 31 | 7 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
-| `lsp-bridge-completion.el` | 60 | 15 |
-| `lsp-bridge-core.el` | 70 | 7 |
+| `lsp-bridge-completion.el` | 60 | 16 |
+| `lsp-bridge-core.el` | 70 | 8 |
 | `lsp-bridge-dart.el` | 5 | 4 |
 | `lsp-bridge-diagnostic.el` | 33 | 12 |
 | `lsp-bridge-document.el` | 23 | 5 |
@@ -102,7 +102,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-imenu.el` | 4 | 1 |
 | `lsp-bridge-inlay-hint.el` | 15 | 10 |
 | `lsp-bridge-jdtls.el` | 14 | 8 |
-| `lsp-bridge-jump.el` | 52 | 18 |
+| `lsp-bridge-jump.el` | 54 | 21 |
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
 | `lsp-bridge-org-babel.el` | 12 | 2 |
 | `lsp-bridge-peek.el` | 62 | 8 |
@@ -113,7 +113,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-transport.el` | 59 | 14 |
 | `lsp-bridge-ui.el` | 14 | 4 |
 | `lsp-bridge-workspace.el` | 30 | 10 |
-| `lsp-bridge.el` | 114 | 11 |
+| `lsp-bridge.el` | 114 | 12 |
 | `lsp_bridge.py` | 24 | 21 |
 
 ## Where the surface is still thin
@@ -124,8 +124,8 @@ covered because some of it is.
 
 | `lsp-bridge-ref.el` | 7/91 | 8% |
 | `acm/acm-frame.el` | 2/22 | 9% |
-| `lsp-bridge.el` | 11/114 | 10% |
-| `lsp-bridge-core.el` | 7/70 | 10% |
+| `lsp-bridge.el` | 12/114 | 11% |
+| `lsp-bridge-core.el` | 8/70 | 11% |
 | `core/remote_file.py` | 4/34 | 12% |
 | `core/fileaction.py` | 5/39 | 13% |
 | `lsp-bridge-peek.el` | 8/62 | 13% |
@@ -145,8 +145,6 @@ covered because some of it is.
 | `core/lspserver.py` | 15/64 | 23% |
 | `acm/acm-terminal.el` | 9/38 | 24% |
 | `lsp-bridge-transport.el` | 14/59 | 24% |
-| `acm/acm-backend-lsp.el` | 6/24 | 25% |
-| `lsp-bridge-completion.el` | 15/60 | 25% |
 
 ## What cannot be covered locally
 
