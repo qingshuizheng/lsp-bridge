@@ -89,5 +89,48 @@ about a frame that is not there is the frame code's business, not this module's.
       (lsp-bridge-hide-signature-tooltip)
       (should (null hidden)))))
 
+(defun lsp-bridge-document-test--show-signature (help-infos help-index)
+  "Return the text the signature help shows for HELP-INFOS and HELP-INDEX.
+The showing function is stood in for, so this is the rendering alone."
+  (let (shown)
+    ;; The function is called through the variable, so the variable is what is
+    ;; stood in front of; stubbing the symbol has no effect on it.
+    (let ((lsp-bridge-signature-show-function (lambda (help) (setq shown help))))
+      (lsp-bridge-signature-help--update help-infos help-index))
+    shown))
+
+(ert-deftest lsp-bridge-document-test-signatures-are-joined ()
+  "The signatures are shown one after another, separated by a comma."
+  (should (equal (substring-no-properties
+                  (lsp-bridge-document-test--show-signature (list "one()" "two(x)") 0))
+                 "one(), two(x)")))
+
+(ert-deftest lsp-bridge-document-test-the-active-signature-is-highlighted ()
+  "The signature being typed is the one in the face of a function name."
+  (let* ((text (lsp-bridge-document-test--show-signature (list "one()" "two(x)" "three()") 1))
+         ;; "one(), two(x), three()": the separators carry no face of their own,
+         ;; so the faces are read at the first character of each signature.
+         (faces (mapcar (lambda (index) (get-text-property index 'face text))
+                        (list 0 7 15))))
+    ;; The first is the ordinary face, the second the highlighted one, the third
+    ;; ordinary again.
+    (should (eq (nth 0 faces) 'default))
+    (should (eq (nth 1 faces) 'font-lock-function-name-face))
+    (should (eq (nth 2 faces) 'default))))
+
+(ert-deftest lsp-bridge-document-test-empty-help-is-not-shown ()
+  "Nothing is shown when there is no signature to show."
+  (should-not (lsp-bridge-document-test--show-signature nil 0))
+  (should-not (lsp-bridge-document-test--show-signature (list "") 0)))
+
+(ert-deftest lsp-bridge-document-test-the-documentation-buffer-is-shown ()
+  "The documentation goes to the window of its own buffer."
+  (let (buffer norecord)
+    (cl-letf (((symbol-function 'switch-to-buffer-other-window)
+               (lambda (name &optional record) (setq buffer name norecord record))))
+      (lsp-bridge-switch-to-documentation-buffer t))
+    (should (equal (buffer-name buffer) lsp-bridge-buffer-documentation-buffer))
+    (should norecord)))
+
 (provide 'lsp-bridge-document-test)
 ;;; lsp-bridge-document-test.el ends here

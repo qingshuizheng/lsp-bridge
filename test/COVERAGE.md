@@ -97,7 +97,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-core.el` | 70 | 19 |
 | `lsp-bridge-dart.el` | 5 | 4 |
 | `lsp-bridge-diagnostic.el` | 33 | 12 |
-| `lsp-bridge-document.el` | 23 | 10 |
+| `lsp-bridge-document.el` | 23 | 13 |
 | `lsp-bridge-epc.el` | 62 | 20 |
 | `lsp-bridge-imenu.el` | 4 | 1 |
 | `lsp-bridge-inlay-hint.el` | 15 | 10 |
