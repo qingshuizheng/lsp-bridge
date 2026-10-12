@@ -39,5 +39,62 @@
       (should (equal (lsp-bridge-breadcrumb--icon "function" t) " "))
       (should-not built))))
 
+(defmacro lsp-bridge-breadcrumb-test--with-buffer (&rest body)
+  "Run BODY in a buffer with the breadcrumb state of a fresh buffer."
+  `(with-temp-buffer
+     (insert "one two\n")
+     (let ((lsp-bridge-breadcrumb--timer nil)
+           (lsp-bridge-breadcrumb--last-point nil)
+           (lsp-bridge-breadcrumb--last-update-tick nil)
+           (lsp-bridge-breadcrumb--in-process nil))
+       (unwind-protect (progn ,@body)
+         (when lsp-bridge-breadcrumb--timer
+           (cancel-timer lsp-bridge-breadcrumb--timer))))))
+
+(ert-deftest lsp-bridge-breadcrumb-test-the-first-look-asks-for-the-symbols ()
+  "The first look at a buffer schedules the call that fetches the symbols."
+  (lsp-bridge-breadcrumb-test--with-buffer
+    (should-not lsp-bridge-breadcrumb--timer)
+    (lsp-bridge-breadcrumb--header-line)
+    (should (timerp lsp-bridge-breadcrumb--timer))
+    (should (equal lsp-bridge-breadcrumb--last-point (point)))
+    (should (equal lsp-bridge-breadcrumb--last-update-tick (buffer-chars-modified-tick)))))
+
+(ert-deftest lsp-bridge-breadcrumb-test-nothing-changed-asks-for-nothing ()
+  "Looking again without a change or a move schedules nothing new."
+  (lsp-bridge-breadcrumb-test--with-buffer
+    (lsp-bridge-breadcrumb--header-line)
+    (let ((first lsp-bridge-breadcrumb--timer))
+      (lsp-bridge-breadcrumb--header-line)
+      (should (eq lsp-bridge-breadcrumb--timer first)))))
+
+(ert-deftest lsp-bridge-breadcrumb-test-a-change-asks-again ()
+  "A change in the buffer schedules the call again, replacing the old timer."
+  (lsp-bridge-breadcrumb-test--with-buffer
+    (lsp-bridge-breadcrumb--header-line)
+    (let ((first lsp-bridge-breadcrumb--timer))
+      (goto-char (point-min))
+      (insert "x")
+      (lsp-bridge-breadcrumb--header-line)
+      (should (timerp lsp-bridge-breadcrumb--timer))
+      (should-not (eq lsp-bridge-breadcrumb--timer first)))))
+
+(ert-deftest lsp-bridge-breadcrumb-test-a-call-in-flight-asks-for-nothing ()
+  "While the symbols are being fetched, looking at the buffer asks for nothing."
+  (lsp-bridge-breadcrumb-test--with-buffer
+    (setq lsp-bridge-breadcrumb--in-process t)
+    (lsp-bridge-breadcrumb--header-line)
+    (should-not lsp-bridge-breadcrumb--timer)))
+
+(ert-deftest lsp-bridge-breadcrumb-test-going-to-the-last-symbol ()
+  "The command goes to the position the last symbol of the answer holds."
+  (lsp-bridge-breadcrumb-test--with-buffer
+    (let ((lsp-bridge-breadcrumb--last-response
+           (list (list :name "one" :pos '(:line 0 :character 0))
+                 (list :name "two" :pos '(:line 0 :character 4)))))
+      (goto-char (point-min))
+      (lsp-bridge-breadcrumb-goto-last-definition)
+      (should (equal (point) 5)))))
+
 (provide 'lsp-bridge-breadcrumb-test)
 ;;; lsp-bridge-breadcrumb-test.el ends here

@@ -90,7 +90,7 @@ python3 scripts/coverage-report.py
 | `core/search_list.py` | 7 | 3 |
 | `core/search_paths.py` | 7 | 2 |
 | `core/utils.py` | 65 | 27 |
-| `lsp-bridge-breadcrumb.el` | 21 | 3 |
+| `lsp-bridge-breadcrumb.el` | 21 | 10 |
 | `lsp-bridge-call-hierarchy.el` | 31 | 7 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
 | `lsp-bridge-completion.el` | 60 | 17 |
@@ -122,7 +122,6 @@ Modules with at least 8 names of which a quarter or fewer are mentioned by anyth
 under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
-| `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
 | `lsp-bridge.el` | 17/114 | 15% |
 | `lsp-bridge-semantic-tokens.el` | 8/50 | 16% |
 | `lsp-bridge-ref.el` | 15/91 | 16% |
