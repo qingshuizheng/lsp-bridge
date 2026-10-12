@@ -134,5 +134,21 @@
                        calls))))))
 
 
+(ert-deftest lsp-bridge-live-rename-test-fallback-can-be-turned-off ()
+  "With the fallback off both commands say there is no server."
+  (with-temp-buffer
+    (insert "foo bar foo")
+    (goto-char (point-min))
+    (let ((lsp-bridge-mode t)
+          (lsp-bridge-rename-fallback-without-server nil)
+          called)
+      (cl-letf (((symbol-function 'lsp-bridge-has-lsp-server-p) (lambda () nil))
+                ((symbol-function 'symbol-overlay-rename)
+                 (lambda () (interactive) (setq called t))))
+        (should-error (call-interactively #'lsp-bridge-rename) :type 'user-error)
+        (should-error (call-interactively #'lsp-bridge-live-rename) :type 'user-error)
+        (should-not called)))))
+
+
 (provide 'lsp-bridge-live-rename-test)
 ;;; lsp-bridge-live-rename-test.el ends here

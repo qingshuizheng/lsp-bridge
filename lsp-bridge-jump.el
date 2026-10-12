@@ -209,10 +209,11 @@ scope."
     (lsp-bridge-call-file-api "prepare_rename" (lsp-bridge--position))
     (let ((new-name (substring-no-properties (read-string "Rename to: " (thing-at-point 'symbol 'no-properties)))))
       (lsp-bridge-call-file-api "rename" (lsp-bridge--position) new-name)))
-   ((fboundp 'symbol-overlay-rename)
+   ((and lsp-bridge-rename-fallback-without-server
+         (fboundp 'symbol-overlay-rename))
     (call-interactively #'symbol-overlay-rename))
    (t
-    (user-error "No language server here, and symbol-overlay is not installed"))))
+    (user-error "No language server here to rename through"))))
 
 (defun lsp-bridge-flash-region (start-pos end-pos)
   "Flash the region from START-POS to END-POS.
@@ -308,6 +309,18 @@ target and `lsp-bridge-flash-line' highlights it."
 
   ;; Flash define line.
   (lsp-bridge-flash-line))
+
+;;; Rename
+
+(defcustom lsp-bridge-rename-fallback-without-server t
+  "Rename the buffer occurrences when no server can be asked.
+With a language server the rename always goes through it.  Without one - in an
+Emacs Lisp buffer, for instance - the request has nothing to answer it, and this
+hands over to `symbol-overlay-rename' instead, which renames the occurrences the
+buffer holds, inside a scope when it is set up for scopes.  Set it to nil to keep
+both rename commands server only, reporting that they cannot do anything here."
+  :type 'boolean
+  :group 'lsp-bridge)
 
 ;;; Live rename
 
@@ -483,10 +496,11 @@ other files, and `C-c C-k' puts the buffer back."
    ;; Without a server there are no highlights to follow, and the occurrences are
    ;; plain text: that rename is `symbol-overlay-rename', which renames the ones
    ;; the buffer holds, inside a scope when the mode is set up for scopes.
-   ((fboundp 'symbol-overlay-rename)
+   ((and lsp-bridge-rename-fallback-without-server
+         (fboundp 'symbol-overlay-rename))
     (call-interactively #'symbol-overlay-rename))
    (t
-    (user-error "No language server here, and symbol-overlay is not installed"))))
+    (user-error "No language server here to rename through"))))
 
 (advice-add 'lsp-bridge-document-highlight-render :before #'lsp-bridge-live-rename--render-hook)
 
