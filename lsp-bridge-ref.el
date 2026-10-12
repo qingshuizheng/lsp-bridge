@@ -922,15 +922,18 @@ Do nothing when the current line has no line:column prefix."
 Quit the reference buffer and restore its window configuration
 first, so the code goes back where the search started."
   (interactive)
-  (let ((start nil) (end nil)
-        (current-line (save-excursion
-                        (beginning-of-line)
-                        (search-forward-regexp lsp-bridge-ref-regexp-position nil t)
-                        (setq start (point))
-                        (end-of-line)
-                        (setq end (point))
-                        (buffer-substring start end)
-                        )))
+  ;; The two positions and the line are bound first and set afterwards: a plain `let'
+  ;; evaluates all of its value forms before any of its bindings exists, so a `setq'
+  ;; written inside one of them was setting the variables of the session - which is what
+  ;; the compiler had been saying about them.
+  (let (start end current-line)
+    (save-excursion
+      (beginning-of-line)
+      (search-forward-regexp lsp-bridge-ref-regexp-position nil t)
+      (setq start (point))
+      (end-of-line)
+      (setq end (point))
+      (setq current-line (buffer-substring start end)))
     ;; We need to restore windows if we want to insert current line.
     (lsp-bridge-ref-quit t)
     (insert current-line)))
