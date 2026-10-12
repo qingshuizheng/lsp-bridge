@@ -69,6 +69,7 @@ MODIFIER is a one-character modifier such as \"M\" and KEY is the rest
 of the sequence, as in the members of `acm-quick-access-keys'."
   (kbd (format "%s-%s" modifier key)))
 
+;;;###autoload
 (defun acm-complete-quick-access (row)
   "Insert a candidate visible on a ROW matched by a quick-access key binding.
 See `acm-quick-access-keys' for more details."
@@ -82,6 +83,7 @@ See `acm-quick-access-keys' for more details."
     (setq-local acm-menu-index row)
     (acm-complete)))
 
+;;;###autoload
 (defun acm-insert-number-or-complete-candiate ()
   "Insert the typed number, or complete the candidate it selects.
 When `acm-quick-access-use-number-select' is non-nil and the typed

@@ -189,6 +189,7 @@ final t element is the fallback for unknown candidate types.")
   "Return the local SVG file path of icon NAME in COLLECTION."
   (concat (file-name-as-directory acm-icon-dir) (format "%s_%s.svg" collection name)))
 
+;;;###autoload
 (defun acm-icon-fetch-all ()
   "Download every icon of `acm-icon-alist' into `acm-icon-dir'.
 Each icon overwrites the file named by `acm-icon-filepath'."

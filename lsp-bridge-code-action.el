@@ -130,6 +130,7 @@ cons of point and point."
                (cons (overlay-start overlay) (overlay-end overlay))
              (cons (point) (point)))))))
 
+;;;###autoload
 (defun lsp-bridge-code-action (&optional action-kind)
   "Send code action to LSP server to fixes code or problems.
 
@@ -155,6 +156,7 @@ Please read https://microsoft.github.io/language-server-protocol/specifications/
                                 (lsp-bridge--point-position (cdr range))
                                 action-kind))))
 
+;;;###autoload
 (defun lsp-bridge-code-action-popup-select ()
   "Apply the code action selected in the code action popup.
 This quits the popup and applies the action of the entry at
@@ -164,6 +166,7 @@ This quits the popup and applies the action of the entry at
   (lsp-bridge-code-action--fix-do
    (cdr (nth lsp-bridge-call-hierarchy--index lsp-bridge-call-hierarchy--popup-response))))
 
+;;;###autoload
 (defun lsp-bridge-code-action-popup-quit ()
   "Quit the code action popup.
 This cancels the preview timer, deletes the popup frame and buffer - which is

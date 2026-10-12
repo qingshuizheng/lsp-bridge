@@ -218,6 +218,7 @@
       (setq lsp-bridge-breadcrumb--last-point nil)
       (lsp-bridge-breadcrumb--header-line window))))
 
+;;;###autoload
 (defun lsp-bridge-breadcrumb-goto-last-definition ()
   "Go to the definition of the last breadcrumb symbol."
   (interactive)

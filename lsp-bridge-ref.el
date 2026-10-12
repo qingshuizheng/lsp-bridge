@@ -598,6 +598,7 @@ is killed."
     (append-to-buffer lsp-bridge-ref-temp-buffer (point-min) (point-max))
     ))
 
+;;;###autoload
 (defun lsp-bridge-ref-switch-to-view-mode ()
   "Switch the reference buffer back to view mode.
 Discard the change markers and the temp buffer, remove the
@@ -749,6 +750,7 @@ Count the text regions whose properties include the
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Interactive functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defalias 'lsp-bridge-ref-search-input-in-project 'lsp-bridge-ref-search-project)
 
+;;;###autoload
 (defun lsp-bridge-ref-replace-all-matches ()
   "Replace all matches in the reference buffer with user input.
 Read the replacement text from the minibuffer, replace every
@@ -773,26 +775,31 @@ the replacement text, and the number of edited lines is reported."
             )))
       (message "[LSP-Bridge] Replace %s lines" changed-line-number))))
 
+;;;###autoload
 (defun lsp-bridge-ref-filter-match-results ()
   "Keep only the result lines that match a regexp read from the minibuffer."
   (interactive)
   (lsp-bridge-ref-filter-results t))
 
+;;;###autoload
 (defun lsp-bridge-ref-filter-mismatch-results ()
   "Remove the result lines that match a regexp read from the minibuffer."
   (interactive)
   (lsp-bridge-ref-filter-results nil))
 
+;;;###autoload
 (defun lsp-bridge-ref-filter-match-files ()
   "Keep only the result files whose extension is read from the minibuffer."
   (interactive)
   (lsp-bridge-ref-filter-files t))
 
+;;;###autoload
 (defun lsp-bridge-ref-filter-mismatch-files ()
   "Remove the result files whose extension is read from the minibuffer."
   (interactive)
   (lsp-bridge-ref-filter-files nil))
 
+;;;###autoload
 (defun lsp-bridge-ref-unfilter ()
   "Restore the unfiltered results from the reference temp buffer.
 Erase the reference buffer, insert the original content of the
@@ -811,6 +818,7 @@ temp buffer and refresh the header line."
       ;; Update hit number in header line.
       (lsp-bridge-ref-update-header-line-hits))))
 
+;;;###autoload
 (defun lsp-bridge-ref-remove-line-from-results ()
   "Remove the current result line from the results buffer.
 Do nothing when the current line has no line:column prefix."
@@ -825,6 +833,7 @@ Do nothing when the current line has no line:column prefix."
         (read-only-mode 1)
         ))))
 
+;;;###autoload
 (defun lsp-bridge-ref-jump-next-keyword ()
   "Move to the next match line and open its source location."
   (interactive)
@@ -835,6 +844,7 @@ Do nothing when the current line has no line:column prefix."
           (lsp-bridge-ref-open-file))
       (message "[LSP-Bridge] Reach to last line."))))
 
+;;;###autoload
 (defun lsp-bridge-ref-jump-prev-keyword ()
   "Move to the previous match line and open its source location."
   (interactive)
@@ -858,6 +868,7 @@ Do nothing when the current line has no line:column prefix."
           (lsp-bridge-ref-open-file))
       (message "[LSP-Bridge] Reach to first line."))))
 
+;;;###autoload
 (defun lsp-bridge-ref-jump-next-file ()
   "Move to the next file line in the results and open its first match."
   (interactive)
@@ -869,6 +880,7 @@ Do nothing when the current line has no line:column prefix."
           (lsp-bridge-ref-open-file))
       (message "[LSP-Bridge] Reach to last file."))))
 
+;;;###autoload
 (defun lsp-bridge-ref-jump-prev-file ()
   "Move to the previous file line in the results and open its first match."
   (interactive)
@@ -900,6 +912,7 @@ Do nothing when the current line has no line:column prefix."
           (lsp-bridge-ref-open-file))
       (message "[LSP-Bridge] Reach to first file."))))
 
+;;;###autoload
 (defun lsp-bridge-ref-insert-current-line ()
   "Insert the code of the current result line at the original point.
 Quit the reference buffer and restore its window configuration
@@ -933,6 +946,7 @@ displayed in any window."
     ;; Create window if `lsp-bridge-ref-buffer' is not exist in windows.
     (funcall lsp-bridge-ref-popup-window-handler)))
 
+;;;###autoload
 (defun lsp-bridge-ref-open-file (&optional stay)
   "Open the file of the result line at point and jump to its match.
 Move point to the matched line and column, reveal the match in an
@@ -991,6 +1005,7 @@ non-nil, select the reference window again afterwards."
     (lsp-bridge-ref-move-to-column match-column)
     ))
 
+;;;###autoload
 (defun lsp-bridge-ref-open-file-and-stay ()
   "Open the file of the result line at point and stay in the results.
 Like `lsp-bridge-ref-open-file' with STAY non-nil."
@@ -1055,6 +1070,7 @@ up `string-bytes' one character at a time."
       (forward-char 1)
       (setq scan-column (string-bytes (buffer-substring first-char-point (point)))))))
 
+;;;###autoload
 (defun lsp-bridge-ref-switch-to-edit-mode ()
   "Switch the reference buffer to edit mode.
 Clone the results into the reference temp buffer, keep the file
@@ -1096,6 +1112,7 @@ install `lsp-bridge-ref-after-change-function' to track changes."
   ;; Message to user.
   (message "[LSP-Bridge] Switch to edit mode: press C-c C-c to apply change, press C-c C-q cancel edit"))
 
+;;;###autoload
 (defun lsp-bridge-ref-quit (&optional restore)
   "Quit the reference buffer and restore the previous window layout.
 Kill the buffers that were opened by lsp-bridge-ref when
@@ -1128,6 +1145,7 @@ and select the window that requested the search."
   ;; clear saved window which requested search.
   (setq lsp-bridge-ref-request-search-window nil))
 
+;;;###autoload
 (defun lsp-bridge-ref-beginning-of-line ()
   "Move to the start of the line:column prefix, or to the line start.
 When the current line has no such prefix, move to the beginning of
@@ -1138,6 +1156,7 @@ the line instead."
         (goto-char row-column-position)
       (move-beginning-of-line 1))))
 
+;;;###autoload
 (defun lsp-bridge-ref-delete-line ()
   "Kill the code of the current result line.
 Do nothing when the current line has no line:column prefix."
@@ -1150,6 +1169,7 @@ Do nothing when the current line has no line:column prefix."
       (kill-region start end)
       )))
 
+;;;###autoload
 (defun lsp-bridge-ref-delete-all-lines ()
   "Kill the code of every result line in the reference buffer."
   (interactive)
@@ -1159,6 +1179,7 @@ Do nothing when the current line has no line:column prefix."
       (while (search-forward-regexp lsp-bridge-ref-regexp-position nil t)
         (lsp-bridge-ref-delete-line)))))
 
+;;;###autoload
 (defun lsp-bridge-ref-recover-line ()
   "Restore the original code of the current result line.
 The original is taken from the reference temp buffer."
@@ -1166,6 +1187,7 @@ The original is taken from the reference temp buffer."
   (lsp-bridge-ref-delete-line)
   (insert (lsp-bridge-ref-get-line-content lsp-bridge-ref-temp-buffer (line-number-at-pos))))
 
+;;;###autoload
 (defun lsp-bridge-ref-recover-buffer ()
   "Restore the whole reference buffer from the reference temp buffer.
 Discard every pending change and switch back to edit mode."
@@ -1183,6 +1205,7 @@ Discard every pending change and switch back to edit mode."
         (lsp-bridge-ref-switch-to-edit-mode)
         ))))
 
+;;;###autoload
 (defun lsp-bridge-ref-apply-changed ()
   "Write the edited result lines back to their source files.
 Each changed line replaces the matched line in its file.  Report

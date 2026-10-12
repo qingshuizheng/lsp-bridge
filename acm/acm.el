@@ -352,6 +352,7 @@ The menu, the doc frame and the filter are gone by then, so a function here sees
 the state the menu left behind - which is what lsp-bridge needs to reset what it
 resolved for the items of that menu.")
 
+;;;###autoload
 (defun acm-hide ()
   "Hide the completion menu, the doc frame and the acm filter.
 Turn off `acm-mode', remove the buffer-local `pre-command-hook' that
@@ -830,6 +831,7 @@ Installed on the buffer-local `pre-command-hook' by `acm-update'."
   (unless (acm-match-symbol-p acm-continue-commands this-command)
     (acm-hide)))
 
+;;;###autoload
 (defun acm-complete (&optional not-hide)
   "Insert the selected candidate into the buffer.
 Call the expand function the backend of the candidate is registered
@@ -886,6 +888,7 @@ made it taller."
       (setcdr (acm-popup popup-position) (cdr popup-pos))
       (acm-menu-adjust-pos))))
 
+;;;###autoload
 (defun acm-complete-or-expand-yas-snippet ()
   "Complete the candidate when the menu is visible, else expand a snippet.
 Bind this to <tab> in `yas-keymap'; it calls `acm-complete' while
@@ -896,6 +899,7 @@ otherwise."
       (acm-complete)
     (yas-next-field-or-maybe-expand)))
 
+;;;###autoload
 (defun acm-insert-common ()
   "Insert common prefix of menu."
   (interactive)
@@ -1325,6 +1329,7 @@ whole list is selected."
        (= acm-menu-index 0)
        (= acm-menu-offset 0)))
 
+;;;###autoload
 (defun acm-select-first ()
   "Select first candidate."
   (interactive)
@@ -1332,6 +1337,7 @@ whole list is selected."
    (setq-local acm-menu-offset 0)
    (setq-local acm-menu-index 0)))
 
+;;;###autoload
 (defun acm-select-last ()
   "Select last candidate."
   (interactive)
@@ -1340,6 +1346,7 @@ whole list is selected."
      (setq-local acm-menu-offset (- (length acm-candidates) menu-length))
      (setq-local acm-menu-index (- menu-length 1)))))
 
+;;;###autoload
 (defun acm-select-next ()
   "Select next candidate.
 With `acm-menu-cycle' non-nil, the last candidate wraps to the first."
@@ -1352,6 +1359,7 @@ With `acm-menu-cycle' non-nil, the last candidate wraps to the first."
            ((< (+ acm-menu-offset acm-menu-index) (1- (length acm-candidates)))
             (setq-local acm-menu-offset (1+ acm-menu-offset)))))))
 
+;;;###autoload
 (defun acm-select-prev ()
   "Select previous candidate.
 With `acm-menu-cycle' non-nil, the first candidate wraps to the last."
@@ -1364,6 +1372,7 @@ With `acm-menu-cycle' non-nil, the first candidate wraps to the last."
            ((> acm-menu-offset 0)
             (setq-local acm-menu-offset (1- acm-menu-offset)))))))
 
+;;;###autoload
 (defun acm-select-next-page ()
   "Select next page candidate."
   (interactive)
@@ -1373,6 +1382,7 @@ With `acm-menu-cycle' non-nil, the first candidate wraps to the last."
          ((< (+ acm-menu-offset acm-menu-index) (1- (length acm-candidates)))
           (setq-local acm-menu-offset (+ acm-menu-offset acm-menu-length))))))
 
+;;;###autoload
 (defun acm-select-prev-page ()
   "Select previous page candidate."
   (interactive)
@@ -1382,6 +1392,7 @@ With `acm-menu-cycle' non-nil, the first candidate wraps to the last."
          ((> acm-menu-offset 0)
           (setq-local acm-menu-offset (- acm-menu-offset acm-menu-length))))))
 
+;;;###autoload
 (defun acm-doc-scroll-up ()
   "Scroll the doc frame buffer up by one screen.
 A front end that draws the documentation itself takes it over through
@@ -1395,6 +1406,7 @@ A front end that draws the documentation itself takes it over through
           (with-selected-frame (acm-popup doc-frame)
             (scroll-up-command)))))))
 
+;;;###autoload
 (defun acm-doc-scroll-down ()
   "Scroll the doc frame buffer down by one screen.
 A front end that draws the documentation itself takes it over through
@@ -1408,6 +1420,7 @@ A front end that draws the documentation itself takes it over through
           (with-selected-frame (acm-popup doc-frame)
             (scroll-down-command)))))))
 
+;;;###autoload
 (defun acm-doc-toggle ()
   "Toggle documentation preview for selected candidate."
   (interactive)
@@ -1535,6 +1548,7 @@ line when point is already at the beginning of the defun."
       (beginning-of-line))
     (parse-partial-sexp (point) point)))
 
+;;;###autoload
 (defun acm-filter ()
   "Toggle the acm filter in the current buffer.
 Turn it off when `acm-filter-overlay' is set, and on otherwise."
@@ -1561,6 +1575,7 @@ QUIET is non-nil, also echo a message."
   (unless quiet
     (message "Turn off acm filter.")))
 
+;;;###autoload
 (defun acm-filter-insert-char ()
   "Insert filter character."
   (interactive)
@@ -1570,6 +1585,7 @@ QUIET is non-nil, also echo a message."
 
     (acm-filter-update)))
 
+;;;###autoload
 (defun acm-filter-delete-char ()
   "Delete filter character."
   (interactive)

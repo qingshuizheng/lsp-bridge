@@ -84,6 +84,7 @@ TODO notes that tramp docker patterns are not covered yet.")
     (with-temp-file filepath)
     ""))
 
+;;;###autoload
 (defun lsp-bridge-open-remote-file ()
   "Ask for a remote `ip:path' file and open it on the server.
 Recent entries are offered from the ip.txt file in the user Emacs
@@ -140,12 +141,14 @@ of the file is marked as a remote file."
                                                   (message "[LSP-Bridge] remote file %s updated info successfully."
                                                            (buffer-file-name))))
 
+;;;###autoload
 (defun lsp-bridge-tramp-show-hostnames ()
   "Ask the server to message the host names it knows about."
   (interactive)
   (lsp-bridge-call-async "message_hostnames"))
 
 
+;;;###autoload
 (defun lsp-bridge-sync-tramp-remote (force)
   "Sync the tramp file of the current buffer with the remote server.
 FORCE non-nil opens a fresh connection, otherwise a cached connection
@@ -300,6 +303,7 @@ request."
                                   (append
                                    (list lsp-bridge-remote-file-host lsp-bridge-remote-file-path method) args))))
 
+;;;###autoload
 (defun lsp-bridge-remote-save-buffer ()
   "Save the remote file of this buffer on the remote host.
 A message is shown when the current buffer is not a remote file."

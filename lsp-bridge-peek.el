@@ -363,6 +363,7 @@ not affected by its surroundings."
     (add-face-text-property 0 len 'default 'append str)
     str))
 
+;;;###autoload
 (defun lsp-bridge-peek-abort ()
   "Abort peeking."
   (interactive)
@@ -646,6 +647,7 @@ When FORCE if non-nil, the content of the peek window is recalculated."
 			                 border)))
       (setq lsp-bridge-peek--content-update nil))))
 
+;;;###autoload
 (defun lsp-bridge-peek ()
   "Peek the definition of the symbol at point."
   (interactive)
@@ -684,11 +686,13 @@ peeking and sets `lsp-bridge-peek--content-update'."
       (setf selected-id (+ selected-id num))))
   (setq lsp-bridge-peek--content-update t))
 
+;;;###autoload
 (defun lsp-bridge-peek-list-next-line ()
   "Choose the next definition/reference in the list."
   (interactive)
   (lsp-bridge-peek-list-move-line 1))
 
+;;;###autoload
 (defun lsp-bridge-peek-list-prev-line ()
   "Choose the prev definition/reference in the list."
   (interactive)
@@ -707,16 +711,19 @@ when not peeking and sets `lsp-bridge-peek--content-update'."
     (setf content-move (+ content-move num))
     (setq lsp-bridge-peek--content-update t)))
 
+;;;###autoload
 (defun lsp-bridge-peek-file-content-next-line ()
   "Step through the next line of file content."
   (interactive)
   (lsp-bridge-peek-file-content-move lsp-bridge-peek-file-content-scroll-margin))
 
+;;;###autoload
 (defun lsp-bridge-peek-file-content-prev-line ()
   "Step through the next line of file content."
   (interactive)
   (lsp-bridge-peek-file-content-move (* lsp-bridge-peek-file-content-scroll-margin -1)))
 
+;;;###autoload
 (defun lsp-bridge-peek-jump ()
   "Jump to where the definition/reference is."
   (interactive)
@@ -732,6 +739,7 @@ when not peeking and sets `lsp-bridge-peek--content-update'."
 	     (pos (nth selected-id pos-list)))
     (lsp-bridge-jump-to-file file pos)))
 
+;;;###autoload
 (defun lsp-bridge-peek-jump-back ()
   "Jump to the file and position before jump."
   (interactive)
@@ -854,6 +862,7 @@ The buffer and the point is returned in a cons cell."
 	         (cl-return (cons file pos))))
 	      (_ (lsp-bridge-peek--show 'force)))))))
 
+;;;###autoload
 (defun lsp-bridge-peek-through ()
   "Peek through a symbol in current peek window."
   (interactive)
@@ -891,6 +900,7 @@ The buffer and the point is returned in a cons cell."
       (setf (nth 3 lsp-bridge-peek-ace-list) (buffer-name))))
   (switch-to-buffer (nth 2 lsp-bridge-peek-ace-list)))
 
+;;;###autoload
 (defun lsp-bridge-peek-tree-previous-node ()
   "Select the previous node in the tree history."
   (interactive)
@@ -903,6 +913,7 @@ The buffer and the point is returned in a cons cell."
 	  (setq lsp-bridge-peek-selected-symbol parent-symbol)
 	  (setq lsp-bridge-peek--content-update t))))
 
+;;;###autoload
 (defun lsp-bridge-peek-tree-next-node ()
   "Select the next node in the tree history."
   (interactive)
@@ -950,11 +961,13 @@ error when not peeking or when the current symbol has no parent."
 		        (setq lsp-bridge-peek-selected-symbol (nth selected-brother brother-list))
 		        (setq lsp-bridge-peek--content-update t)))))))
 
+;;;###autoload
 (defun lsp-bridge-peek-tree-previous-branch ()
   "Select the previous brach in the tree history."
   (interactive)
   (lsp-bridge-peek-tree-change-branch 1))
 
+;;;###autoload
 (defun lsp-bridge-peek-tree-next-branch ()
   "Select the next brach in the tree history."
   (interactive)

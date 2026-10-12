@@ -334,6 +334,7 @@ already visible."
    (>= (point) (overlay-start overlay))
    (<= (point) (overlay-end overlay))))
 
+;;;###autoload
 (defun lsp-bridge-diagnostic-jump-next ()
   "Jump to the next diagnostic and show its tooltip.
 Display a message when the buffer has no diagnostics or when point
@@ -350,6 +351,7 @@ is already at the last diagnostic."
         (lsp-bridge-diagnostic-show-tooltip diagnostic-overlay t)
       (message "[LSP-Bridge] Reach last diagnostic."))))
 
+;;;###autoload
 (defun lsp-bridge-diagnostic-jump-prev ()
   "Jump to the previous diagnostic and show its tooltip.
 Display a message when the buffer has no diagnostics or when point
@@ -373,6 +375,7 @@ is already at the first diagnostic."
                (< (point) (overlay-end overlay)))
       (cl-return overlay))))
 
+;;;###autoload
 (defun lsp-bridge-diagnostic-copy ()
   "Copy the diagnostic message at point to the kill ring.
 Display a message when the buffer has no diagnostics or when
@@ -385,6 +388,7 @@ point is not inside a diagnostic overlay."
         (kill-new diagnostic-message)
         (message "Copy diagnostics: '%s'" diagnostic-message)))))
 
+;;;###autoload
 (defun lsp-bridge-workspace-diagnostic-list ()
   "Report that workspace diagnostics are not supported.
 Only a few LSP servers implement workspace diagnostics and
@@ -393,6 +397,7 @@ lsp-bridge does not request them."
   ;; (lsp-bridge-call-file-api "workspace_diagnostics")
   (message "Workspace diagnostic just few LSP server implement it, lsp-bridge haven't support it."))
 
+;;;###autoload
 (defun lsp-bridge-diagnostic-list ()
   "Request the diagnostic list for the current buffer.
 The value of `lsp-bridge-diagnostic-hide-severities' is sent to

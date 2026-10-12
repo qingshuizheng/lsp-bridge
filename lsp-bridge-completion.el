@@ -181,6 +181,7 @@ completion request was sent."
   (setq lsp-bridge-last-change-position
         (list (current-buffer) (buffer-chars-modified-tick) (point))))
 
+;;;###autoload
 (defun lsp-bridge-popup-complete-menu ()
   "Popup the completion menu on explicit request.
 Sets `lsp-bridge-manual-complete-flag', records the current position,
@@ -496,6 +497,7 @@ documentation are excluded from the change monitors."
          (or (string-equal (file-name-extension (buffer-file-name)) "zsh")
              (member (buffer-name) '(".zshenv" ".zshrc"))))))
 
+;;;###autoload
 (defun lsp-bridge-copilot-complete ()
   "Ask the copilot backend to complete at point.
 The whole buffer text, the major mode, the file path and the relative

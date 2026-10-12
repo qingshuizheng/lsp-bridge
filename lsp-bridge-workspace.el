@@ -103,6 +103,7 @@ in the buffer afterwards."
 
   (setq-local lsp-bridge-prohibit-completion t))
 
+;;;###autoload
 (defun lsp-bridge-workspace-list-symbol-at-point ()
   "List workspace symbols matching the symbol or region at point.
 The active region text is used as query when there is one, otherwise
@@ -112,6 +113,7 @@ the symbol at point is searched."
       (lsp-bridge-workspace-list-symbols (buffer-substring-no-properties (mark) (point)))
     (lsp-bridge-workspace-list-symbols (substring-no-properties (symbol-name (symbol-at-point))))))
 
+;;;###autoload
 (defun lsp-bridge-workspace-list-symbols (query)
   "Ask the server for workspace symbols matching QUERY.
 QUERY is read from the minibuffer when the command is called
@@ -172,6 +174,7 @@ Formatting is skipped while the mouse wheel scrolls."
   (unless (eq last-command 'mwheel-scroll)
     (lsp-bridge-code-format)))
 
+;;;###autoload
 (defun lsp-bridge-code-format ()
   "Ask the server to format the region or the current line.
 The request is skipped unless a language server applies, the
@@ -243,6 +246,7 @@ the buffer afterwards and the original position is restored."
 
   (setq-local lsp-bridge-prohibit-completion t))
 
+;;;###autoload
 (defun lsp-bridge-indent-left (start end)
   "Indent the region from START to END to the left by one level.
 The indentation width comes from `lsp-bridge--get-indent-width' of
@@ -251,6 +255,7 @@ the major mode."
   (let ((indent (symbol-value (lsp-bridge--get-indent-width major-mode))))
     (indent-rigidly start end (- indent))))
 
+;;;###autoload
 (defun lsp-bridge-indent-right (start end)
   "Indent the region from START to END to the right by one level.
 The indentation width comes from `lsp-bridge--get-indent-width' of
@@ -328,6 +333,7 @@ idle time and is stored in `lsp-bridge-document-highlight-timer'."
     (setq lsp-bridge-document-highlight-timer
           (run-with-idle-timer 0.5 t #'lsp-bridge-document-highlight))))
 
+;;;###autoload
 (defun lsp-bridge-toggle-document-highlight ()
   "Toggle document highlight."
   (interactive)

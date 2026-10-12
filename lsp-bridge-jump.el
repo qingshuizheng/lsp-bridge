@@ -76,6 +76,7 @@ selected instead of switching buffers; off by default."
 (defvar-local lsp-bridge-jump-to-def-in-other-window nil
   "Whether the next definition jump should use another window.")
 
+;;;###autoload
 (defun lsp-bridge-find-def ()
   "Jump to the definition of the symbol at point in the current window.
 Elisp buffers use the elisp backend, other buffers ask the language
@@ -93,6 +94,7 @@ available."
         (lsp-bridge-call-file-api "find_define" (lsp-bridge--position))
       (lsp-bridge-find-def-fallback (lsp-bridge--position))))))
 
+;;;###autoload
 (defun lsp-bridge-find-def-other-window ()
   "Jump to the definition of the symbol at point in another window.
 Like `lsp-bridge-find-def' but sets
@@ -109,6 +111,7 @@ Like `lsp-bridge-find-def' but sets
         (lsp-bridge-call-file-api "find_define" (lsp-bridge--position))
       (lsp-bridge-find-def-fallback (lsp-bridge--position))))))
 
+;;;###autoload
 (defun lsp-bridge-find-def-return ()
   "Pop off lsp-bridge-mark-ring and jump to the top location."
   (interactive)
@@ -133,6 +136,7 @@ Like `lsp-bridge-find-def' but sets
       (switch-to-buffer buffer))
     (recenter)))
 
+;;;###autoload
 (defun lsp-bridge-find-type-def ()
   "Jump to the type definition of the symbol at point.
 Sends a `find_type_define' request for the current position in the
@@ -141,6 +145,7 @@ current window."
   (setq-local lsp-bridge-jump-to-def-in-other-window nil)
   (lsp-bridge-call-file-api "find_type_define" (lsp-bridge--position)))
 
+;;;###autoload
 (defun lsp-bridge-find-type-def-other-window ()
   "Jump to the type definition of the symbol at point in another window.
 Like `lsp-bridge-find-type-def' but sets
@@ -149,6 +154,7 @@ Like `lsp-bridge-find-type-def' but sets
   (setq-local lsp-bridge-jump-to-def-in-other-window t)
   (lsp-bridge-call-file-api "find_type_define" (lsp-bridge--position)))
 
+;;;###autoload
 (defun lsp-bridge-find-impl ()
   "Jump to the implementation of the symbol at point.
 Sends a `find_implementation' request for the current position in the
@@ -157,6 +163,7 @@ current window."
   (setq-local lsp-bridge-jump-to-def-in-other-window nil)
   (lsp-bridge-call-file-api "find_implementation" (lsp-bridge--position)))
 
+;;;###autoload
 (defun lsp-bridge-find-impl-other-window ()
   "Jump to the implementation of the symbol at point in another window.
 Like `lsp-bridge-find-impl' but sets
@@ -165,6 +172,7 @@ Like `lsp-bridge-find-impl' but sets
   (setq-local lsp-bridge-jump-to-def-in-other-window t)
   (lsp-bridge-call-file-api "find_implementation" (lsp-bridge--position)))
 
+;;;###autoload
 (defun lsp-bridge-find-references ()
   "List the references of the symbol at point.
 Sends a `find_references' request when a language server applies,
@@ -209,6 +217,7 @@ when there is at least one reference, otherwise
         (message "[LSP-Bridge] Found %s references" references-counter))
     (lsp-bridge-find-ref-fallback position)))
 
+;;;###autoload
 (defun lsp-bridge-rename ()
   "Rename the symbol at point.
 Sends a `prepare_rename' request, asks for the new name with
@@ -471,11 +480,13 @@ those very positions itself."
       (message "Live rename: nothing changed"))
     (lsp-bridge-live-rename--cleanup)))
 
+;;;###autoload
 (defun lsp-bridge-live-rename-commit ()
   "Apply the live rename through the language server."
   (interactive)
   (lsp-bridge-live-rename--finish t))
 
+;;;###autoload
 (defun lsp-bridge-live-rename-abort ()
   "Give up the live rename and put the symbol back."
   (interactive)
@@ -568,6 +579,7 @@ and the others display what is typed there instead of holding it."
                   ranges))))
       (lsp-bridge-live-rename--setup (nreverse ranges)))))
 
+;;;###autoload
 (defun lsp-bridge-live-rename ()
   "Rename the symbol at point while every occurrence follows along.
 The occurrences are the ones the language server reports for the symbol, so

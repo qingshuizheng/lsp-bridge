@@ -31,6 +31,7 @@
 (declare-function lsp-bridge-has-lsp-server-p "lsp-bridge")
 (defvar lsp-bridge-popup-documentation-buffer)
 
+;;;###autoload
 (defun lsp-bridge-show-documentation ()
   "Show the hover documentation of the symbol at point in its own buffer.
 The active region, or point when there is none, selects the range
@@ -40,6 +41,7 @@ sent with the `hover' request."
          (end (lsp-bridge--point-position (if (region-active-p) (region-end) (point)))))
     (lsp-bridge-call-file-api "hover" start end "show")))
 
+;;;###autoload
 (defun lsp-bridge-popup-documentation ()
   "Popup the hover documentation of the symbol at point.
 The active region, or point when there is none, selects the range
@@ -49,6 +51,7 @@ sent with the `hover' request."
          (end (lsp-bridge--point-position (if (region-active-p) (region-end) (point)))))
     (lsp-bridge-call-file-api "hover" start end "popup")))
 
+;;;###autoload
 (defun lsp-bridge-signature-help-fetch ()
   "Fetch the signature help of the call around point.
 The request is skipped when no language server applies and when the
@@ -62,6 +65,7 @@ position of the org src block instead of the buffer position."
                                     (lsp-bridge--position-in-org)
                                   (lsp-bridge--position))))))
 
+;;;###autoload
 (defun lsp-bridge-switch-to-documentation-buffer (norecord)
   "Show the documentation buffer in another window.
 NORECORD is passed to `switch-to-buffer-other-window'."
@@ -93,6 +97,7 @@ reused, filled with the markdown rendered VALUE and displayed."
       (goto-char (point-min)))
     (display-buffer buffer 'display-buffer-reuse-window)))
 
+;;;###autoload
 (defun lsp-bridge-popup-documentation-scroll-up (&optional arg)
   "Scroll the hover documentation frame up by ARG lines.
 ARG is passed to `scroll-up-command'; the call is ignored when the
@@ -102,6 +107,7 @@ documentation frame is not live."
     (with-selected-frame (acm-popup hover-frame)
       (apply #'scroll-up-command arg))))
 
+;;;###autoload
 (defun lsp-bridge-popup-documentation-scroll-down (&optional arg)
   "Scroll the hover documentation frame down by ARG lines.
 ARG is passed to `scroll-down-command'; the call is ignored when the

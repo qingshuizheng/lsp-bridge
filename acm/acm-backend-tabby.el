@@ -89,6 +89,7 @@ are stored through `lsp-bridge-search-backend--record-items'."
         (setq tabby--ongoing-request-id
               (tabby--agent-provide-completions request on-response))))))
 
+;;;###autoload
 (defun acm-backend-tabby-record (current-symbol)
   "Request tabby completions for the current buffer.
 Load the tabby library unless it is already available, clear

@@ -99,11 +99,13 @@ another window."
         (rust-ts-mode)))
     (switch-to-buffer-other-window buf)))
 
+;;;###autoload
 (defun lsp-bridge-rust-expand-macro ()
   "Ask the LSP server to expand the macro at point."
   (interactive)
   (lsp-bridge-call-file-api "rust_expand_macro" (lsp-bridge--position)))
 
+;;;###autoload
 (defun lsp-bridge-rust-reload-workspace ()
   "Ask the LSP server to reload the Rust workspace."
   (interactive)

@@ -27,6 +27,7 @@ prefix for KEYWORD and memoized in
     keyword
     acm-backend-jupyter-items)))
 
+;;;###autoload
 (defun acm-backend-jupyter-record (current-symbol)
   "Record the jupyter completions for the current buffer.
 Load the jupyter libraries when `jupyter-org-completion-at-point' is

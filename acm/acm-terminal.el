@@ -600,6 +600,7 @@ same way acm clears them for its doc frame."
           ;; Hide doc frame immediately if backend is not LSP.
           (_ (acm-doc-hide)))))))
 
+;;;###autoload
 (defun acm-terminal-doc-scroll-up ()
   "Scroll text of doc upward."
   (interactive)
@@ -619,6 +620,7 @@ same way acm clears them for its doc frame."
         (popon-redisplay)
         (setq acm-terminal-doc-scroll-start scroll-start)))))
 
+;;;###autoload
 (defun acm-terminal-doc-scroll-down ()
   "Scroll text of doc down."
   (interactive)
@@ -638,6 +640,7 @@ same way acm clears them for its doc frame."
         (popon-redisplay)
         (setq acm-terminal-doc-scroll-start scroll-start)))))
 
+;;;###autoload
 (defun acm-terminal-hide ()
   (interactive)
   (let* ((candidate-info (acm-menu-current-candidate))

@@ -398,6 +398,7 @@ Holds a cons of the log buffer window and the window to select again.")
               (ansi-color-apply-on-region start (point)))
             (set-marker (process-mark process) (point))))))))
 
+;;;###autoload
 (defun lsp-bridge-restart-process ()
   "Stop and restart LSP-Bridge process."
   (interactive)
@@ -421,6 +422,7 @@ Holds a cons of the log buffer window and the window to select again.")
 
   (message "[LSP-Bridge] Process restarted."))
 
+;;;###autoload
 (defun lsp-bridge-profile-dump ()
   "Ask the server to dump its collected profiling data.
 The data is written to ~/lsp-bridge.prof when
@@ -472,6 +474,7 @@ The data is written to ~/lsp-bridge.prof when
 Each function is called with no argument from
 `lsp-bridge-kill-process'.")
 
+;;;###autoload
 (defun lsp-bridge-kill-process ()
   "Stop LSP-Bridge process and kill all LSP-Bridge buffers."
   (interactive)
@@ -543,6 +546,7 @@ without a running server."
              (or (plist-get state :log-lines) 0)
              (plist-get state :log-level)))))
 
+;;;###autoload
 (defun lsp-bridge-diagnose ()
   "Report what the Emacs and Python halves of lsp-bridge are doing.
 Write into the `*lsp-bridge-diagnose*' buffer the protocol versions of the two

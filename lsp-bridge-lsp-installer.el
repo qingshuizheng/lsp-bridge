@@ -83,6 +83,7 @@
 (require 'cl-lib)
 ;;; Code:
 
+;;;###autoload
 (defun lsp-bridge-install-omnisharp ()
   "Download OmniSharp for this platform and unpack it into .cache/omnisharp.
 The release archive comes from OmniSharp/omnisharp-roslyn and is
@@ -109,16 +110,19 @@ langserver/omnisharp-*.json configurations look for the server."
     (call-process-shell-command (format "%s -xf %s -C %s" "tar" down-des install-des))
     (call-process-shell-command (format "chmod +x %s" (format "%sOmniSharp" install-des)))))
 
+;;;###autoload
 (defun lsp-bridge-copilot-login ()
   "Ask the Python side to log in to the Copilot language server."
   (interactive)
   (lsp-bridge-call-async "copilot_login"))
 
+;;;###autoload
 (defun lsp-bridge-copilot-logout ()
   "Ask the Python side to log out of Copilot."
   (interactive)
   (lsp-bridge-call-async "copilot_logout"))
 
+;;;###autoload
 (defun lsp-bridge-copilot-status ()
   "Ask the Python side for the Copilot login status."
   (interactive)

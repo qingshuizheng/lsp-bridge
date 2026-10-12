@@ -48,6 +48,7 @@ one is turned into an xref object by
   (let ((fetcher (lambda () (mapcar #'acm-backend-ctags-xref--make-object tags))))
     (xref-show-xrefs fetcher nil)))
 
+;;;###autoload
 (defun acm-backend-ctags-find-def-at-point ()
   "Find the definition of the symbol at point with ctags.
 Send a `ctags_find_def' request to the Python side, or to the remote

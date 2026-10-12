@@ -40,12 +40,14 @@ It is used to restore `mode-line-format' when the popup is quit.")
 (defvar lsp-bridge-call-hierarchy--preview-window nil
   "Window showing the preview of the selected call.")
 
+;;;###autoload
 (defun lsp-bridge-incoming-call-hierarchy ()
   "Show all symbols that call the symbol at point."
   (interactive)
   (lsp-bridge-call-file-api "prepare_call_hierarchy_incoming"
                             (lsp-bridge--position)))
 
+;;;###autoload
 (defun lsp-bridge-outgoing-call-hierarchy ()
   "Show all symbols called by the symbol at point."
   (interactive)
@@ -170,40 +172,47 @@ the highlight overlay and updates the preview."
             (+ next lsp-bridge-call-hierarchy--index))
       (lsp-bridge-call-hierarchy-maybe-preview)))
 
+;;;###autoload
 (defun lsp-bridge-call-hierarchy-next ()
   "Select the next call in the call hierarchy buffer."
   (interactive)
   (lsp-bridge-call-hierarchy--move 1))
 
+;;;###autoload
 (defun lsp-bridge-call-hierarchy-prev ()
   "Select the previous call in the call hierarchy buffer."
   (interactive)
   (lsp-bridge-call-hierarchy--move -1))
 
+;;;###autoload
 (defun lsp-bridge-call-hierarchy-preview-next ()
   "Scroll the call hierarchy preview window up five lines."
   (interactive)
   (with-selected-window (get-buffer-window "*lsp-bridge-code-action-preview*")
     (scroll-up-line 5)))
 
+;;;###autoload
 (defun lsp-bridge-call-hierarchy-preview-prev ()
   "Scroll the call hierarchy preview window down five lines."
   (interactive)
   (with-selected-window (get-buffer-window "*lsp-bridge-code-action-preview*")
     (scroll-down-line 5)))
 
+;;;###autoload
 (defun lsp-bridge-call-hierarchy-scroll-left ()
   "Scroll the call hierarchy preview window left five columns."
   (interactive)
   (with-selected-window (get-buffer-window "*lsp-bridge-code-action-preview*")
     (scroll-left 5)))
 
+;;;###autoload
 (defun lsp-bridge-call-hierarchy-scroll-right ()
   "Scroll the call hierarchy preview window right five columns."
   (interactive)
   (with-selected-window (get-buffer-window "*lsp-bridge-code-action-preview*")
     (scroll-right 5)))
 
+;;;###autoload
 (defun lsp-bridge-call-hierarchy-quit ()
   "Quit the call hierarchy popup and restore the previous window layout.
 This deletes the frame and its buffer, deletes the preview window,
@@ -267,6 +276,7 @@ didn't exist before are remembered in
                                           (goto-char (+ (point-at-bol) echaracter))
                                           (point))))))
 
+;;;###autoload
 (defun lsp-bridge-call-hierarchy-select ()
   "Jump to the selected call and quit the call hierarchy popup."
   (interactive)
