@@ -180,7 +180,8 @@ mode rules are tried."
       (lsp-bridge-get-single-lang-server-by-file-mode filename)))
 
 (defun lsp-bridge--user-emacs-directory-func ()
-  "Get lang server with project path, file path or file extension."
+  "Return the user's Emacs directory, expanded.
+The Python side asks for it when it has to look at something of this Emacs."
   (expand-file-name user-emacs-directory))
 
 (defun lsp-bridge--user-tsdk-path-func ()
