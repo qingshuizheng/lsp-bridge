@@ -74,6 +74,11 @@
 
 (require 'color)
 
+(defvar-local file-content nil
+  "The file content the peek window is showing, kept for the next redisplay.
+It is set by `lsp-bridge-peek--get-content' and read where the content is put in
+the window, so it belongs to the buffer rather than to one call.")
+
 ;;; Code:
 
 (defgroup lsp-bridge-peek nil
