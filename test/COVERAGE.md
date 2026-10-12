@@ -102,7 +102,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-imenu.el` | 4 | 1 |
 | `lsp-bridge-inlay-hint.el` | 14 | 1 |
 | `lsp-bridge-jdtls.el` | 14 | 8 |
-| `lsp-bridge-jump.el` | 52 | 17 |
+| `lsp-bridge-jump.el` | 52 | 18 |
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
 | `lsp-bridge-org-babel.el` | 12 | 2 |
 | `lsp-bridge-peek.el` | 62 | 1 |

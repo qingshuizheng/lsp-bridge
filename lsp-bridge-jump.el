@@ -455,10 +455,12 @@ symbols with dashes in them as much as for names in a language server's file."
   (memq (char-syntax (or char ?\s)) '(?w ?_)))
 
 (defun lsp-bridge-live-rename--textual-ranges (symbol)
-  "Return the ranges of every occurrence of SYMBOL in this buffer.
+  "Return the ranges of the occurrences of SYMBOL in this buffer.
 The characters around a match must not be symbol characters, which is what keeps
 an occurrence inside a longer name out of the rename; case is significant, as it
-is in the languages this is used for."
+is in the languages this is used for.  At most 1000 occurrences are collected,
+so that a symbol in every line of a large file cannot make the walk of the
+buffer unbounded."
   (let ((case-fold-search nil)
         (regexp (regexp-quote symbol))
         (limit 1000)

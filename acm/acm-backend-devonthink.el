@@ -246,8 +246,8 @@ keystroke that starts the search, so this is shown until the answer arrives."
 
 (defun acm-backend-devonthink--remember (query candidates)
   "Cache CANDIDATES as the answer for QUERY.
-Only the most recent answers are kept, because each one is a search the user
-typed."
+Each answer is a whole search the user typed, so only the twenty most recent
+ones are kept and the oldest is dropped once there would be more."
   (setq acm-backend-devonthink--results
         (cons (cons query (cons (float-time) candidates))
               (cl-remove-if (lambda (cell) (equal (car cell) query))
