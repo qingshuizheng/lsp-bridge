@@ -164,3 +164,31 @@ covered because some of it is.
 - `acm-frame.el` and what draws popups need a real frame;
   `test/acm-session-test.el` covers the session bookkeeping around them, and
   `test/acm-test.el` the menu state machine that stops before a frame is touched.
+
+### Module by module
+
+What a module covers is in its test file, and each of those says in its commentary
+what it does not, and why.  The reasons are of five kinds:
+
+- **A peer.** The sockets, the process filter and the messages that go over them in
+  `lsp-bridge-epc.el` need something on the other end - `test/lsp-bridge-epc-test.el`
+  has the deferred queue, which does not - and so does the opening of a connection
+  in `lsp-bridge-remote.el`, as do the requests and the formatting of
+  `lsp-bridge-workspace.el`, which need the server to answer first.
+- **A server process.** Starting a language server in `core/lspserver.py`, the reads
+  and writes of its pipes and the dispatch of its answers need the server itself;
+  `test/test_lspserver.py` has the protocol messages, the URIs and the retry
+  bookkeeping around them.
+- **A display.** The popup documentation of `lsp-bridge-document.el` needs one from
+  the frame it makes to the `window-pixel-edges' it is positioned by, and the
+  signature tooltip and the scrolling of either are the same; what is asked instead
+  is what those commands do when there is nothing to show.
+- **The server answering.** The search commands `lsp-bridge-ref.el` generates per
+  language mode, the popup they fill, and the edit that goes back to the file being
+  searched - the last of which wants that file under version control.
+- **The system.** `lsp-bridge-jdtls` asks a JDTLS server, `lsp-bridge-dart` needs
+  the Dart SDK, and `lsp-bridge-lsp-installer` downloads what it installs.
+
+The live rename of `lsp-bridge-jump.el` is between the first and the fourth: the
+ranges it works on are tested, and the mode itself starts from a document highlight
+that the server sends.
