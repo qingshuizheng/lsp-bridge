@@ -10,13 +10,17 @@ import importlib
 import inspect
 import pkgutil
 import unittest
+from types import SimpleNamespace
 
 from core.handler import Handler
 from core.handler.breadcrumb import Breadcrumb
+from core.handler.call_hierarchy import CallHierarchy, PrepareCallHierarchy
 from core.handler.code_action import CodeAction
 from core.handler.completion import Completion
 from core.handler.completion_item import CompletionItem
 from core.handler.completion_workspace_symbol import CompletionWorkspaceSymbol
+from core.handler.csharp_uri_resolver import CSharpUriResolver
+from core.handler.deno_uri_resolver import DenoUriResolver
 from core.handler.diagnostic import Diagnostic
 from core.handler.document_highlight import DocumentHighlight
 from core.handler.document_symbol import DocumentSymbol
@@ -28,10 +32,18 @@ from core.handler.find_type_define import FindTypeDefine
 from core.handler.hover import Hover, make_code_block
 from core.handler.imenu import IMenu
 from core.handler.inlay_hint import InlayHint
+from core.handler.jdt_uri_resolver import JDTUriResolver
+from core.handler.jdtls.jdtls_add_overridable_methods import JdtlsAddOverridableMethods
+from core.handler.jdtls.jdtls_list_overridable_methods import JdtlsListOverridableMethods
+from core.handler.peek import PeekFindDefine, PeekFindReferences
 from core.handler.prepare_rename import PrepareRename
 from core.handler.rename import Rename, count_workspace_edits
+from core.handler.rust_expand_macro import RustExpandMacro
+from core.handler.rust_reload_workspace import RustReloadWorkspace
 from core.handler.semantic_tokens import SemanticTokens
 from core.handler.signature_help import SignatureHelp
+from core.handler.volar_proxy import TsserverRequestHandler
+from core.handler.workspace_diagnostics import WorkspaceDiagnostics
 from core.handler.workspace_symbol import WorkspaceSymbol
 
 
@@ -373,15 +385,23 @@ class CodeActionTest(unittest.TestCase):
 
 POSITION = {"line": 4, "character": 9}
 RANGE_END = {"line": 5, "character": 0}
+SERVER = SimpleNamespace(server_info={"name": "pyright"})
+URI = "file:///tmp/thing.cs"
 
 # handler, arguments for `process_request', the params it should return
 REQUEST_SHAPES = [
     (Breadcrumb, (17,), {}),
+    (CSharpUriResolver, (URI, POSITION, "handler"), {"textDocument": {"uri": URI}}),
     (CompletionItem, ("the-key", "pyright", {"label": "thing"}), {"label": "thing"}),
+    (CompletionWorkspaceSymbol, (SERVER, "foo bar"), {"query": "foobar"}),
+    (DenoUriResolver, (URI, POSITION, "handler"), {"textDocument": {"uri": URI}}),
     (Diagnostic, (), {}),
     (Diagnostic, ("py",), {"identifier": "py"}),
     (Diagnostic, (None, "previous"), {"previousResultId": "previous"}),
     (DocumentSymbol, (POSITION,), {}),
+    (ExecuteCommand, ("clangd", "fix", [{"code": 1}]),
+     {"command": "fix", "arguments": [{"code": 1}]}),
+    (ExecuteCommand, ("clojure-lsp", "fix", [{}]), {"command": "fix", "arguments": [None]}),
     (FindDefine, (POSITION,), {"position": POSITION}),
     (FindImplementation, (POSITION,), {"position": POSITION}),
     (FindReferences, (POSITION,),
@@ -390,8 +410,19 @@ REQUEST_SHAPES = [
     (IMenu, (), {}),
     (InlayHint, (POSITION, RANGE_END),
      {"range": {"start": POSITION, "end": RANGE_END}}),
+    (JDTUriResolver, (URI, POSITION, "handler"), {"uri": URI}),
+    (JdtlsAddOverridableMethods, ('{"a": 1}',), {"a": 1}),
+    (JdtlsListOverridableMethods, (["method"],), ["method"]),
+    (PeekFindDefine, (POSITION,), {"position": POSITION}),
+    (PeekFindReferences, (POSITION, RANGE_END),
+     {"position": POSITION, "context": {"includeDeclaration": False}}),
+    (PrepareCallHierarchy, (POSITION,), {"position": POSITION}),
     (Rename, (POSITION, "renamed"), {"position": POSITION, "newName": "renamed"}),
+    (RustExpandMacro, (POSITION,), {"position": POSITION}),
+    (RustReloadWorkspace, (), None),
     (SignatureHelp, (POSITION,), {"position": POSITION}),
+    (TsserverRequestHandler, (), {}),
+    (WorkspaceDiagnostics, (), {"previousResultIds": []}),
     (WorkspaceSymbol, ("foo bar",), {"query": "foobar"}),
 ]
 
@@ -426,6 +457,25 @@ class RequestShapeTest(unittest.TestCase):
         handler.process_request("the-key", "pyright", {"label": "thing"})
         self.assertEqual(handler.item_key, "the-key")
         self.assertEqual(handler.server_name, "pyright")
+
+        handler = bare(CompletionWorkspaceSymbol)
+        handler.process_request(SERVER, "foo bar")
+        self.assertEqual(handler.prefix, "foo bar")
+        self.assertEqual(handler.lsp_server_name, "pyright")
+
+        handler = bare(JdtlsListOverridableMethods)
+        handler.process_request(["method"])
+        self.assertEqual(handler.context, ["method"])
+
+    def test_the_call_hierarchy_remembers_its_direction(self):
+        handler = bare(CallHierarchy)
+        handler.call_contents = []
+        item = {"name": "thing", "kind": 12, "uri": "file:///tmp/thing.py",
+                "range": {"start": POSITION, "end": RANGE_END},
+                "selectionRange": {"start": POSITION, "end": RANGE_END}}
+        self.assertEqual(handler.process_request(item, "from"), {"item": item})
+        self.assertEqual(handler.response_prefix, "from")
+        self.assertEqual(len(handler.call_contents), 1)
 
 
 if __name__ == "__main__":
