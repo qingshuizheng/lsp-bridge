@@ -63,5 +63,43 @@ the flash lasts."
       (lsp-bridge-flash-region 1 2))
     (should (equal seen 0.75))))
 
+(ert-deftest lsp-bridge-jump-test-mark-ring-is-recorded-and-pushed ()
+  "The position of the old buffer is kept, and pushed onto the ring of the new one.
+The two functions say they are used in pairs: the first in the buffer being left,
+the second in the one jumped to."
+  (let ((lsp-bridge-mark-ring nil))
+    (with-temp-buffer
+      (insert "one two three\n")
+      (goto-char 5)
+      (lsp-bridge--record-mark-ring)
+      ;; The marker is of the buffer it was taken in, at the position it was taken.
+      (should (equal (marker-position lsp-bridge-position-before-jump) 5))
+      (should (eq (marker-buffer lsp-bridge-position-before-jump) (current-buffer))))
+    (let ((recorded lsp-bridge-position-before-jump))
+      (with-temp-buffer
+        (lsp-bridge--set-mark-ring-in-new-buffer)
+        ;; The new buffer's ring starts with what was recorded in the old one.
+        (should (eq (car lsp-bridge-mark-ring) recorded))
+        (should (eq (marker-buffer (car lsp-bridge-mark-ring)) (marker-buffer recorded)))))))
+
+(ert-deftest lsp-bridge-jump-test-mark-ring-accumulates ()
+  "A second jump pushes a second position in front of the first."
+  (let ((lsp-bridge-mark-ring nil))
+    (with-temp-buffer
+      (insert "first\n")
+      (goto-char 3)
+      (lsp-bridge--record-mark-ring))
+    (let ((first lsp-bridge-position-before-jump))
+      (with-temp-buffer
+        (lsp-bridge--set-mark-ring-in-new-buffer)
+        (should (eq (car lsp-bridge-mark-ring) first))
+        ;; A second jump is recorded and pushed in front of the first one.
+        (goto-char 2)
+        (lsp-bridge--record-mark-ring)
+        (lsp-bridge--set-mark-ring-in-new-buffer)
+        (should (equal (length lsp-bridge-mark-ring) 2))
+        (should-not (eq (car lsp-bridge-mark-ring) first))
+        (should (eq (nth 1 lsp-bridge-mark-ring) first))))))
+
 (provide 'lsp-bridge-jump-test)
 ;;; lsp-bridge-jump-test.el ends here

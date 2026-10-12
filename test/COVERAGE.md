@@ -102,7 +102,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-imenu.el` | 4 | 1 |
 | `lsp-bridge-inlay-hint.el` | 15 | 10 |
 | `lsp-bridge-jdtls.el` | 14 | 8 |
-| `lsp-bridge-jump.el` | 54 | 22 |
+| `lsp-bridge-jump.el` | 54 | 26 |
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
 | `lsp-bridge-org-babel.el` | 12 | 2 |
 | `lsp-bridge-peek.el` | 62 | 19 |
@@ -113,7 +113,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-transport.el` | 59 | 15 |
 | `lsp-bridge-ui.el` | 14 | 4 |
 | `lsp-bridge-workspace.el` | 30 | 12 |
-| `lsp-bridge.el` | 114 | 14 |
+| `lsp-bridge.el` | 114 | 16 |
 | `lsp_bridge.py` | 24 | 21 |
 
 ## Where the surface is still thin
@@ -124,10 +124,10 @@ covered because some of it is.
 
 | `lsp-bridge-ref.el` | 7/91 | 8% |
 | `core/remote_file.py` | 4/34 | 12% |
-| `lsp-bridge.el` | 14/114 | 12% |
 | `core/fileaction.py` | 5/39 | 13% |
 | `acm/acm-frame.el` | 3/22 | 14% |
 | `lsp-bridge-semantic-tokens.el` | 7/50 | 14% |
+| `lsp-bridge.el` | 16/114 | 14% |
 | `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
 | `lsp-bridge-core.el` | 10/70 | 14% |
 | `core/search_file_words.py` | 2/12 | 17% |
