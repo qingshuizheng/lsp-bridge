@@ -44,5 +44,49 @@ before this fix because the pattern looked for `%%' where the message has one."
     ;; A fresh buffer has none of its own, which is the point of it being local.
     (should-not (lsp-bridge-symbols--current-defun))))
 
+(defun lsp-bridge-ui-test--mode-line (server live progress)
+  "Return the mode line text with SERVER, LIVE and PROGRESS in place."
+  (let ((lsp-bridge-server server)
+        (lsp-bridge--work-done-progress progress))
+    (cl-letf (((symbol-function 'lsp-bridge-process-live-p) (lambda () live)))
+      (lsp-bridge--mode-line-format))))
+
+(ert-deftest lsp-bridge-ui-test-mode-line-without-a-server ()
+  "There is nothing to show before a server is there."
+  (should-not (lsp-bridge-ui-test--mode-line nil t nil)))
+
+(ert-deftest lsp-bridge-ui-test-mode-line-says-whether-the-server-lives ()
+  "The face of the name is the state of the server, and the progress follows it."
+  (let ((alive (lsp-bridge-ui-test--mode-line "server" t nil))
+        (dead (lsp-bridge-ui-test--mode-line "server" nil nil))
+        (busy (lsp-bridge-ui-test--mode-line "server" t " Indexing 12%")))
+    (should (equal (substring-no-properties alive) "lsp-bridge"))
+    (should (eq (get-text-property 0 'face alive) 'lsp-bridge-alive-mode-line))
+    (should (eq (get-text-property 0 'face dead) 'lsp-bridge-kill-mode-line))
+    ;; The progress carries the space an icon would have filled, so without the
+    ;; icon library the mode line has two of them.
+    (should (equal (substring-no-properties busy) "lsp-bridge  Indexing 12%"))
+    (should (eq (get-text-property (length "lsp-bridge ") 'face busy)
+                'lsp-bridge-alive-mode-line))))
+
+(ert-deftest lsp-bridge-ui-test-record-progress-keeps-it-per-buffer ()
+  "The progress is stored in the buffer of the file it is about."
+  (let ((file (make-temp-file "lsp-bridge-ui-test" nil ".py"))
+        (acm-backend-lsp-show-progress nil))
+    (unwind-protect
+        (with-current-buffer (find-file-noselect file)
+          (setq-local lsp-bridge--work-done-progress-timer nil)
+          (lsp-bridge--record-work-done-progress "Indexing (12%)" (list file))
+          (should (equal lsp-bridge--work-done-progress " Indexing 12%"))
+          (should (timerp lsp-bridge--work-done-progress-timer))
+          (lsp-bridge--record-work-done-progress "" (list file))
+          (should-not lsp-bridge--work-done-progress)
+          (when lsp-bridge--work-done-progress-timer
+            (cancel-timer lsp-bridge--work-done-progress-timer)
+            (setq-local lsp-bridge--work-done-progress-timer nil)))
+      (let ((buffer (get-file-buffer file)))
+        (when buffer (kill-buffer buffer)))
+      (delete-file file))))
+
 (provide 'lsp-bridge-ui-test)
 ;;; lsp-bridge-ui-test.el ends here

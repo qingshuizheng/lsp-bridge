@@ -24,7 +24,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-elisp.el` | 18 | 9 |
 | `acm/acm-backend-jupyter.el` | 5 | 3 |
 | `acm/acm-backend-lsp-workspace-symbol.el` | 7 | 3 |
-| `acm/acm-backend-lsp.el` | 24 | 11 |
+| `acm/acm-backend-lsp.el` | 24 | 12 |
 | `acm/acm-backend-path.el` | 5 | 5 |
 | `acm/acm-backend-search-file-words.el` | 11 | 5 |
 | `acm/acm-backend-tabby.el` | 7 | 4 |
@@ -94,7 +94,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-call-hierarchy.el` | 31 | 7 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
 | `lsp-bridge-completion.el` | 60 | 17 |
-| `lsp-bridge-core.el` | 70 | 10 |
+| `lsp-bridge-core.el` | 70 | 12 |
 | `lsp-bridge-dart.el` | 5 | 4 |
 | `lsp-bridge-diagnostic.el` | 33 | 12 |
 | `lsp-bridge-document.el` | 23 | 10 |
@@ -110,8 +110,8 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-remote.el` | 30 | 17 |
 | `lsp-bridge-rust.el` | 3 | 0 |
 | `lsp-bridge-semantic-tokens.el` | 50 | 7 |
-| `lsp-bridge-transport.el` | 59 | 15 |
-| `lsp-bridge-ui.el` | 14 | 4 |
+| `lsp-bridge-transport.el` | 59 | 17 |
+| `lsp-bridge-ui.el` | 14 | 12 |
 | `lsp-bridge-workspace.el` | 30 | 12 |
 | `lsp-bridge.el` | 114 | 16 |
 | `lsp_bridge.py` | 24 | 21 |
@@ -129,9 +129,9 @@ covered because some of it is.
 | `lsp-bridge-semantic-tokens.el` | 7/50 | 14% |
 | `lsp-bridge.el` | 16/114 | 14% |
 | `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
-| `lsp-bridge-core.el` | 10/70 | 14% |
 | `core/search_file_words.py` | 2/12 | 17% |
 | `lsp-bridge-org-babel.el` | 2/12 | 17% |
+| `lsp-bridge-core.el` | 12/70 | 17% |
 | `core/utils.py` | 12/65 | 18% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
