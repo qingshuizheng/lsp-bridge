@@ -14,6 +14,9 @@
 (require 'lsp-bridge)
 (require 'lsp-bridge-jump)
 
+;; Read by the pulse library rather than passed to it.
+(defvar pulse-delay)
+
 (ert-deftest lsp-bridge-jump-test-symbol-char-p ()
   "What counts as a symbol character is the syntax table of the buffer."
   (with-temp-buffer
@@ -46,6 +49,19 @@
     (emacs-lisp-mode)
     (dotimes (_ 1001) (insert "sym "))
     (should (equal (length (lsp-bridge-live-rename--textual-ranges "sym")) 1000))))
+
+(ert-deftest lsp-bridge-jump-test-flash-region-keeps-its-duration ()
+  "The delay of the flash is bound for the pulse library to read.
+The library reads `pulse-delay' itself rather than taking it as an argument, which
+is why the binding is not an unused variable and why removing it changes how long
+the flash lasts."
+  (require 'pulse)
+  (let ((lsp-bridge-flash-region-delay 0.75)
+        seen)
+    (cl-letf (((symbol-function 'pulse-momentary-highlight-region)
+               (lambda (&rest _args) (setq seen pulse-delay))))
+      (lsp-bridge-flash-region 1 2))
+    (should (equal seen 0.75))))
 
 (provide 'lsp-bridge-jump-test)
 ;;; lsp-bridge-jump-test.el ends here

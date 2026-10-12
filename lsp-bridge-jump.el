@@ -37,6 +37,11 @@
 (defvar lsp-bridge-mark-ring)
 (defvar lsp-bridge-peek-ace-list)
 (defvar lsp-bridge-position-before-jump)
+
+;; Declared so that the bindings in `lsp-bridge-flash-region' are seen as the
+;; dynamic ones they are: the pulse library reads these itself.
+(defvar pulse-delay)
+(defvar pulse-iterations)
 (declare-function lsp-bridge-ref-popup "lsp-bridge-ref")
 (defvar lsp-bridge-tramp-alias-alist)
 
@@ -231,7 +236,12 @@ scope."
 The region is highlighted with `lsp-bridge-font-lock-flash' for
 `lsp-bridge-flash-region-delay' seconds."
   (require 'pulse)
-  (pulse-momentary-highlight-region start-pos end-pos 'lsp-bridge-font-lock-flash))
+  ;; `pulse-delay' and `pulse-iterations' are read by the pulse library rather than
+  ;; passed to it, so they are bound around the call: the compiler cannot see that
+  ;; they are used, and dropping them as unused is what took the duration away once.
+  (let ((pulse-delay lsp-bridge-flash-region-delay)
+        (pulse-iterations 1))
+    (pulse-momentary-highlight-region start-pos end-pos 'lsp-bridge-font-lock-flash)))
 
 (defun lsp-bridge-flash-line ()
   "Flash the line around point.
