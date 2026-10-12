@@ -29,11 +29,17 @@
   (directory-files-recursively directory "\\.el\\'"))
 
 (defconst nbc--known
-  '(;; Passed to `acm-frame-create-frame-if-not-exist', whose first argument is a
-    ;; session slot name rather than a variable, while the same file reads it as a
-    ;; variable in thirteen other places.  Made coherent once, on purpose, with a
-    ;; display to try it on; listed here so that the check stays green and any new
-    ;; name of this shape fails it.
+  '(;; The frame of the code action menu, and neither of the two things the file
+    ;; that uses it takes it for.  Read as a variable in thirteen places - passing it
+    ;; to `frame-live-p', `frame-position', `window-list' and the like, which want a
+    ;; frame - and passed as a slot name to `acm-frame-delete-frame' and the other
+    ;; macros of acm-frame, whose slots are those of an `acm-session': trying that
+    ;; gives `cl-struct-unknown-slot acm-session lsp-bridge-call-hierarchy--frame',
+    ;; seen while this was looked into.  Nothing declares the name either, so the
+    ;; reads are of an unbound variable.  Which of the two it should become, a
+    ;; declared variable holding a frame or a popup of acm's own, is a decision to
+    ;; make with a display to try the menu on; until then this check keeps any *new*
+    ;; name of this shape from being added unnoticed.
     "lsp-bridge-call-hierarchy--frame")
   "Names of this shape that are known and have not been dealt with yet.")
 
