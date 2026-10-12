@@ -664,6 +664,11 @@ so that no further file request is sent."
                                 (setq-local acm-backend-lsp-server-command-exist nil)))
 
 
+(defvar-local lsp-bridge-revert-buffer-flag nil
+  "Non-nil while `revert-buffer' runs in this buffer.
+lsp-bridge sends no change_file request while it is set, because the text of the
+buffer is about to be replaced wholesale.")
+
 (defun lsp-bridge--rename-file-advisor (orig-fun &optional arg &rest args)
   "Tell the server about a rename before `rename-file' runs.
 ORIG-FUN, ARG and ARGS describe the advised call.  When the renamed

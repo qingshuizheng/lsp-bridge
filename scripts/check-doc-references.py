@@ -1,11 +1,12 @@
-"""Check that the names in docstrings of the Python side still exist.
+"""Check that the names the comments and docstrings mention still exist.
 
-A docstring that writes a name as a call - ``foo()`` - is a claim about the code,
-and a claim that goes stale silently when the function is renamed or removed.
-This collects those names from every docstring under core/ and lsp_bridge.py and
-reports the ones nothing in the package defines.  The LSP specification types
-(`Location`, `MarkedString`) and JSON field names are data, not calls, and are
-not looked at.
+A name written in a docstring as a call - ``foo()`` - or in a comment as a
+reference - ``lsp-bridge-some-function`` - is a claim about the code, and a claim
+that goes stale silently when the function is renamed or removed.  This collects
+both and reports the ones nothing in the package defines.
+
+Only the names this package owns are looked at: `Location' or `completionItem' is
+the protocol talking, and ``json.load()`` is somebody else's function.
 
 Run it from the repository root:
 
@@ -18,16 +19,51 @@ import re
 import sys
 
 CALL = re.compile(r"`([A-Za-z_][A-Za-z0-9_.]*)\(\)`?")
+ELISP_REFERENCE = re.compile(r"(?<![\w-])((?:lsp-bridge|acm)-[a-zA-Z0-9-]+)")
+ELISP_DEFINITION = re.compile(
+    r"^\((?:defun|defmacro|defsubst|defvar|defvar-local|defcustom|defface|"
+    r"define-minor-mode|define-derived-mode|define-globalized-minor-mode|"
+    r"cl-defun|cl-defmacro|cl-defstruct|cl-defgeneric|cl-defmethod)\s+"
+    r"([a-zA-Z0-9*+!?<>=/:_-]+)",
+    re.M)
+ELISP_FEATURE = re.compile(r"^\(provide '([a-zA-Z0-9-]+)\)", re.M)
 
 
-def source_files():
+def repository():
+    """Return the root of the checkout this script lives in."""
+    return pathlib.Path(__file__).resolve().parent.parent
+
+
+def elisp_files(root):
+    """Return the Elisp files of the package."""
+    return sorted(list(root.glob("lsp-bridge*.el")) + list((root / "acm").glob("*.el")))
+
+
+def python_files(root):
     """Return the Python files of the bridge, tests excluded."""
-    root = pathlib.Path(__file__).resolve().parent.parent
     return sorted(list((root / "core").rglob("*.py")) + [root / "lsp_bridge.py"])
 
 
-def defined_names(paths):
-    """Return every name PATHs define or bind."""
+def elisp_names(root):
+    """Return every name the Elisp side defines, features included.
+
+    The files are read rather than loaded, so this stays a Python check with no
+    Emacs behind it; a name made by a macro of a macro would be missed, which is
+    what `doc references to missing symbols' in check-doc-references.el is for.
+    """
+    names = set()
+    for path in elisp_files(root):
+        text = path.read_text(errors="ignore")
+        names.update(ELISP_DEFINITION.findall(text))
+        names.update(ELISP_FEATURE.findall(text))
+        names.add(path.stem)
+    for path in (root / "test").glob("*.el"):
+        names.add(path.stem)
+    return names
+
+
+def python_names(paths):
+    """Return every name the Python files define or bind."""
     names = set()
     for path in paths:
         try:
@@ -46,7 +82,7 @@ def defined_names(paths):
     return {name for name in names if name}
 
 
-def documented_names(paths):
+def documented_calls(paths):
     """Yield (path, owner, name) for every call a docstring names."""
     for path in paths:
         try:
@@ -63,17 +99,59 @@ def documented_names(paths):
                 yield path, getattr(node, "name", "<module>"), match.split(".")[0]
 
 
+def comment_of(line, marker):
+    """Return the comment in LINE, or an empty string when there is none.
+
+    Strings are dropped first, which is enough to keep a marker inside one from
+    being read as the start of a comment.
+    """
+    stripped = re.sub(r'"[^"]*"|\'[^\']*\'', "", line)
+    position = stripped.find(marker)
+    return stripped[position:] if position >= 0 else ""
+
+
+def comment_references(root, known):
+    """Yield the references in comments to names of this package that are gone.
+
+    A name that is only the beginning of a real one (`;; lsp-bridge-epc-server'
+    over the `lsp-bridge-epc-server-...' functions) is a section header, and a
+    name that ends in a dash is a placeholder such as `acm-backend-<name>'; both
+    are how the sources are written down rather than a claim about code.
+    """
+    for path in elisp_files(root) + python_files(root):
+        marker = ";" if path.suffix == ".el" else "#"
+        text = path.read_text(errors="ignore")
+        for number, line in enumerate(text.splitlines(), 1):
+            comment = comment_of(line, marker)
+            if not comment:
+                continue
+            for name in ELISP_REFERENCE.findall(comment):
+                if name.endswith("-") or name in known:
+                    continue
+                if any(known_name.startswith(name) for known_name in known):
+                    continue
+                yield f"{path.relative_to(root)}:{number} -> `{name}'"
+
+
 def main():
-    """Report the docstring calls that nothing defines, and fail if there are any."""
-    paths = source_files()
-    known = defined_names(paths)
-    missing = [(path, owner, name)
-               for path, owner, name in documented_names(paths)
-               if name not in known]
-    print(f"docstring calls checked: {len(paths)} files, missing names: {len(missing)}")
-    for path, owner, name in missing:
+    """Report the references nothing defines, and fail when there are any."""
+    root = repository()
+    elisp = elisp_files(root)
+    python = python_files(root)
+    known = elisp_names(root) | python_names(python)
+
+    calls = [(path, owner, name)
+             for path, owner, name in documented_calls(python)
+             if name not in known]
+    comments = list(comment_references(root, known))
+
+    print(f"docstring calls with nothing behind them: {len(calls)}")
+    for path, owner, name in calls:
         print(f"  {path.name}:{owner} -> `{name}()`")
-    return 1 if missing else 0
+    print(f"comment references to names that are gone: {len(comments)}")
+    for line in comments:
+        print(f"  {line}")
+    return 1 if calls or comments else 0
 
 
 if __name__ == "__main__":

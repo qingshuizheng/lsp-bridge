@@ -81,6 +81,11 @@ the symbol bounds as keyword prefix."
   ;; other LSP server need use `bounds-of-thing-at-point' of symbol as keyword prefix.
   (setq-local acm-input-bound-style prefix-style))
 
+(defvar-local acm-backend-lsp-server-names nil
+  "Names of the language servers that answer completion in this buffer.
+Set by `lsp-bridge-set-server-names' when the servers of a file are known,
+and read when a completion request has to name them again.")
+
 (defun lsp-bridge-set-server-names (filename filehost server-names)
   "Store SERVER-NAMES for the buffer visiting FILENAME on FILEHOST.
 The buffer is located with `lsp-bridge--with-file-buffer' and the
@@ -393,7 +398,7 @@ it."
       (unless (or (string-equal current-word "") (null current-word))
         (if (lsp-bridge-is-remote-file)
             ;; remote file buffer do not associate with an actual file on the disk
-            ;; the buffer is created by lsp-bridge-opne-remote-file--response
+            ;; the buffer is created by lsp-bridge-open-remote-file--response
             ;; hence (buffer-file-name) will return nil
             ;; should use buffer local variable lsp-bridge-remote-file-path
             (with-current-buffer (buffer-name)

@@ -168,6 +168,11 @@ sends a `completionItem/resolve' request for the candidate.")
 It is compared with each new candidate so the same completion item is
 not resolved twice in a row.")
 
+(defvar-local acm-backend-lsp-items nil
+  "Hash table of the completion items each server offered in this buffer.
+The candidates are keyed by the server that sent them, which is where the
+menu finds an item again when its documentation has to be resolved.")
+
 (defvar-local acm-backend-lsp-block-kind-list nil
   "You can customize this option to filter certain types of completion candidates.
 
