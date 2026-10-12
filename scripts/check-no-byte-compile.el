@@ -39,9 +39,10 @@
 
 (defun nbc--where-used (files)
   "Return a hash from each name FILES mention to the files that mention it.
-A name that is mentioned by more than one file is declared or used somewhere else
-of the package, which a file compiled on its own cannot know about.  What is left
-is the shape of a variable that exists only because a `setq-local' created it."
+A name that is mentioned by more than one file is declared or used somewhere
+else of the package, which a file compiled on its own cannot know about.  What
+is left is the shape of a variable that exists only because a `setq-local'
+created it."
   (let ((used (make-hash-table :test 'equal)))
     (dolist (file files)
       (with-temp-buffer
@@ -90,8 +91,8 @@ void variable rather than a value to save."
 
 (defun nbc--name (message)
   "Return the name MESSAGE is about, when MESSAGE is about a free variable.
-Only the two warnings about one are of interest here: a warning about a docstring
-or a custom type names something that is declared by that very declaration."
+Only the two warnings about one are of interest: a warning about a docstring or
+a custom type names something that its own declaration declares."
   (when (string-match "\\(?:reference to free variable\\|assignment to free variable\\) ‘\\([^’]+\\)’" message)
     (let ((name (match-string 1 message)))
       (when (cl-some (lambda (prefix) (string-prefix-p prefix name)) nbc--package-prefixes)
