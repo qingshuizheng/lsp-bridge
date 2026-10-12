@@ -429,6 +429,12 @@ lsp-bridge provides support for more than two language servers for many language
 - `lsp-bridge-jdtls-workspace`: The jdtls workspace directory, `~/.cache/lsp-bridge-jdtls` by default
 - `lsp-bridge-jdtls-jvm-args`: Additional VM parameters for the Java language server
 
+### Terminal menus
+
+`acm-terminal` draws the completion menu with [popon](https://codeberg.org/akib/emacs-popon) overlays instead of child frames, for an Emacs running in a terminal. Loading it changes nothing; `acm-terminal-active` takes the menu over and `acm-terminal-deactive` gives it back, and the two are already called for you when Emacs starts without a window system - in which case `popon` has to be installed, otherwise the menu is left alone with a warning.
+
+The file was written by Gong Qijian as [acm-terminal](https://github.com/twlz0ne/acm-terminal) and merged here. It takes the menu over through `acm-ui-overrides`, the alist of functions a front end answers itself, rather than by advising the functions of `acm`.
+
 ### Completion backends
 
 The candidates of the current mode are collected from the backends below. `acm-completion-mode-candidates-merge-order` decides the order in which they are asked for candidates, `acm-backend-order` how the candidate groups are concatenated, and the major mode has to be listed in `lsp-bridge-default-mode-hooks` before lsp-bridge runs at all.

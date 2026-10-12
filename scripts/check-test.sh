@@ -45,6 +45,9 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== ERT: terminal menu front end (test/acm-terminal-test.el)"
+run_ert test/acm-terminal-test.el
+
 echo "== ERT: Elisp search backend (test/acm-backend-elisp-test.el)"
 run_ert test/acm-backend-elisp-test.el
 
