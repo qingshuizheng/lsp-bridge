@@ -196,6 +196,13 @@ naming a red of its own."
   :group 'lsp-bridge-ref)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Variables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; These three belong to the remote module and are set or read here; declaring them
+;; without a value is what tells the compiler they are not to be looked for in this
+;; file, which is how `lsp-bridge-jump.el' declares the first of them as well.
+(defvar lsp-bridge-enable-with-tramp)
+(defvar lsp-bridge-remote-file-pattern)
+(defvar lsp-bridge-remote-file-window)
+
 (defvar lsp-bridge-ref-temp-visit-buffers nil
   "The temp visit buffers use to kill temp buffer after quit lsp-bridge-ref.")
 

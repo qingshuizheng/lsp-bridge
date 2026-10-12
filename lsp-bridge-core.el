@@ -569,6 +569,10 @@ Each element is a hook list in the form accepted by `add-hook'.")
   :group 'lsp-bridge)
 
 
+;; Declared without a value: the variable belongs to `which-func', and this file adds
+;; a function to it rather than defining it.
+(defvar which-func-functions)
+
 (defun lsp-bridge--enable ()
   "Enable LSP Bridge mode."
 
