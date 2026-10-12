@@ -358,6 +358,12 @@ target and `lsp-bridge-flash-line' highlights it."
 (defvar-local lsp-bridge-live-rename--pending nil
   "Non-nil while the highlight request that starts a live rename is out.")
 
+(defvar-local lsp-bridge-live-rename--pending-delete nil
+  "Non-nil while the occurrence at point is only shown, not removed.
+Starting a live rename does not change a character: the text the user
+selected is removed by the first change in the buffer, which is the first
+character typed.")
+
 (defvar-local lsp-bridge-live-rename--textual nil
   "Non-nil when the occurrences came from the buffer text, not from a server.")
 
@@ -370,11 +376,12 @@ target and `lsp-bridge-flash-line' highlights it."
 
 (define-minor-mode lsp-bridge-live-rename-mode
   "Type the new name of a symbol and watch every occurrence follow.
-The occurrences come from `textDocument/documentHighlight', the one at point is
-edited in place and the others are displayed with the new name while the buffer
-itself keeps its text - which is what keeps the positions, and the undo list,
-exactly as the server knows them.  `lsp-bridge-live-rename-commit' then asks the
-server for the real rename, so the other files are renamed as well."
+The occurrences come from `textDocument/documentHighlight' and are all shown:
+nothing is changed until the first character is typed, which removes the one at
+point, and the others display the new name while the buffer itself keeps its
+text - which is what keeps the positions, and the undo list, exactly as the
+server knows them.  `C-c C-k' gives up and puts the buffer back; `C-c C-c'
+applies the rename through the server, so the other files are renamed as well."
   :lighter " Rename"
   :keymap lsp-bridge-live-rename-mode-map
   (if lsp-bridge-live-rename-mode
@@ -382,10 +389,23 @@ server for the real rename, so the other files are renamed as well."
     (remove-hook 'after-change-functions #'lsp-bridge-live-rename--after-change t)))
 
 (defun lsp-bridge-live-rename--after-change (&rest _)
-  "Show the name being typed on every occurrence but the one being typed."
+  "Remove the shown occurrence now that something is typed, and follow along.
+The first change in the buffer is what removes it, so that starting a live
+rename changes nothing by itself."
   (when (and lsp-bridge-live-rename-mode
              (car lsp-bridge-live-rename--active)
              (cdr lsp-bridge-live-rename--active))
+    (when lsp-bridge-live-rename--pending-delete
+      ;; Cleared first: the deletion below is itself a change, and the call it
+      ;; makes must not try to remove the occurrence a second time.
+      (setq lsp-bridge-live-rename--pending-delete nil)
+      (dolist (overlay lsp-bridge-live-rename--overlays)
+        (when (overlay-get overlay 'lsp-bridge-live-rename-active)
+          (let ((start (overlay-start overlay))
+                (end (overlay-end overlay)))
+            (when (and start end (< start end))
+              (delete-region start end)))
+          (delete-overlay overlay))))
     (let ((name (buffer-substring-no-properties (car lsp-bridge-live-rename--active)
                                                 (cdr lsp-bridge-live-rename--active))))
       (setq lsp-bridge-live-rename--name name)
@@ -416,9 +436,14 @@ those very positions itself."
         (original lsp-bridge-live-rename--original)
         (textual lsp-bridge-live-rename--textual)
         (start (car lsp-bridge-live-rename--active))
-        (end (cdr lsp-bridge-live-rename--active)))
-    (lsp-bridge-live-rename-mode -1)
-    (when (and (not textual) (markerp start) (marker-position start) original)
+        (end (cdr lsp-bridge-live-rename--active))
+        (touched (not lsp-bridge-live-rename--pending-delete)))
+      (lsp-bridge-live-rename-mode -1)
+      ;; What stands in the buffer is put back to the text it had before, whether
+      ;; the rename is committed or given up: the server is asked to rename from
+      ;; the symbol itself, and giving up should leave nothing behind.
+      (when (and (not textual) touched (markerp start) (marker-position start)
+                 (markerp end) (marker-position end) original)
       (save-excursion
         (goto-char start)
         (delete-region start end)
@@ -485,8 +510,9 @@ buffer unbounded."
 
 (defun lsp-bridge-live-rename--setup (ranges)
   "Start a live rename over RANGES, the occurrences inside this buffer.
-The occurrence at point is emptied and typed into; the others get an overlay
-that displays whatever is typed there."
+Nothing is changed yet: every occurrence is highlighted, and the one at point
+is the one that will be typed into.  It is removed by the first character typed,
+and the others display what is typed there instead of holding it."
   (let ((ranges (sort ranges (lambda (a b) (< (car a) (car b)))))
         (symbol (thing-at-point 'symbol t))
         active)
@@ -505,7 +531,9 @@ that displays whatever is typed there."
             (mapcar (lambda (range)
                       (let ((overlay (make-overlay (car range) (cdr range))))
                         (overlay-put overlay 'face 'lsp-bridge-live-rename-face)
-                        (unless (equal range active)
+                        (if (equal range active)
+                            ;; shown like the rest, and removed on the first typing
+                            (overlay-put overlay 'lsp-bridge-live-rename-active t)
                           ;; the buffer keeps its text: the overlay shows the name
                           (overlay-put overlay 'lsp-bridge-live-rename t)
                           (overlay-put overlay 'display symbol))
@@ -513,13 +541,15 @@ that displays whatever is typed there."
                     ranges))
       ;; the markers grow around what is typed: the start stays before it and the
       ;; end follows it, so the text between them is the new name
+      (setq lsp-bridge-live-rename--pending-delete t)
+      ;; the markers grow around what is typed: the start stays before it and the
+      ;; end follows it, so the text between them is the new name
       (setq lsp-bridge-live-rename--active
             (cons (copy-marker (car active))
                   (progn (goto-char (cdr active)) (copy-marker (cdr active) t))))
-      (delete-region (car lsp-bridge-live-rename--active)
-                     (cdr lsp-bridge-live-rename--active))
       (lsp-bridge-live-rename-mode 1)
-      (message "Live rename: type the new name, C-c C-c applies it, C-c C-k gives up")))))
+      (message "Live rename: %d occurrences, type the new name; C-c C-c applies it, C-c C-k gives up"
+               (length ranges))))))
 
 (defun lsp-bridge-live-rename--render-hook (highlights)
   "Start the live rename the highlights were asked for by HIGHLIGHTS."
@@ -540,10 +570,12 @@ that displays whatever is typed there."
 
 (defun lsp-bridge-live-rename ()
   "Rename the symbol at point while every occurrence follows along.
-The occurrences are the ones the language server reports for the symbol, so what
-is shown is what the server considers part of the symbol.  `C-c C-c' applies the
-rename through the server, which is also what renames the occurrences in the
-other files, and `C-c C-k' puts the buffer back."
+The occurrences are the ones the language server reports for the symbol, so
+what is shown is what the server considers part of the symbol.  They are
+highlighted and nothing is changed until the first character is typed, which
+replaces the one at point; `C-c C-c' applies the rename through the server,
+which is also what renames the occurrences in the other files, and `C-c C-k'
+gives up and puts the buffer back as it was."
   (interactive)
   (cond
    ((and lsp-bridge-mode (lsp-bridge-has-lsp-server-p))

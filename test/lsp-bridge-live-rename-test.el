@@ -96,8 +96,12 @@
       (should lsp-bridge-live-rename-mode)
       (should (equal 2 (length lsp-bridge-live-rename--overlays)))
       (should-not lsp-bridge-live-rename--pending)
-      ;; the occurrence at point is the one emptied for typing
-      (should (equal " bar foo" (buffer-string)))
+      ;; Nothing is written yet: the occurrences are only shown, and the one at
+      ;; point is left ready to be typed over.
+      (should (equal "foo bar foo" (buffer-string)))
+      ;; The first character typed is what takes its place.
+      (insert "X")
+      (should (equal "X bar foo" (buffer-string)))
       (lsp-bridge-live-rename-abort)
       (should (equal "foo bar foo" (buffer-string))))))
 

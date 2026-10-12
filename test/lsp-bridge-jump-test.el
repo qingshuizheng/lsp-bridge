@@ -101,5 +101,80 @@ the second in the one jumped to."
         (should-not (eq (car lsp-bridge-mark-ring) first))
         (should (eq (nth 1 lsp-bridge-mark-ring) first))))))
 
+(defun lsp-bridge-jump-test--ranges-of (text needle)
+  "Return the ranges of every NEEDLE in TEXT, as the live rename is given them."
+  (let ((ranges nil) (start 0))
+    (while (string-match (regexp-quote needle) text start)
+      (push (cons (1+ (match-beginning 0)) (1+ (match-end 0))) ranges)
+      (setq start (match-end 0)))
+    (nreverse ranges)))
+
+(defmacro lsp-bridge-jump-test--with-live-rename (text needle &rest body)
+  "Run BODY in a buffer of TEXT with a live rename over every NEEDLE."
+  `(with-temp-buffer
+     (insert ,text)
+     ;; Point has to be on the symbol, or the live rename has nothing to work on.
+     (goto-char (point-min))
+     (lsp-bridge-live-rename--setup (lsp-bridge-jump-test--ranges-of ,text ,needle))
+     (unwind-protect (progn ,@body)
+       (when lsp-bridge-live-rename-mode
+         (lsp-bridge-live-rename-abort)))))
+
+(ert-deftest lsp-bridge-jump-test-live-rename-changes-nothing-at-first ()
+  "Starting a live rename highlights, and does not change one character."
+  (lsp-bridge-jump-test--with-live-rename "one two one\n" "one"
+    (should (equal (buffer-string) "one two one\n"))
+    (should lsp-bridge-live-rename-mode)
+    ;; One overlay per occurrence, and none of them shows anything yet.
+    (should (equal (length lsp-bridge-live-rename--overlays) 2))
+    ;; The occurrence at point shows nothing over it - it is there to be typed in -
+    ;; and the others show the name the symbol still has.
+    (should (seq-every-p (lambda (overlay)
+                           (if (overlay-get overlay 'lsp-bridge-live-rename-active)
+                               (null (overlay-get overlay 'display))
+                             (equal (overlay-get overlay 'display) "one")))
+                         lsp-bridge-live-rename--overlays))
+    (should lsp-bridge-live-rename--pending-delete)))
+
+(ert-deftest lsp-bridge-jump-test-live-rename-removes-on-the-first-typing ()
+  "The first character typed takes the place of the highlighted occurrence."
+  (lsp-bridge-jump-test--with-live-rename "one two one\n" "one"
+    ;; Point is left at the end of the occurrence at point.
+    (should (equal (point) 4))
+    (insert "X")
+    (should (equal (buffer-string) "X two one\n"))
+    (should-not lsp-bridge-live-rename--pending-delete)
+    ;; The other occurrence now shows what was typed.
+    (let ((other (seq-find (lambda (overlay) (overlay-get overlay 'lsp-bridge-live-rename))
+                           lsp-bridge-live-rename--overlays)))
+      (should (equal (overlay-get other 'display) "X")))))
+
+(ert-deftest lsp-bridge-jump-test-live-rename-abort-restores-what-was-typed ()
+  "Giving up puts the occurrence that was typed over back as it was."
+  (lsp-bridge-jump-test--with-live-rename "one two one\n" "one"
+    (insert "X")
+    (should (equal (buffer-string) "X two one\n"))
+    (lsp-bridge-live-rename-abort)
+    (should (equal (buffer-string) "one two one\n"))
+    (should-not lsp-bridge-live-rename-mode)
+    (should-not lsp-bridge-live-rename--overlays)))
+
+(ert-deftest lsp-bridge-jump-test-live-rename-abort-without-typing ()
+  "Giving up before anything was typed leaves the buffer as it was."
+  (lsp-bridge-jump-test--with-live-rename "one two one\n" "one"
+    (lsp-bridge-live-rename-abort)
+    (should (equal (buffer-string) "one two one\n"))
+    (should-not lsp-bridge-live-rename-mode)))
+
+(ert-deftest lsp-bridge-jump-test-live-rename-typing-a-whole-name ()
+  "A name typed character by character replaces the occurrence as it goes."
+  (lsp-bridge-jump-test--with-live-rename "one two one\n" "one"
+    (insert "a")
+    (insert "b")
+    (insert "c")
+    (should (equal (buffer-string) "abc two one\n"))
+    (lsp-bridge-live-rename-abort)
+    (should (equal (buffer-string) "one two one\n"))))
+
 (provide 'lsp-bridge-jump-test)
 ;;; lsp-bridge-jump-test.el ends here
