@@ -547,6 +547,10 @@ variables named after BACKEND-NAME and the completion menu is tried."
   ;; make sure Emacs not do GC
   (let ((gc-cons-threshold most-positive-fixnum))
     (set (make-local-variable (intern (format "acm-backend-%s-items" backend-name))) items)
+    ;; Both names are built here and written out in full in the backend that owns
+    ;; them, so renaming either half breaks the reset without saying so.
+    ;; "candiates" is misspelled on purpose: it is the name every backend has
+    ;; always used, and this format string has to keep matching it.
     (set (make-local-variable (intern (format "acm-backend-%s-cache-candiates" backend-name))) nil)
 
     (lsp-bridge-try-completion)))

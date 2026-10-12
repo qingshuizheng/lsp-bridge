@@ -48,6 +48,9 @@ run_ert test/acm-session-test.el
 echo "== ERT: Elisp search backend (test/acm-backend-elisp-test.el)"
 run_ert test/acm-backend-elisp-test.el
 
+echo "== ERT: path backend (test/acm-backend-path-test.el)"
+run_ert test/acm-backend-path-test.el
+
 echo "== ERT: backend registry (test/acm-backend-test.el)"
 run_ert test/lsp-bridge-call-hierarchy-test.el
 run_ert test/lsp-bridge-completion-test.el

@@ -316,7 +316,7 @@ when it is not already visible."
         (menu-width 0)
         (menu-frame-exist (frame-live-p lsp-bridge-call-hierarchy--frame))
         cursor)
-    ;; Calcuate cursor position when menu frame is not visible.
+    ;; Calculate cursor position when menu frame is not visible.
     (unless menu-frame-exist
       (setq cursor (acm-frame-get-popup-position (point))))
 

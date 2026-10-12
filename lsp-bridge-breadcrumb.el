@@ -49,7 +49,7 @@
   :group 'lsp-bridge-breadcrumb)
 
 (defcustom lsp-bridge-breadcrumb-show-icon (display-graphic-p)
-  "Wheter to show icons on breadcrumb."
+  "Whether to show icons on breadcrumb."
   :type 'boolean
   :group 'lsp-bridge-breadcrumb)
 
