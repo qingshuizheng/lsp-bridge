@@ -9,6 +9,9 @@ is checked here is that kind of logic, so it runs anywhere and fast.
 import unittest
 
 from core.handler.completion import Completion
+from core.handler.completion_workspace_symbol import CompletionWorkspaceSymbol
+from core.handler.execute_command import ExecuteCommand
+from core.handler.hover import Hover, make_code_block
 from core.handler.rename import count_workspace_edits
 from core.handler.semantic_tokens import SemanticTokens
 
@@ -174,6 +177,87 @@ class CompareCandidatesTest(unittest.TestCase):
         short = self.candidate("foo", sort_text="A")
         long = self.candidate("foobar", sort_text="A")
         self.assertEqual(self.completion.compare_candidates(short, long), -1)
+
+
+class FixEmptyObjectsTest(unittest.TestCase):
+    """clojure-lsp is sent `null' instead of an empty object, everywhere."""
+
+    def setUp(self):
+        self.execute = bare(ExecuteCommand)
+
+    def test_empty_object_becomes_none(self):
+        self.assertIsNone(self.execute.fix_empty_objects({}))
+
+    def test_nested_objects_and_lists(self):
+        self.assertEqual(
+            self.execute.fix_empty_objects({"a": {}, "b": [{}], "c": {"d": {}}}),
+            {"a": None, "b": [None], "c": {"d": None}})
+
+    def test_other_values_are_untouched(self):
+        self.assertEqual(self.execute.fix_empty_objects([1, "two", None, []]),
+                         [1, "two", None, []])
+
+
+class CompareWorkspaceSymbolsTest(unittest.TestCase):
+    """The order the workspace symbols are shown in."""
+
+    def setUp(self):
+        self.symbols = bare(CompletionWorkspaceSymbol)
+        self.symbols.prefix = "foo"
+
+    def test_prefix_matches_come_first(self):
+        match = {"label": "foobar"}
+        other = {"label": "barfoo"}
+        self.assertEqual(self.symbols.compare_candidates(match, other), -1)
+        self.assertEqual(self.symbols.compare_candidates(other, match), 1)
+
+    def test_the_shorter_label_comes_last(self):
+        short = {"label": "foo"}
+        long = {"label": "foobar"}
+        self.assertEqual(self.symbols.compare_candidates(short, long), -1)
+        self.assertEqual(self.symbols.compare_candidates(long, short), 1)
+
+    def test_equal_labels_are_equal(self):
+        self.assertEqual(self.symbols.compare_candidates({"label": "foo"},
+                                                         {"label": "FOO"}), 0)
+
+
+class MakeCodeBlockTest(unittest.TestCase):
+    """Documentation that is not Markdown already is fenced."""
+
+    def test_a_fenced_block(self):
+        self.assertEqual(make_code_block("python", "print(1)"),
+                         "```python\nprint(1)\n```")
+
+
+class ParseHoverContentsTest(unittest.TestCase):
+    """The shapes `contents' arrives in are normalised into Markdown."""
+
+    def setUp(self):
+        self.hover = bare(Hover)
+
+    @staticmethod
+    def parse(contents):
+        strings = []
+        return Hover.parse_hover_contents(bare(Hover), contents, strings)
+
+    def test_plain_text_is_fenced(self):
+        self.assertEqual(self.parse("some text"), "```text\nsome text\n```")
+
+    def test_markdown_is_kept_as_it_is(self):
+        self.assertEqual(self.parse("```python\nprint(1)\n```"),
+                         "```python\nprint(1)\n```")
+
+    def test_a_markdown_content_object_is_appended(self):
+        self.assertEqual(self.parse({"kind": "markdown", "value": "# Title"}),
+                         "# Title")
+
+    def test_a_language_object_is_fenced(self):
+        self.assertEqual(self.parse({"language": "python", "value": "print(1)"}),
+                         "```python\nprint(1)\n```")
+
+    def test_nothing_to_render(self):
+        self.assertEqual(self.parse([]), "")
 
 
 if __name__ == "__main__":
