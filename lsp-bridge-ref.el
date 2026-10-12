@@ -667,7 +667,7 @@ present in the results.  With MATCH-FILES non-nil keep the files
 that have it and remove the others; otherwise remove the files
 that have it.  Do nothing when the results hold only one
 extension, then refresh the header line."
-  (let (file-extensions filename filter-extension remove-counter file-extension start end)
+  (let (file-extensions filename filter-extension file-extension start end)
     (save-excursion
       (goto-char (point-min))
       (while (setq end (search-forward-regexp lsp-bridge-ref-regexp-file nil t))
@@ -684,7 +684,6 @@ extension, then refresh the header line."
                                                   file-extensions))
       (save-excursion
         (with-current-buffer lsp-bridge-ref-buffer
-          (setq remove-counter 0)
           (goto-char (point-min))
           (while (setq end (search-forward-regexp lsp-bridge-ref-regexp-file nil t))
             (beginning-of-line)
