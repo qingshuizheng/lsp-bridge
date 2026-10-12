@@ -24,7 +24,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-elisp.el` | 18 | 1 |
 | `acm/acm-backend-jupyter.el` | 5 | 3 |
 | `acm/acm-backend-lsp-workspace-symbol.el` | 7 | 3 |
-| `acm/acm-backend-lsp.el` | 22 | 1 |
+| `acm/acm-backend-lsp.el` | 24 | 6 |
 | `acm/acm-backend-path.el` | 5 | 5 |
 | `acm/acm-backend-search-file-words.el` | 11 | 5 |
 | `acm/acm-backend-tabby.el` | 7 | 4 |
@@ -122,7 +122,6 @@ Modules with at least 8 names of which a quarter or fewer are mentioned by anyth
 under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
-| `acm/acm-backend-lsp.el` | 1/22 | 5% |
 | `core/lspserver.py` | 3/64 | 5% |
 | `acm/acm-backend-elisp.el` | 1/18 | 6% |
 | `lsp-bridge-ui.el` | 1/14 | 7% |
@@ -149,6 +148,7 @@ covered because some of it is.
 | `core/pystardict.py` | 8/35 | 23% |
 | `acm/acm-terminal.el` | 9/38 | 24% |
 | `lsp-bridge-transport.el` | 14/59 | 24% |
+| `acm/acm-backend-lsp.el` | 6/24 | 25% |
 | `lsp-bridge-completion.el` | 15/60 | 25% |
 
 ## What cannot be covered locally

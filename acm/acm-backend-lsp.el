@@ -173,6 +173,14 @@ not resolved twice in a row.")
 The candidates are keyed by the server that sent them, which is where the
 menu finds an item again when its documentation has to be resolved.")
 
+(defvar-local acm-backend-lsp-completion-position nil
+  "Position of the completion request that is in flight, or nil.
+Set when a completion starts and read when the edits of a candidate come back.")
+
+(defvar-local acm-backend-lsp-completion-trigger-characters nil
+  "Characters of the server that triggered the completion in flight.
+Set when a completion starts and read when a candidate is expanded.")
+
 (defvar-local acm-backend-lsp-block-kind-list nil
   "You can customize this option to filter certain types of completion candidates.
 
