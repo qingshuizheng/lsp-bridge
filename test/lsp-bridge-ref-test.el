@@ -99,5 +99,43 @@
         (when buffer (kill-buffer buffer)))
       (delete-file file))))
 
+(ert-deftest lsp-bridge-ref-test-an-org-file-is-told-by-its-extension ()
+  "Only a file whose extension is org is an org file."
+  (should (lsp-bridge-ref-is-org-file "notes.org"))
+  (should-not (lsp-bridge-ref-is-org-file "notes.py"))
+  (should-not (lsp-bridge-ref-is-org-file "notes.org.txt")))
+
+(ert-deftest lsp-bridge-ref-test-deleting-the-code-of-a-result-line ()
+  "The code after the line and column of a result is what is killed."
+  (with-temp-buffer
+    (insert "12:3: some code here\n")
+    (goto-char (point-min))
+    (lsp-bridge-ref-delete-line)
+    (should (equal (buffer-string) "12:3:\n"))))
+
+(ert-deftest lsp-bridge-ref-test-deleting-a-line-that-is-not-a-result ()
+  "A line with no line and column is left alone."
+  (with-temp-buffer
+    (insert "/tmp/a-file.py\n")
+    (goto-char (point-min))
+    (lsp-bridge-ref-delete-line)
+    (should (equal (buffer-string) "/tmp/a-file.py\n"))))
+
+(ert-deftest lsp-bridge-ref-test-deleting-the-code-of-every-result-line ()
+  "Every result line of the reference buffer loses its code."
+  (let ((lsp-bridge-ref-buffer (get-buffer-create "*lsp-bridge-ref-test*")))
+    (unwind-protect
+        (progn
+          (with-current-buffer lsp-bridge-ref-buffer
+            (erase-buffer)
+            (insert "12:3: some code here\n")
+            (insert "/tmp/a-file.py\n")
+            (insert "4:0: other code\n"))
+          (lsp-bridge-ref-delete-all-lines)
+          (with-current-buffer lsp-bridge-ref-buffer
+            (should (equal (buffer-string)
+                           "12:3:\n/tmp/a-file.py\n4:0:\n"))))
+      (kill-buffer lsp-bridge-ref-buffer))))
+
 (provide 'lsp-bridge-ref-test)
 ;;; lsp-bridge-ref-test.el ends here

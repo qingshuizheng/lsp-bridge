@@ -1165,13 +1165,16 @@ the line instead."
   "Kill the code of the current result line.
 Do nothing when the current line has no line:column prefix."
   (interactive)
-  (let* ((row-column-position (lsp-bridge-ref-get-row-column-position)))
+  ;; `start' and `end' are bound here rather than set: as plain `setq' they became
+  ;; variables of the whole session, which the compiler reported as an assignment to
+  ;; a free variable and which the next package could read.
+  (let ((start nil) (end nil)
+        (row-column-position (lsp-bridge-ref-get-row-column-position)))
     (when row-column-position
       (setq start row-column-position)
       (end-of-line)
       (setq end (point))
-      (kill-region start end)
-      )))
+      (kill-region start end))))
 
 ;;;###autoload
 (defun lsp-bridge-ref-delete-all-lines ()
