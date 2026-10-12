@@ -52,9 +52,11 @@ FOOTER = """
   for, and cannot be asked here: `acm-backend-yas` requires yasnippet,
   `acm-backend-tabby` requires tabby, `acm-backend-jupyter` requires jupyter and
   its org client, `acm-backend-copilot` a Copilot through the Python side, and
-  `acm-backend-tempel` tempel.  What those backends do with the candidates once
-  they have them - the option, the minimum length, the cache, the reset, the
-  trimming of a label - is what `test/acm-backend-candidates-test.el` asks.
+  `acm-backend-tempel` tempel.  What a backend does with a list of candidates it
+  already has - the option, the minimum length, the cache, the reset, the trimming
+  of a label - is tested for the ones that have such a part, in
+  `test/acm-backend-candidates-test.el` (the ctags, search-file-words, workspace
+  symbol and Copilot backends) and in `test/acm-backend-vulpea-test.el`.
 - `lsp-bridge-jdtls` asks a JDTLS server over `lsp-bridge-call-file-api`, and
   `lsp-bridge-dart` needs the Dart SDK to find its analysis server.
 - `lsp-bridge-lsp-installer` downloads language servers from GitHub releases with
