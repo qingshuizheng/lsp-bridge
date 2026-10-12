@@ -113,7 +113,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-transport.el` | 59 | 18 |
 | `lsp-bridge-ui.el` | 14 | 12 |
 | `lsp-bridge-workspace.el` | 30 | 12 |
-| `lsp-bridge.el` | 114 | 23 |
+| `lsp-bridge.el` | 114 | 28 |
 | `lsp_bridge.py` | 24 | 22 |
 
 ## Where the surface is still thin
@@ -125,8 +125,8 @@ covered because some of it is.
 | `lsp-bridge-semantic-tokens.el` | 8/50 | 16% |
 | `lsp-bridge-ref.el` | 18/91 | 20% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
-| `lsp-bridge.el` | 23/114 | 20% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
+| `lsp-bridge.el` | 28/114 | 25% |
 
 ## What cannot be covered locally
 

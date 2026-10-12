@@ -76,4 +76,40 @@
                    '((js-mode js-ts-mode) . "the-js-server")))
     (should-not (lsp-bridge-lang-server-by-mode 'ruby-mode table))))
 
+(defvar lsp-bridge-test--server-name "the-named-server"
+  "A variable a langserver rule can point at instead of naming a server.")
+
+(ert-deftest lsp-bridge-test-a-rule-holding-a-string-or-a-variable ()
+  "A rule may hold the name of a server or a variable holding it."
+  (should (equal (lsp-bridge-get-symbol-string-value "the-server") "the-server"))
+  (should (equal (lsp-bridge-get-symbol-string-value 'lsp-bridge-test--server-name)
+                 "the-named-server")))
+
+(ert-deftest lsp-bridge-test-the-indent-width-of-a-mode ()
+  "The indentation offset of a mode is looked up, and follows what it derives from."
+  (let ((lsp-bridge-formatting-indent-alist '((python-mode . 4)
+                                              (default . 8))))
+    (should (equal (lsp-bridge--get-indent-width 'python-mode) 4))
+    ;; A mode that is not listed takes the offset of its parent.
+    (let ((child (make-symbol "lsp-bridge-test-child-mode")))
+      (put child 'derived-mode-parent 'python-mode)
+      (should (equal (lsp-bridge--get-indent-width child) 4)))
+    ;; And one with nothing behind it takes the default.
+    (should (equal (lsp-bridge--get-indent-width (make-symbol "unrelated-mode")) 8))))
+
+(ert-deftest lsp-bridge-test-a-file-name-without-its-properties ()
+  "A buffer file name is returned without the face properties it may carry."
+  (let ((name (propertize "/tmp/a.py" 'face 'bold)))
+    (should (equal (lsp-bridge-buffer-file-name name) "/tmp/a.py"))
+    (should-not (text-properties-at 0 (lsp-bridge-buffer-file-name name))))
+  (should-not (lsp-bridge-buffer-file-name nil))
+  (should-not (lsp-bridge-buffer-file-name 42)))
+
+(ert-deftest lsp-bridge-test-the-truename-of-a-file ()
+  "The truename is asked of the file system for a local file."
+  (let ((file (make-temp-file "lsp-bridge-truename" nil ".py")))
+    (unwind-protect
+        (should (equal (lsp-bridge-get-buffer-truename file) (file-truename file)))
+      (delete-file file))))
+
 ;;; lsp-bridge-test.el ends here
