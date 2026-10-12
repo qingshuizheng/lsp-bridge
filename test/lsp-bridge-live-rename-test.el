@@ -102,19 +102,27 @@
       (should (equal "foo bar foo" (buffer-string))))))
 
 (ert-deftest lsp-bridge-live-rename-test-delegates-without-a-server ()
-  "Without a server the buffer-local rename does the work, in both commands."
+  "The one shot rename hands over to symbol-overlay; the live one scans."
   (with-temp-buffer
-    (insert "foo bar foo")
+    (emacs-lisp-mode)
+    (insert "(foo bar foo)")
     (goto-char (point-min))
+    (forward-char 1)
     (let ((lsp-bridge-mode t)
           called)
       (cl-letf (((symbol-function 'lsp-bridge-has-lsp-server-p) (lambda () nil))
-                ((symbol-function 'symbol-overlay-rename) (lambda () (interactive) (setq called t))))
+                ((symbol-function 'symbol-overlay-rename)
+                 (lambda () (interactive) (setq called t))))
+        ;; the occurrences are text, and the one shot rename is symbol-overlay's
         (call-interactively #'lsp-bridge-rename)
         (should called)
         (setq called nil)
-        (call-interactively #'lsp-bridge-live-rename)
-        (should called)))))
+        ;; the live rename finds them itself instead of handing over
+        (lsp-bridge-live-rename)
+        (should-not called)
+        (should lsp-bridge-live-rename-mode)
+        (should (equal 2 (length lsp-bridge-live-rename--overlays)))
+        (lsp-bridge-live-rename-abort)))))
 
 (ert-deftest lsp-bridge-live-rename-test-rename-still-asks-the-server ()
   "With a server, rename sends prepare_rename and then rename."
@@ -148,6 +156,42 @@
         (should-error (call-interactively #'lsp-bridge-rename) :type 'user-error)
         (should-error (call-interactively #'lsp-bridge-live-rename) :type 'user-error)
         (should-not called)))))
+
+
+(ert-deftest lsp-bridge-live-rename-test-textual-ranges-are-whole-symbols ()
+  "The scan takes whole symbols: a name that merely starts the same is left out."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "(defun foo () (foo) (foobar) foo-bar)")
+    (should (equal '("foo" "foo")
+                   (mapcar (lambda (range)
+                             (buffer-substring-no-properties (car range) (cdr range)))
+                           (lsp-bridge-live-rename--textual-ranges "foo"))))))
+
+(ert-deftest lsp-bridge-live-rename-test-renames-elisp-buffers-as-text ()
+  "An Emacs Lisp buffer has no server, so its occurrences are renamed as text."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "(defun foo () (foo) (foobar))")
+    (goto-char (point-min))
+    (search-forward "(foo)")
+    (goto-char (1+ (match-beginning 0)))
+    (let ((lsp-bridge-mode t)
+          called)
+      (cl-letf (((symbol-function 'lsp-bridge-has-lsp-server-p) (lambda () nil))
+                ((symbol-function 'lsp-bridge-call-file-api)
+                 (lambda (&rest args) (push args called))))
+        (lsp-bridge-live-rename)
+        (should lsp-bridge-live-rename-mode)
+        (should (equal 2 (length lsp-bridge-live-rename--overlays)))
+        (insert "renamed")
+        (should (equal '("renamed")
+                       (delq nil (mapcar (lambda (overlay) (overlay-get overlay 'display))
+                                         lsp-bridge-live-rename--overlays))))
+        (lsp-bridge-live-rename-commit)
+        (should (equal "(defun renamed () (renamed) (foobar))" (buffer-string)))
+        (should-not called)
+        (should-not lsp-bridge-live-rename--overlays)))))
 
 
 (provide 'lsp-bridge-live-rename-test)

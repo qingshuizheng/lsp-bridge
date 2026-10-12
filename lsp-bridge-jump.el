@@ -349,6 +349,9 @@ target and `lsp-bridge-flash-line' highlights it."
 (defvar-local lsp-bridge-live-rename--pending nil
   "Non-nil while the highlight request that starts a live rename is out.")
 
+(defvar-local lsp-bridge-live-rename--textual nil
+  "Non-nil when the occurrences came from the buffer text, not from a server.")
+
 (defvar lsp-bridge-live-rename-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'lsp-bridge-live-rename-commit)
@@ -392,7 +395,8 @@ server for the real rename, so the other files are renamed as well."
       (set-marker marker nil)))
   (setq lsp-bridge-live-rename--active nil)
   (setq lsp-bridge-live-rename--name nil)
-  (setq lsp-bridge-live-rename--original nil))
+  (setq lsp-bridge-live-rename--original nil)
+  (setq lsp-bridge-live-rename--textual nil))
 
 (defun lsp-bridge-live-rename--finish (commit)
   "Leave the live rename, applying it through the server when COMMIT is non-nil.
@@ -401,10 +405,11 @@ saw before the rename is asked for, because the edit that comes back replaces
 those very positions itself."
   (let ((name lsp-bridge-live-rename--name)
         (original lsp-bridge-live-rename--original)
+        (textual lsp-bridge-live-rename--textual)
         (start (car lsp-bridge-live-rename--active))
         (end (cdr lsp-bridge-live-rename--active)))
     (lsp-bridge-live-rename-mode -1)
-    (when (and (markerp start) (marker-position start) original)
+    (when (and (not textual) (markerp start) (marker-position start) original)
       (save-excursion
         (goto-char start)
         (delete-region start end)
@@ -412,6 +417,18 @@ those very positions itself."
         (when (and commit name (not (string-empty-p name)) (not (equal name original)))
           ;; the rename is asked from the symbol itself, which is in place again
           (lsp-bridge-call-file-api "rename" (lsp-bridge--position) name))))
+    (when (and commit textual name (not (string-empty-p name)) (not (equal name original)))
+      ;; no server to apply anything: the occurrences are text, so they are
+      ;; written here, and all of it inside this command, which is one undo step
+      (save-excursion
+        (dolist (overlay lsp-bridge-live-rename--overlays)
+          (when (overlay-get overlay 'lsp-bridge-live-rename)
+            (let ((overlay-start (overlay-start overlay))
+                  (overlay-end (overlay-end overlay)))
+              (when (and overlay-start overlay-end (< overlay-start overlay-end))
+                (goto-char overlay-start)
+                (delete-region overlay-start overlay-end)
+                (insert name)))))))
     (unless (and commit name (not (string-empty-p name)) (not (equal name original)))
       (message "Live rename: nothing changed"))
     (lsp-bridge-live-rename--cleanup)))
@@ -425,6 +442,31 @@ those very positions itself."
   "Give up the live rename and put the symbol back."
   (interactive)
   (lsp-bridge-live-rename--finish nil))
+
+(defun lsp-bridge-live-rename--symbol-char-p (char)
+  "Return non-nil when CHAR can be part of a symbol.
+What counts is the syntax table of the buffer, so this holds for Emacs Lisp
+symbols with dashes in them as much as for names in a language server's file."
+  (memq (char-syntax (or char ?\s)) '(?w ?_)))
+
+(defun lsp-bridge-live-rename--textual-ranges (symbol)
+  "Return the ranges of every occurrence of SYMBOL in this buffer.
+The characters around a match must not be symbol characters, which is what keeps
+an occurrence inside a longer name out of the rename; case is significant, as it
+is in the languages this is used for."
+  (let ((case-fold-search nil)
+        (regexp (regexp-quote symbol))
+        (limit 1000)
+        ranges)
+    (save-excursion
+      (goto-char (point-min))
+      (while (and (< (length ranges) limit) (re-search-forward regexp nil t))
+        (let ((start (match-beginning 0))
+              (end (match-end 0)))
+          (when (and (not (lsp-bridge-live-rename--symbol-char-p (char-before start)))
+                     (not (lsp-bridge-live-rename--symbol-char-p (char-after end))))
+            (push (cons start end) ranges)))))
+    (nreverse ranges)))
 
 (defun lsp-bridge-live-rename--setup (ranges)
   "Start a live rename over RANGES, the occurrences inside this buffer.
@@ -494,12 +536,15 @@ other files, and `C-c C-k' puts the buffer back."
       (lsp-bridge-live-rename--finish nil))
     (setq lsp-bridge-live-rename--pending t)
     (lsp-bridge-call-file-api "document_highlight" (lsp-bridge--position)))
-   ;; Without a server there are no highlights to follow, and the occurrences are
-   ;; plain text: that rename is `symbol-overlay-rename', which renames the ones
-   ;; the buffer holds, inside a scope when the mode is set up for scopes.
-   ((and lsp-bridge-rename-fallback-without-server
-         (fboundp 'symbol-overlay-rename))
-    (call-interactively #'symbol-overlay-rename))
+   ;; Without a server there are no highlights to ask for, and the occurrences
+   ;; are what the buffer text holds: they are found here and renamed as text.
+   (lsp-bridge-rename-fallback-without-server
+    (let ((symbol (thing-at-point 'symbol t)))
+      (if (or (null symbol) (string-empty-p symbol))
+          (user-error "No symbol at point to rename")
+        (setq lsp-bridge-live-rename--textual t)
+        (lsp-bridge-live-rename--setup
+         (lsp-bridge-live-rename--textual-ranges symbol)))))
    (t
     (user-error "No language server here to rename through"))))
 
