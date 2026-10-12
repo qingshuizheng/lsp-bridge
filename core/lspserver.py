@@ -327,7 +327,7 @@ class LspServer:
         self.enable_diagnostics = enable_diagnostics
         self.request_dict: Dict[int, Handler] = dict()
         self.root_path = self.project_path
-        self.worksplace_folder = None
+        self.workspace_folder = None
 
         # LSP server information.
         self.completion_trigger_characters = list()
@@ -426,7 +426,7 @@ class LspServer:
         """Send the `initialize` request with the client capabilities."""
         initialize_options = self.server_info.get("initializationOptions", {})
 
-        self.worksplace_folder = get_emacs_func_result("get-workspace-folder", self.project_path)
+        self.workspace_folder = get_emacs_func_result("get-workspace-folder", self.project_path)
 
         self.sender.send_request("initialize", {
             "processId": os.getpid(),
@@ -518,7 +518,7 @@ class LspServer:
             }
         })
 
-        if isinstance(self.worksplace_folder, str):
+        if isinstance(self.workspace_folder, str):
             merge_capabilites = merge(merge_capabilites, {
                 "workspace": {
                      "workspaceFolders": True
@@ -555,10 +555,10 @@ class LspServer:
         """Return the server initialization options, adding the workspace folder."""
         initialization_options = self.server_info.get("initializationOptions", {})
 
-        if isinstance(self.worksplace_folder, str):
+        if isinstance(self.workspace_folder, str):
             initialization_options = merge(initialization_options, {
                 "workspaceFolders": [
-                    self.worksplace_folder
+                    self.workspace_folder
                 ]
             })
 

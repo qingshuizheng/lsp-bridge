@@ -42,7 +42,7 @@ python3 scripts/coverage-report.py
 | `core/bridge_remote.py` | 16 | 9 |
 | `core/bridge_search.py` | 10 | 9 |
 | `core/bridge_server.py` | 15 | 5 |
-| `core/copilot.py` | 17 | 6 |
+| `core/copilot.py` | 17 | 7 |
 | `core/ctags.py` | 13 | 11 |
 | `core/fileaction.py` | 39 | 5 |
 | `core/handler/breadcrumb.py` | 3 | 3 |
@@ -82,7 +82,7 @@ python3 scripts/coverage-report.py
 | `core/handler/volar_proxy.py` | 9 | 3 |
 | `core/handler/workspace_diagnostics.py` | 3 | 3 |
 | `core/handler/workspace_symbol.py` | 3 | 3 |
-| `core/lspserver.py` | 64 | 15 |
+| `core/lspserver.py` | 64 | 18 |
 | `core/mergedeep.py` | 7 | 1 |
 | `core/pystardict.py` | 35 | 8 |
 | `core/remote_file.py` | 34 | 4 |
@@ -140,7 +140,6 @@ covered because some of it is.
 | `core/handler/solidity.py` | 6/27 | 22% |
 | `lsp-bridge-call-hierarchy.el` | 7/31 | 23% |
 | `core/pystardict.py` | 8/35 | 23% |
-| `core/lspserver.py` | 15/64 | 23% |
 | `acm/acm-terminal.el` | 9/38 | 24% |
 
 ## What cannot be covered locally

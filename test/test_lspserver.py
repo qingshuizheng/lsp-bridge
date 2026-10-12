@@ -165,5 +165,80 @@ class ServerNameTest(unittest.TestCase):
                          "rust-analyzer")
 
 
+class LanguageIdTest(unittest.TestCase):
+    """The language id of a file, which the user can take over."""
+
+    def make(self, server_info, filepath="/tmp/project/a.py", project="/tmp/project"):
+        server = make_server(server_info=server_info, project_path=project, server_name="test")
+        fa = mock.Mock()
+        fa.filepath = filepath
+        return server, fa
+
+    def test_the_user_function_wins_when_it_returns_a_string(self):
+        server, fa = self.make({"languageId": "python"})
+        with mock.patch("core.lspserver.get_emacs_func_result", return_value="tailwindcss"):
+            self.assertEqual(server.get_language_id(fa), "tailwindcss")
+
+    def test_the_configured_ids_are_used_by_extension(self):
+        server, fa = self.make({"languageId": "python", "languageIds": {"py": "python3"}})
+        with mock.patch("core.lspserver.get_emacs_func_result", return_value=None):
+            self.assertEqual(server.get_language_id(fa), "python3")
+
+    def test_the_extension_is_used_when_the_configured_id_is_empty(self):
+        server, fa = self.make({"languageId": ""})
+        with mock.patch("core.lspserver.get_emacs_func_result", return_value=None):
+            self.assertEqual(server.get_language_id(fa), "py")
+
+    def test_the_configured_id_is_used_otherwise(self):
+        server, fa = self.make({"languageId": "python"})
+        with mock.patch("core.lspserver.get_emacs_func_result", return_value=None):
+            self.assertEqual(server.get_language_id(fa), "python")
+
+
+class InitializationOptionsTest(unittest.TestCase):
+    """What the server is told at initialization."""
+
+    def test_the_configured_options_are_kept(self):
+        server = make_server(server_info={"initializationOptions": {"a": 1}},
+                             workspace_folder=None)
+        self.assertEqual(server.get_initialization_options(), {"a": 1})
+
+    def test_the_workspace_folder_is_added(self):
+        server = make_server(server_info={"initializationOptions": {"a": 1}},
+                             workspace_folder="/tmp/project")
+        self.assertEqual(server.get_initialization_options(),
+                         {"a": 1, "workspaceFolders": ["/tmp/project"]})
+
+    def test_a_server_without_options_gets_the_folder_alone(self):
+        server = make_server(server_info={}, workspace_folder="/tmp/project")
+        self.assertEqual(server.get_initialization_options(),
+                         {"workspaceFolders": ["/tmp/project"]})
+
+
+class CapabilitiesTest(unittest.TestCase):
+    """The client capabilities, merged with what a server asks for."""
+
+    def test_the_configured_capabilities_are_merged_in(self):
+        server = make_server(server_info={"capabilities": {"textDocument": {"hover": {"contentFormat": ["markdown"]}}}},
+                             workspace_folder=None,
+                             enable_diagnostics=True)
+        capabilities = server.get_capabilities()
+        hover = capabilities["textDocument"]["hover"]
+        # `merge' is a deep one, and for a list that means the values are joined
+        # rather than replaced: what the default ask for stays, and what the server
+        # asks for is added to it.
+        self.assertEqual(hover["contentFormat"], ["markdown", "plaintext"])
+        self.assertTrue(hover["dynamicRegistration"])
+        self.assertTrue(capabilities["textDocument"]["completion"]["completionItem"]["snippetSupport"])
+
+    def test_diagnostics_follow_the_option(self):
+        for enabled in (True, False):
+            server = make_server(server_info={}, enable_diagnostics=enabled,
+                                 workspace_folder=None)
+            diagnostic = server.get_capabilities()["textDocument"]["diagnostic"]
+            self.assertEqual(diagnostic["relatedInformation"], enabled)
+            self.assertEqual(diagnostic["dataSupport"], enabled)
+
+
 if __name__ == "__main__":
     unittest.main()
