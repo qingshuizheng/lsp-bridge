@@ -26,6 +26,10 @@ run_python() {
     fi
 }
 
+echo "== docstrings: names they mention still exist (scripts/check-doc-references.*)"
+"$EMACS" -Q --batch -L . -L acm -l scripts/check-doc-references.el
+python3 scripts/check-doc-references.py
+
 echo "== protocol: the two halves declare the same version (scripts/check-protocol.py)"
 python3 scripts/check-protocol.py
 
