@@ -327,5 +327,25 @@ sit inside the string for this test."
   "lsp-bridge keeps its menu state through the hook, not through advice."
   (should-not (advice-member-p 'lsp-bridge--reset-completion-item-ticker 'acm-hide)))
 
+(ert-deftest acm-test-kbd-quick-access-builds-the-sequence ()
+  "The quick-access key of a modifier and a key is the sequence of both."
+  (should (equal (acm-keymap--kbd-quick-access "M" "1") (kbd "M-1")))
+  (should (equal (acm-keymap--kbd-quick-access "C" "a") (kbd "C-a"))))
+
+(ert-deftest acm-test-icon-filepath-names-the-svg ()
+  "An icon file is the collection and the name, under the icon directory."
+  (require 'acm-icon)
+  (let ((path (acm-icon-filepath "material" "check")))
+    (should (string-suffix-p "material_check.svg" path))
+    (should (file-name-absolute-p path))
+    (should (string-prefix-p (file-name-as-directory acm-icon-dir) path))))
+
+(ert-deftest acm-test-icon-color-becomes-hex ()
+  "A colour Emacs knows is written as #rrggbb; one it does not is left alone."
+  (require 'acm-icon)
+  (should (equal (acm-icon-convert-to-svg-color "red") "#ff0000"))
+  (should (equal (acm-icon-convert-to-svg-color "not-a-colour-at-all")
+                 "not-a-colour-at-all")))
+
 (provide 'acm-test)
 ;;; acm-test.el ends here

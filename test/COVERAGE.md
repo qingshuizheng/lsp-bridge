@@ -21,7 +21,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-copilot.el` | 14 | 0 |
 | `acm/acm-backend-ctags.el` | 11 | 0 |
 | `acm/acm-backend-devonthink.el` | 24 | 10 |
-| `acm/acm-backend-elisp.el` | 18 | 0 |
+| `acm/acm-backend-elisp.el` | 18 | 1 |
 | `acm/acm-backend-jupyter.el` | 5 | 0 |
 | `acm/acm-backend-lsp-workspace-symbol.el` | 7 | 0 |
 | `acm/acm-backend-lsp.el` | 22 | 0 |
@@ -34,10 +34,10 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-yas.el` | 16 | 0 |
 | `acm/acm-backend.el` | 20 | 19 |
 | `acm/acm-frame.el` | 22 | 1 |
-| `acm/acm-icon.el` | 11 | 3 |
+| `acm/acm-icon.el` | 11 | 5 |
 | `acm/acm-quick-access.el` | 10 | 3 |
 | `acm/acm-session.el` | 9 | 9 |
-| `acm/acm.el` | 99 | 36 |
+| `acm/acm.el` | 99 | 38 |
 | `core/bridge_remote.py` | 16 | 9 |
 | `core/bridge_search.py` | 10 | 9 |
 | `core/bridge_server.py` | 15 | 5 |
@@ -93,7 +93,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-call-hierarchy.el` | 31 | 7 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
 | `lsp-bridge-completion.el` | 60 | 13 |
-| `lsp-bridge-core.el` | 70 | 6 |
+| `lsp-bridge-core.el` | 70 | 7 |
 | `lsp-bridge-dart.el` | 5 | 0 |
 | `lsp-bridge-diagnostic.el` | 33 | 0 |
 | `lsp-bridge-document.el` | 23 | 1 |
