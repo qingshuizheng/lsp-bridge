@@ -142,9 +142,9 @@ See `acm-terminal-menu-popon' for why the documentation is an overlay here.")
   "Split STRING into substrings of length WIDTH, padded with spaces.
 
 Every substring is WIDTH characters wide, the last one included; it is padded
-with spaces when the text does not fill it.  If CONT is non-nil it is appended to
-every substring except the last, and the text of each is then WIDTH minus the
-width of CONT, e.g.:
+with spaces when the text does not fill it.  If CONT is non-nil it is appended
+to every substring except the last, and the text of each is then WIDTH minus
+the width of CONT, e.g.:
 
   (fn \"foobarbazq\" 3 \"↩\") => (\"fo↩\" \"ob↩\" \"ar↩\" \"ba↩\" \"zq \")
   (fn \"foobarbazq\" 3)     => (\"foo\" \"bar\" \"baz\" \"q  \") "

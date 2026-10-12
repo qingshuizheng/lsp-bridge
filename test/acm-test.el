@@ -366,5 +366,51 @@ sit inside the string for this test."
         (acm-doc-hide)))
     (should (eq called 'default))))
 
+(ert-deftest acm-test-bind-quick-access-binds-the-keys ()
+  "Every quick-access key gets the modifier of the platform."
+  (let ((acm-quick-access-keys '("1" "2"))
+        (keymap (make-sparse-keymap)))
+    (cl-letf (((symbol-function 'acm-keymap--quick-access-modifier) (lambda () "M")))
+      (acm-keymap--bind-quick-access keymap))
+    (should (eq (lookup-key keymap (kbd "M-1")) #'acm-complete-quick-access))
+    (should (eq (lookup-key keymap (kbd "M-2")) #'acm-complete-quick-access))))
+
+(ert-deftest acm-test-bind-quick-access-keeps-what-is-there ()
+  "A key the mode map already uses is left alone."
+  (let ((acm-quick-access-keys '("1"))
+        (keymap (make-sparse-keymap)))
+    (define-key keymap (kbd "M-1") #'ignore)
+    (cl-letf (((symbol-function 'acm-keymap--quick-access-modifier) (lambda () "M")))
+      (acm-keymap--bind-quick-access keymap))
+    (should (eq (lookup-key keymap (kbd "M-1")) #'ignore))))
+
+(ert-deftest acm-test-complete-quick-access-selects-the-row ()
+  "The row of the key that was pressed is the candidate that is completed."
+  (with-temp-buffer
+    (let (completed)
+      (cl-letf (((symbol-function 'acm-complete) (lambda () (setq completed t))))
+        (acm-complete-quick-access 2)
+        (should (equal acm-menu-index 2))
+        (should completed)
+        (setq completed nil)
+        (acm-complete-quick-access nil)
+        (should-not completed)))))
+
+(ert-deftest acm-test-quick-access-init-honours-the-option ()
+  "The keys are bound once, and only while the option is on."
+  (let ((acm-quick-access-init-p nil)
+        (acm-quick-access-keys '("1"))
+        (acm-mode-map (make-sparse-keymap)))
+    (cl-letf (((symbol-function 'acm-keymap--quick-access-modifier) (lambda () "M")))
+      (let ((acm-enable-quick-access nil))
+        (acm-quick-access-init)
+        (should-not acm-quick-access-init-p)
+        (should-not (lookup-key acm-mode-map (kbd "M-1"))))
+      (let ((acm-enable-quick-access t))
+        (acm-quick-access-init)
+        (should acm-quick-access-init-p)
+        (should (eq (lookup-key acm-mode-map (kbd "M-1"))
+                    #'acm-complete-quick-access))))))
+
 (provide 'acm-test)
 ;;; acm-test.el ends here
