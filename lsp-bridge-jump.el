@@ -231,9 +231,7 @@ scope."
 The region is highlighted with `lsp-bridge-font-lock-flash' for
 `lsp-bridge-flash-region-delay' seconds."
   (require 'pulse)
-  (let ((pulse-iterations 1)
-        (pulse-delay lsp-bridge-flash-region-delay))
-    (pulse-momentary-highlight-region start-pos end-pos 'lsp-bridge-font-lock-flash)))
+  (pulse-momentary-highlight-region start-pos end-pos 'lsp-bridge-font-lock-flash))
 
 (defun lsp-bridge-flash-line ()
   "Flash the line around point.

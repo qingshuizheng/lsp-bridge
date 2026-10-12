@@ -470,7 +470,6 @@ attached."
 	     (total-n (min lsp-bridge-peek-list-height (length path-list)))
 	     (first-displayed-id (nth 0 lsp-bridge-peek-chosen-displaying-list))
 	     (selected-id (nth 1 lsp-bridge-peek-chosen-displaying-list))
-	     (last-displayed-id (nth 2 lsp-bridge-peek-chosen-displaying-list))
 	     (displaying-list (make-list total-n nil)))
     (dotimes (n total-n)
       (let* ((filename (nth (+ first-displayed-id n) path-list))
@@ -571,7 +570,7 @@ refreshed."
 	    (with-current-buffer buf
 	      (insert references-content)
 	      (goto-char (point-min))
-	      (dotimes (n references-counter)
+	      (dotimes (_ references-counter)
 	        (let ((beg (point))
 		          (end nil)
 		          (filename nil)

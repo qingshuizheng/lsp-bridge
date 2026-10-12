@@ -361,10 +361,8 @@ shown.")
 (defun lsp-bridge-complete-other-backends ()
   "Trigger the non-LSP completion backends.
 Copilot, jupyter, tabby and ctags are each asked for candidates when
-their acm option is enabled and the current command and buffer allow
-it."
-  (let* ((this-command-string (lsp-bridge-command-name))
-         (current-word (thing-at-point 'word t))
+their acm option is enabled and the buffer allows it."
+  (let* ((current-word (thing-at-point 'word t))
          (current-symbol (thing-at-point 'symbol t)))
     ;; Copilot search.
     (when (and acm-enable-copilot

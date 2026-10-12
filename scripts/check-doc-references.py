@@ -198,7 +198,6 @@ def default_claims(root):
 def main():
     """Report the references nothing defines, and fail when there are any."""
     root = repository()
-    elisp = elisp_files(root)
     python = python_files(root)
     known = elisp_names(root) | python_names(python)
 

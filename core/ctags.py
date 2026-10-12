@@ -138,7 +138,6 @@ class Ctags:
         tagname = tag["tagname"]
 
         kind = tag.get("kind", "NOKIND")
-        signature = tag.get("signature", "NOSIGN")
         annotation = self.make_tag_annotation(tag)
 
         candidate["key"] = tagname
@@ -207,7 +206,6 @@ class Ctags:
         text.
         """
         candidate = {}
-        tagname = tag["tagname"]
 
         path = tag.get("tagfile", "")
         line = int(tag.get("line", "1"))

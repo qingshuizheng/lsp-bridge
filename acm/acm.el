@@ -872,8 +872,7 @@ candidate label from the popup point on.  The overlay is stored in
 made it taller."
   (let* ((candidate-info (acm-menu-current-candidate))
          (beg (acm-popup popup-point))
-         (cand (plist-get candidate-info :label))
-         (end (+ beg (length cand))))
+         (cand (plist-get candidate-info :label)))
     (when acm-preview-overlay (delete-overlay acm-preview-overlay))
     (if (acm-backend-preview-p candidate-info)
         (save-excursion

@@ -1502,12 +1502,6 @@ def find_define_response(obj, response, define_jump_handler) -> None:
         # for normal file uri
         filepath = uri_to_path(file_uri)
         if not filepath or os.path.isdir(filepath):
-            server_name = ""
-            if getattr(obj.file_action, "single_server", None) is not None:
-                server_name = obj.file_action.single_server.server_info.get("name", "")
-            elif getattr(obj.file_action, "multi_servers", None) is not None:
-                server_name = ",".join(obj.file_action.get_lsp_server_names())
-
             if file_uri == "file:///":
                 # Solidity (and possibly other servers) return file:/// as a "no definition" placeholder.
                 if _try_solidity_fallback(obj, define_jump_handler):

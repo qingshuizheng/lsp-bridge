@@ -528,7 +528,7 @@ overlay as changed or, when the line is now empty, as deleted."
     (let* ((change-line (save-excursion
                           (goto-char beg)
                           (line-number-at-pos)))
-           change-line-content
+           changed-line-content
            original-line-content)
       (setq changed-line-content (lsp-bridge-ref-get-line-content lsp-bridge-ref-buffer change-line))
       (setq original-line-content (lsp-bridge-ref-get-line-content lsp-bridge-ref-temp-buffer change-line))
