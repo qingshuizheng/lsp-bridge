@@ -97,7 +97,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-core.el` | 70 | 7 |
 | `lsp-bridge-dart.el` | 5 | 4 |
 | `lsp-bridge-diagnostic.el` | 33 | 12 |
-| `lsp-bridge-document.el` | 23 | 1 |
+| `lsp-bridge-document.el` | 23 | 5 |
 | `lsp-bridge-epc.el` | 62 | 13 |
 | `lsp-bridge-imenu.el` | 4 | 1 |
 | `lsp-bridge-inlay-hint.el` | 14 | 1 |
@@ -113,7 +113,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-transport.el` | 59 | 14 |
 | `lsp-bridge-ui.el` | 14 | 1 |
 | `lsp-bridge-workspace.el` | 30 | 10 |
-| `lsp-bridge.el` | 114 | 10 |
+| `lsp-bridge.el` | 114 | 11 |
 | `lsp_bridge.py` | 24 | 21 |
 
 ## Where the surface is still thin
@@ -122,7 +122,6 @@ Modules with at least 8 names of which a quarter or fewer are mentioned by anyth
 under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
-| `lsp-bridge-document.el` | 1/23 | 4% |
 | `acm/acm-backend-lsp.el` | 1/22 | 5% |
 | `core/lspserver.py` | 3/64 | 5% |
 | `acm/acm-backend-elisp.el` | 1/18 | 6% |
@@ -130,8 +129,8 @@ covered because some of it is.
 | `lsp-bridge-ui.el` | 1/14 | 7% |
 | `core/ctags.py` | 1/13 | 8% |
 | `lsp-bridge-ref.el` | 7/91 | 8% |
-| `lsp-bridge.el` | 10/114 | 9% |
 | `acm/acm-frame.el` | 2/22 | 9% |
+| `lsp-bridge.el` | 11/114 | 10% |
 | `lsp-bridge-core.el` | 7/70 | 10% |
 | `core/fileaction.py` | 4/39 | 10% |
 | `core/remote_file.py` | 4/34 | 12% |
@@ -144,6 +143,7 @@ covered because some of it is.
 | `lsp-bridge-remote.el` | 5/30 | 17% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `lsp-bridge-epc.el` | 13/62 | 21% |
+| `lsp-bridge-document.el` | 5/23 | 22% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
 | `core/handler/solidity.py` | 6/27 | 22% |
 | `lsp-bridge-call-hierarchy.el` | 7/31 | 23% |

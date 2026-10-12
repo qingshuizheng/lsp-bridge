@@ -45,6 +45,9 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== ERT: rendering the documentation of a symbol (test/lsp-bridge-document-test.el)"
+run_ert test/lsp-bridge-document-test.el
+
 echo "== ERT: colour arithmetic and ace keys (test/lsp-bridge-peek-test.el)"
 run_ert test/lsp-bridge-peek-test.el
 
