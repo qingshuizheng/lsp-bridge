@@ -582,6 +582,8 @@ refreshed."
 	        (let ((beg (point))
 		          (end nil)
 		          (filename nil)
+		          (char nil)
+		          (line nil)
 		          (pos nil))
 	          (move-end-of-line 1)
 	          (setq end (point))
