@@ -507,7 +507,8 @@ attached."
 
 (defun lsp-bridge-peek--tree-history ()
   "Return a string for displaying the tree history of symbols were peeked."
-  (let* ((selected-symbol (nth lsp-bridge-peek-selected-symbol lsp-bridge-peek-symbol-tree))
+  (let* ((child-list nil)
+	     (selected-symbol (nth lsp-bridge-peek-selected-symbol lsp-bridge-peek-symbol-tree))
 	     (total-n (length (nth 1 selected-symbol)))
 	     (selected-id (nth 1 lsp-bridge-peek-chosen-displaying-list))
 	     (history-string (format "[%s]" (lsp-bridge--add-face
