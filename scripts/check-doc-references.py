@@ -19,6 +19,10 @@ import re
 import sys
 
 CALL = re.compile(r"`([A-Za-z_][A-Za-z0-9_.]*)\(\)`?")
+DEFCUSTOM = re.compile(r"^\(defcustom\s+([a-zA-Z0-9-]+)\s+([^\s)]+)", re.M)
+BOOLEAN_TYPE = re.compile(r":type\s+'boolean")
+DEFAULT_CLAIM = re.compile(r"[Dd]efaults?\s+(?:is|are|to)?\s*\b(nil|t)\b|\b(nil|t)\b\s+by\s+default")
+DOCSTRING = re.compile(r'"((?:[^"\\]|\\.)*)"', re.S)
 ELISP_REFERENCE = re.compile(r"(?<![\w-])((?:lsp-bridge|acm)-[a-zA-Z0-9-]+)")
 ELISP_DEFINITION = re.compile(
     r"^\((?:defun|defmacro|defsubst|defvar|defvar-local|defcustom|defface|"
@@ -133,6 +137,64 @@ def comment_references(root, known):
                 yield f"{path.relative_to(root)}:{number} -> `{name}'"
 
 
+def lisp_form(text, start):
+    """Return the Lisp form of TEXT that starts at START, or "" when unclosed.
+
+    Strings and comments are skipped, so a parenthesis inside either does not
+    count.
+    """
+    depth = 0
+    in_string = False
+    escaped = False
+    index = start
+    while index < len(text):
+        char = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+        elif char == '"':
+            in_string = True
+        elif char == ";":
+            newline = text.find("\n", index)
+            index = len(text) if newline == -1 else newline
+            continue
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return text[start:index + 1]
+        index += 1
+    return ""
+
+
+def default_claims(root):
+    """Yield the boolean options whose docstring names the wrong default.
+
+    An option whose default is t and whose docstring says "Default is nil" sends
+    the reader the wrong way, and nothing else checks it: checkdoc looks at the
+    shape of a docstring, not at whether it is true.
+    """
+    for path in elisp_files(root):
+        text = path.read_text(errors="ignore")
+        for match in DEFCUSTOM.finditer(text):
+            form = lisp_form(text, match.start())
+            if not form or not BOOLEAN_TYPE.search(form):
+                continue
+            docstring = DOCSTRING.search(form)
+            claim = DEFAULT_CLAIM.search(docstring.group(1)) if docstring else None
+            if not claim:
+                continue
+            said = claim.group(1) or claim.group(2)
+            if said != match.group(2):
+                yield (f"{path.relative_to(root)}: `{match.group(1)}' is {match.group(2)}"
+                       f" but its docstring says {said}")
+
+
 def main():
     """Report the references nothing defines, and fail when there are any."""
     root = repository()
@@ -144,6 +206,7 @@ def main():
              for path, owner, name in documented_calls(python)
              if name not in known]
     comments = list(comment_references(root, known))
+    defaults = list(default_claims(root))
 
     print(f"docstring calls with nothing behind them: {len(calls)}")
     for path, owner, name in calls:
@@ -151,7 +214,10 @@ def main():
     print(f"comment references to names that are gone: {len(comments)}")
     for line in comments:
         print(f"  {line}")
-    return 1 if calls or comments else 0
+    print(f"boolean options whose docstring names the wrong default: {len(defaults)}")
+    for line in defaults:
+        print(f"  {line}")
+    return 1 if calls or comments or defaults else 0
 
 
 if __name__ == "__main__":
