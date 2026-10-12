@@ -628,7 +628,8 @@ change hook and make the buffer read-only again."
 With MATCH-REGEXP non-nil keep the lines that match the regexp and
 remove the others; otherwise remove the lines that match.  Report
 how many lines were removed and refresh the header line."
-  (let ((filter-regexp (read-string
+  (let ((start nil) (line-content nil) (remove-counter 0)
+          (filter-regexp (read-string
                         (format (if match-regexp
                                     "Filter result match regexp: "
                                   "Filter result not match regexp: ")))))
@@ -666,7 +667,7 @@ present in the results.  With MATCH-FILES non-nil keep the files
 that have it and remove the others; otherwise remove the files
 that have it.  Do nothing when the results hold only one
 extension, then refresh the header line."
-  (let (file-extensions start end)
+  (let (file-extensions filename filter-extension remove-counter file-extension start end)
     (save-excursion
       (goto-char (point-min))
       (while (setq end (search-forward-regexp lsp-bridge-ref-regexp-file nil t))
