@@ -32,6 +32,8 @@
 (defvar lsp-bridge-flash-region-delay)
 (defvar lsp-bridge-font-lock-flash)
 (declare-function lsp-bridge-has-lsp-server-p "lsp-bridge")
+(declare-function symbol-overlay-rename "symbol-overlay")
+(defvar lsp-bridge-mode)
 (defvar lsp-bridge-mark-ring)
 (defvar lsp-bridge-peek-ace-list)
 (defvar lsp-bridge-position-before-jump)
@@ -194,11 +196,23 @@ when there is at least one reference, otherwise
 (defun lsp-bridge-rename ()
   "Rename the symbol at point.
 Sends a `prepare_rename' request, asks for the new name with
-`read-string' and sends a `rename' request for the current position."
+`read-string' and sends a `rename' request for the current position.
+
+With no language server to ask there is nothing to send, and the request would
+fail silently - which is what a buffer like an Emacs Lisp one looks like.  The
+occurrences the buffer itself holds are renamed through
+`symbol-overlay-rename' in that case, which also knows how to stay inside a
+scope."
   (interactive)
-  (lsp-bridge-call-file-api "prepare_rename" (lsp-bridge--position))
-  (let ((new-name (substring-no-properties (read-string "Rename to: " (thing-at-point 'symbol 'no-properties)))))
-    (lsp-bridge-call-file-api "rename" (lsp-bridge--position) new-name)))
+  (cond
+   ((and lsp-bridge-mode (lsp-bridge-has-lsp-server-p))
+    (lsp-bridge-call-file-api "prepare_rename" (lsp-bridge--position))
+    (let ((new-name (substring-no-properties (read-string "Rename to: " (thing-at-point 'symbol 'no-properties)))))
+      (lsp-bridge-call-file-api "rename" (lsp-bridge--position) new-name)))
+   ((fboundp 'symbol-overlay-rename)
+    (call-interactively #'symbol-overlay-rename))
+   (t
+    (user-error "No language server here, and symbol-overlay is not installed"))))
 
 (defun lsp-bridge-flash-region (start-pos end-pos)
   "Flash the region from START-POS to END-POS.
@@ -294,6 +308,188 @@ target and `lsp-bridge-flash-line' highlights it."
 
   ;; Flash define line.
   (lsp-bridge-flash-line))
+
+;;; Live rename
+
+(declare-function lsp-bridge-document-highlight-render "lsp-bridge-workspace")
+(declare-function lsp-bridge-document-highlight--position-to-point "lsp-bridge-workspace")
+(defvar lsp-bridge-document-highlight-face)
+
+(defface lsp-bridge-live-rename-face
+  '((t :inherit lsp-bridge-document-highlight-face :underline t))
+  "Face used for the occurrences of a live rename."
+  :group 'lsp-bridge)
+
+(defvar-local lsp-bridge-live-rename--overlays nil
+  "Overlays of the live rename in this buffer, one per occurrence.")
+
+(defvar-local lsp-bridge-live-rename--active nil
+  "Cons of the markers around the occurrence the new name is typed in.")
+
+(defvar-local lsp-bridge-live-rename--original nil
+  "The text the symbol had when the live rename started.")
+
+(defvar-local lsp-bridge-live-rename--name nil
+  "The new name as it stands in the buffer right now.")
+
+(defvar-local lsp-bridge-live-rename--pending nil
+  "Non-nil while the highlight request that starts a live rename is out.")
+
+(defvar lsp-bridge-live-rename-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-c") #'lsp-bridge-live-rename-commit)
+    (define-key map (kbd "C-c C-k") #'lsp-bridge-live-rename-abort)
+    map)
+  "Keymap of `lsp-bridge-live-rename-mode'.")
+
+(define-minor-mode lsp-bridge-live-rename-mode
+  "Type the new name of a symbol and watch every occurrence follow.
+The occurrences come from `textDocument/documentHighlight', the one at point is
+edited in place and the others are displayed with the new name while the buffer
+itself keeps its text - which is what keeps the positions, and the undo list,
+exactly as the server knows them.  `lsp-bridge-live-rename-commit' then asks the
+server for the real rename, so the other files are renamed as well."
+  :lighter " Rename"
+  :keymap lsp-bridge-live-rename-mode-map
+  (if lsp-bridge-live-rename-mode
+      (add-hook 'after-change-functions #'lsp-bridge-live-rename--after-change nil t)
+    (remove-hook 'after-change-functions #'lsp-bridge-live-rename--after-change t)))
+
+(defun lsp-bridge-live-rename--after-change (&rest _)
+  "Show the name being typed on every occurrence but the one being typed."
+  (when (and lsp-bridge-live-rename-mode
+             (car lsp-bridge-live-rename--active)
+             (cdr lsp-bridge-live-rename--active))
+    (let ((name (buffer-substring-no-properties (car lsp-bridge-live-rename--active)
+                                                (cdr lsp-bridge-live-rename--active))))
+      (setq lsp-bridge-live-rename--name name)
+      (dolist (overlay lsp-bridge-live-rename--overlays)
+        (when (overlay-get overlay 'lsp-bridge-live-rename)
+          (overlay-put overlay 'display name))))))
+
+(defun lsp-bridge-live-rename--cleanup ()
+  "Undo what the live rename put in the buffer, overlays and markers alike."
+  (dolist (overlay lsp-bridge-live-rename--overlays)
+    (delete-overlay overlay))
+  (setq lsp-bridge-live-rename--overlays nil)
+  (dolist (marker (list (car lsp-bridge-live-rename--active)
+                        (cdr lsp-bridge-live-rename--active)))
+    (when (markerp marker)
+      (set-marker marker nil)))
+  (setq lsp-bridge-live-rename--active nil)
+  (setq lsp-bridge-live-rename--name nil)
+  (setq lsp-bridge-live-rename--original nil))
+
+(defun lsp-bridge-live-rename--finish (commit)
+  "Leave the live rename, applying it through the server when COMMIT is non-nil.
+The occurrence that was edited in place is put back to the text the server last
+saw before the rename is asked for, because the edit that comes back replaces
+those very positions itself."
+  (let ((name lsp-bridge-live-rename--name)
+        (original lsp-bridge-live-rename--original)
+        (start (car lsp-bridge-live-rename--active))
+        (end (cdr lsp-bridge-live-rename--active)))
+    (lsp-bridge-live-rename-mode -1)
+    (when (and (markerp start) (marker-position start) original)
+      (save-excursion
+        (goto-char start)
+        (delete-region start end)
+        (insert original)
+        (when (and commit name (not (string-empty-p name)) (not (equal name original)))
+          ;; the rename is asked from the symbol itself, which is in place again
+          (lsp-bridge-call-file-api "rename" (lsp-bridge--position) name))))
+    (unless (and commit name (not (string-empty-p name)) (not (equal name original)))
+      (message "Live rename: nothing changed"))
+    (lsp-bridge-live-rename--cleanup)))
+
+(defun lsp-bridge-live-rename-commit ()
+  "Apply the live rename through the language server."
+  (interactive)
+  (lsp-bridge-live-rename--finish t))
+
+(defun lsp-bridge-live-rename-abort ()
+  "Give up the live rename and put the symbol back."
+  (interactive)
+  (lsp-bridge-live-rename--finish nil))
+
+(defun lsp-bridge-live-rename--setup (ranges)
+  "Start a live rename over RANGES, the occurrences inside this buffer.
+The occurrence at point is emptied and typed into; the others get an overlay
+that displays whatever is typed there."
+  (let ((ranges (sort ranges (lambda (a b) (< (car a) (car b)))))
+        (symbol (thing-at-point 'symbol t))
+        active)
+    (dolist (range ranges)
+      (when (and (not active) (>= (point) (car range)) (<= (point) (cdr range)))
+        (setq active range)))
+    (cond
+     ((null ranges) (message "Live rename: the server found no occurrence to rename"))
+     ((or (null symbol) (string-empty-p symbol))
+      (message "Live rename: no symbol at point"))
+     (t
+      (unless active (setq active (car ranges)))
+      (setq lsp-bridge-live-rename--original symbol)
+      (setq lsp-bridge-live-rename--name symbol)
+      (setq lsp-bridge-live-rename--overlays
+            (mapcar (lambda (range)
+                      (let ((overlay (make-overlay (car range) (cdr range))))
+                        (overlay-put overlay 'face 'lsp-bridge-live-rename-face)
+                        (unless (equal range active)
+                          ;; the buffer keeps its text: the overlay shows the name
+                          (overlay-put overlay 'lsp-bridge-live-rename t)
+                          (overlay-put overlay 'display symbol))
+                        overlay))
+                    ranges))
+      ;; the markers grow around what is typed: the start stays before it and the
+      ;; end follows it, so the text between them is the new name
+      (setq lsp-bridge-live-rename--active
+            (cons (copy-marker (car active))
+                  (progn (goto-char (cdr active)) (copy-marker (cdr active) t))))
+      (delete-region (car lsp-bridge-live-rename--active)
+                     (cdr lsp-bridge-live-rename--active))
+      (lsp-bridge-live-rename-mode 1)
+      (message "Live rename: type the new name, C-c C-c applies it, C-c C-k gives up")))))
+
+(defun lsp-bridge-live-rename--render-hook (highlights)
+  "Start the live rename the highlights were asked for by HIGHLIGHTS."
+  (when lsp-bridge-live-rename--pending
+    (setq lsp-bridge-live-rename--pending nil)
+    (let (ranges)
+      (dolist (highlight highlights)
+        (let* ((range (plist-get highlight :range))
+               (start (and range (plist-get range :start)))
+               (end (and range (plist-get range :end))))
+          (when (and start end)
+            (push (cons (lsp-bridge-document-highlight--position-to-point
+                         (plist-get start :line) (plist-get start :character))
+                        (lsp-bridge-document-highlight--position-to-point
+                         (plist-get end :line) (plist-get end :character)))
+                  ranges))))
+      (lsp-bridge-live-rename--setup (nreverse ranges)))))
+
+(defun lsp-bridge-live-rename ()
+  "Rename the symbol at point while every occurrence follows along.
+The occurrences are the ones the language server reports for the symbol, so what
+is shown is what the server considers part of the symbol.  `C-c C-c' applies the
+rename through the server, which is also what renames the occurrences in the
+other files, and `C-c C-k' puts the buffer back."
+  (interactive)
+  (cond
+   ((and lsp-bridge-mode (lsp-bridge-has-lsp-server-p))
+    (when lsp-bridge-live-rename-mode
+      (lsp-bridge-live-rename--finish nil))
+    (setq lsp-bridge-live-rename--pending t)
+    (lsp-bridge-call-file-api "document_highlight" (lsp-bridge--position)))
+   ;; Without a server there are no highlights to follow, and the occurrences are
+   ;; plain text: that rename is `symbol-overlay-rename', which renames the ones
+   ;; the buffer holds, inside a scope when the mode is set up for scopes.
+   ((fboundp 'symbol-overlay-rename)
+    (call-interactively #'symbol-overlay-rename))
+   (t
+    (user-error "No language server here, and symbol-overlay is not installed"))))
+
+(advice-add 'lsp-bridge-document-highlight-render :before #'lsp-bridge-live-rename--render-hook)
+
 
 (provide 'lsp-bridge-jump)
 
