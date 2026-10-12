@@ -63,6 +63,9 @@ run_ert test/lsp-bridge-document-test.el
 echo "== ERT: colour arithmetic and ace keys (test/lsp-bridge-peek-test.el)"
 run_ert test/lsp-bridge-peek-test.el
 
+echo "== ERT: the imenu command (test/lsp-bridge-imenu-test.el)"
+run_ert test/lsp-bridge-imenu-test.el
+
 echo "== ERT: the rust-analyzer extras (test/lsp-bridge-rust-test.el)"
 run_ert test/lsp-bridge-rust-test.el
 
