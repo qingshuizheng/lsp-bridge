@@ -62,5 +62,32 @@
     (with-current-buffer (get-buffer lsp-bridge-buffer-documentation-buffer)
       (should (equal (buffer-string) "new\n")))))
 
+(ert-deftest lsp-bridge-document-test-scrolling-without-a-popup ()
+  "Scrolling the documentation popup when there is none does nothing.
+The two commands are bound to keys of the popup, so they can be pressed while it
+is already gone; the scroll command must not be reached then."
+  (should-not (frame-live-p (acm-popup hover-frame)))
+  (let (scrolled)
+    (cl-letf (((symbol-function 'scroll-up-command) (lambda (&rest _args) (setq scrolled 'up)))
+              ((symbol-function 'scroll-down-command) (lambda (&rest _args) (setq scrolled 'down))))
+      (lsp-bridge-popup-documentation-scroll-up)
+      (should-not scrolled)
+      (lsp-bridge-popup-documentation-scroll-down)
+      (should-not scrolled))))
+
+(ert-deftest lsp-bridge-document-test-hiding-what-is-not-there ()
+  "Hiding the tooltips asks the frame code to hide whatever the slot holds.
+The slot is nil when nothing is shown, and that is passed on as it is: what to do
+about a frame that is not there is the frame code's business, not this module's."
+  (let (hidden)
+    (cl-letf (((symbol-function 'acm-frame-hide-frame)
+               (lambda (frame) (setq hidden frame))))
+      (should-not (acm-popup hover-frame))
+      (lsp-bridge-hide-doc-tooltip)
+      (should (null hidden))
+      (should-not (acm-popup signature-frame))
+      (lsp-bridge-hide-signature-tooltip)
+      (should (null hidden)))))
+
 (provide 'lsp-bridge-document-test)
 ;;; lsp-bridge-document-test.el ends here

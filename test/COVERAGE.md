@@ -33,7 +33,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-vulpea.el` | 10 | 4 |
 | `acm/acm-backend-yas.el` | 16 | 8 |
 | `acm/acm-backend.el` | 20 | 19 |
-| `acm/acm-frame.el` | 22 | 2 |
+| `acm/acm-frame.el` | 22 | 3 |
 | `acm/acm-icon.el` | 11 | 5 |
 | `acm/acm-quick-access.el` | 10 | 8 |
 | `acm/acm-session.el` | 9 | 9 |
@@ -97,7 +97,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-core.el` | 70 | 10 |
 | `lsp-bridge-dart.el` | 5 | 4 |
 | `lsp-bridge-diagnostic.el` | 33 | 12 |
-| `lsp-bridge-document.el` | 23 | 5 |
+| `lsp-bridge-document.el` | 23 | 10 |
 | `lsp-bridge-epc.el` | 62 | 13 |
 | `lsp-bridge-imenu.el` | 4 | 1 |
 | `lsp-bridge-inlay-hint.el` | 15 | 10 |
@@ -123,10 +123,10 @@ under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
 | `lsp-bridge-ref.el` | 7/91 | 8% |
-| `acm/acm-frame.el` | 2/22 | 9% |
 | `core/remote_file.py` | 4/34 | 12% |
 | `lsp-bridge.el` | 14/114 | 12% |
 | `core/fileaction.py` | 5/39 | 13% |
+| `acm/acm-frame.el` | 3/22 | 14% |
 | `lsp-bridge-semantic-tokens.el` | 7/50 | 14% |
 | `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
 | `lsp-bridge-core.el` | 10/70 | 14% |
@@ -136,7 +136,6 @@ covered because some of it is.
 | `core/utils.py` | 12/65 | 18% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `lsp-bridge-epc.el` | 13/62 | 21% |
-| `lsp-bridge-document.el` | 5/23 | 22% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
 | `core/handler/solidity.py` | 6/27 | 22% |
 | `lsp-bridge-call-hierarchy.el` | 7/31 | 23% |
