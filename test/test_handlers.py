@@ -12,15 +12,27 @@ import pkgutil
 import unittest
 
 from core.handler import Handler
+from core.handler.breadcrumb import Breadcrumb
 from core.handler.code_action import CodeAction
 from core.handler.completion import Completion
+from core.handler.completion_item import CompletionItem
 from core.handler.completion_workspace_symbol import CompletionWorkspaceSymbol
+from core.handler.diagnostic import Diagnostic
 from core.handler.document_highlight import DocumentHighlight
+from core.handler.document_symbol import DocumentSymbol
 from core.handler.execute_command import ExecuteCommand
+from core.handler.find_define import FindDefine
+from core.handler.find_implementation import FindImplementation
+from core.handler.find_references import FindReferences
+from core.handler.find_type_define import FindTypeDefine
 from core.handler.hover import Hover, make_code_block
+from core.handler.imenu import IMenu
+from core.handler.inlay_hint import InlayHint
 from core.handler.prepare_rename import PrepareRename
-from core.handler.rename import count_workspace_edits
+from core.handler.rename import Rename, count_workspace_edits
 from core.handler.semantic_tokens import SemanticTokens
+from core.handler.signature_help import SignatureHelp
+from core.handler.workspace_symbol import WorkspaceSymbol
 
 
 def bare(handler_class):
@@ -357,6 +369,63 @@ class CodeActionTest(unittest.TestCase):
         params = self.handler.process_request("clangd", [], {"line": 0}, {"line": 0}, None)
         self.assertEqual(params["context"], {"diagnostics": []})
         self.assertIsNone(self.handler.action_kind)
+
+
+POSITION = {"line": 4, "character": 9}
+RANGE_END = {"line": 5, "character": 0}
+
+# handler, arguments for `process_request', the params it should return
+REQUEST_SHAPES = [
+    (Breadcrumb, (17,), {}),
+    (CompletionItem, ("the-key", "pyright", {"label": "thing"}), {"label": "thing"}),
+    (Diagnostic, (), {}),
+    (Diagnostic, ("py",), {"identifier": "py"}),
+    (Diagnostic, (None, "previous"), {"previousResultId": "previous"}),
+    (DocumentSymbol, (POSITION,), {}),
+    (FindDefine, (POSITION,), {"position": POSITION}),
+    (FindImplementation, (POSITION,), {"position": POSITION}),
+    (FindReferences, (POSITION,),
+     {"position": POSITION, "context": {"includeDeclaration": False}}),
+    (FindTypeDefine, (POSITION,), {"position": POSITION}),
+    (IMenu, (), {}),
+    (InlayHint, (POSITION, RANGE_END),
+     {"range": {"start": POSITION, "end": RANGE_END}}),
+    (Rename, (POSITION, "renamed"), {"position": POSITION, "newName": "renamed"}),
+    (SignatureHelp, (POSITION,), {"position": POSITION}),
+    (WorkspaceSymbol, ("foo bar",), {"query": "foobar"}),
+]
+
+
+class RequestShapeTest(unittest.TestCase):
+    """What every handler puts on the wire for its arguments.
+
+    These are params and nothing else - the handler base class adds the text
+    document - which is the part of a request that can be wrong without a
+    server, and the part a server sees."""
+
+    def test_request_shapes(self):
+        for handler_class, arguments, expected in REQUEST_SHAPES:
+            with self.subTest(handler=handler_class.__name__, arguments=arguments):
+                params = handler_class.process_request(bare(handler_class), *arguments)
+                self.assertEqual(params, expected)
+
+    def test_the_handlers_that_remember_their_arguments_do(self):
+        handler = bare(DocumentSymbol)
+        handler.process_request(POSITION)
+        self.assertEqual(handler.position, POSITION)
+
+        handler = bare(FindDefine)
+        handler.process_request(POSITION)
+        self.assertEqual(handler.pos, POSITION)
+
+        handler = bare(Breadcrumb)
+        handler.process_request(17)
+        self.assertEqual(handler.cursor, 17)
+
+        handler = bare(CompletionItem)
+        handler.process_request("the-key", "pyright", {"label": "thing"})
+        self.assertEqual(handler.item_key, "the-key")
+        self.assertEqual(handler.server_name, "pyright")
 
 
 if __name__ == "__main__":
