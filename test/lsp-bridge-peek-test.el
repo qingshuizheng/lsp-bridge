@@ -198,7 +198,17 @@
                  'shadow))
   (should (equal (face-attribute 'lsp-bridge-inlay-hint-face :inherit) 'shadow))
   (should (equal (face-attribute 'acm-backend-ctags-annotation-face :inherit)
-                 'shadow)))
+                 'shadow))
+  ;; The faces of the results buffer.
+  (should (equal (face-attribute 'lsp-bridge-ref-font-lock-file :inherit) 'link))
+  (should (equal (face-attribute 'lsp-bridge-ref-font-lock-line-number :inherit)
+                 'line-number))
+  (should (equal (face-attribute 'lsp-bridge-ref-font-lock-match :inherit) 'match))
+  (should (equal (face-attribute 'lsp-bridge-ref-font-lock-diagnostic :inherit)
+                 'error))
+  (should (equal (face-attribute 'lsp-bridge-ref-font-lock-header-line-edit-mode
+                                 :inherit)
+                 'warning)))
 
 (provide 'lsp-bridge-peek-test)
 ;;; lsp-bridge-peek-test.el ends here

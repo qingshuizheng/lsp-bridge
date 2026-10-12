@@ -132,13 +132,13 @@ Default is `lsp-bridge-ref-popup-window-default-handler'."
 
 
 (defface lsp-bridge-ref-font-lock-header-line-text
-  '((t (:foreground "Green3" :bold t)))
-  "Face for header line text."
+  '((t :inherit font-lock-keyword-face :bold t))
+  "Face for the text of the header line."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-header-line-edit-mode
-  '((t (:foreground "Gold" :bold t)))
-  "Face for header line edit mode."
+  '((t :inherit warning :bold t))
+  "Face for the header line while the results are being edited."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-command
@@ -147,33 +147,33 @@ Default is `lsp-bridge-ref-popup-window-default-handler'."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-file
-  '((t (:foreground "DodgerBlue" :bold t)))
-  "Face for filepath."
+  '((t :inherit link :bold t))
+  "Face for the path of a file in the results."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-line-number
-  '((t (:foreground "gray35")))
-  "Face for line number."
+  '((t :inherit line-number))
+  "Face for the line number of a result."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-column-number
-  '((t (:foreground "gray35")))
-  "Face for column number."
+  '((t :inherit line-number))
+  "Face for the column number of a result."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-position-splitter
-  '((t (:foreground "gray25")))
-  "Face for position splitter."
+  '((t :inherit shadow))
+  "Face for the character that separates a line from a column."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-match
-  '((t (:foreground "Gold3" :bold t)))
-  "Face for keyword match."
+  '((t :inherit match :bold t))
+  "Face for the keyword a result matched."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-diagnostic
-  '((t (:foreground "Red3" :bold t)))
-  "Face for keyword diagnostic."
+  '((t :inherit error :bold t))
+  "Face for a diagnostic the results carry."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-mark-changed
@@ -191,8 +191,8 @@ naming a red of its own."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-function-location
-  '((t (:foreground "Gold" :bold t)))
-  "Face for show function location."
+  '((t :inherit font-lock-function-name-face :bold t))
+  "Face for the location of the function a result is in."
   :group 'lsp-bridge-ref)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Variables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
