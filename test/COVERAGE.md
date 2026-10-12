@@ -44,7 +44,7 @@ python3 scripts/coverage-report.py
 | `core/bridge_server.py` | 15 | 5 |
 | `core/copilot.py` | 17 | 8 |
 | `core/ctags.py` | 13 | 12 |
-| `core/fileaction.py` | 39 | 10 |
+| `core/fileaction.py` | 39 | 18 |
 | `core/handler/breadcrumb.py` | 3 | 3 |
 | `core/handler/call_hierarchy.py` | 9 | 4 |
 | `core/handler/code_action.py` | 3 | 3 |

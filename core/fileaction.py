@@ -700,7 +700,7 @@ class FileAction:
                           self.get_diagnostics(),
                           self.get_diagnostics_count())
 
-    def record_dart_closing_lables(self, labels):
+    def record_dart_closing_labels(self, labels):
         """Show the Dart closing labels pushed by the server.
 
         Args:

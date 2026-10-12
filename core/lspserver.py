@@ -882,7 +882,7 @@ class LspServer:
         if "method" in message and message["method"] == "dart/textDocument/publishClosingLabels":
             filepath = uri_to_path(message["params"]["uri"])
             if is_in_path_dict(self.files, filepath):
-                get_from_path_dict(self.files, filepath).record_dart_closing_lables(message["params"]["labels"])
+                get_from_path_dict(self.files, filepath).record_dart_closing_labels(message["params"]["labels"])
 
     def handle_log_message(self, message):
         """Print the server log MESSAGE when it mentions an error."""
