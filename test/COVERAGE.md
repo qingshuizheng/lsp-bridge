@@ -41,7 +41,7 @@ python3 scripts/coverage-report.py
 | `acm/acm.el` | 102 | 50 |
 | `core/bridge_remote.py` | 16 | 9 |
 | `core/bridge_search.py` | 10 | 9 |
-| `core/bridge_server.py` | 15 | 5 |
+| `core/bridge_server.py` | 15 | 7 |
 | `core/copilot.py` | 17 | 8 |
 | `core/ctags.py` | 13 | 12 |
 | `core/fileaction.py` | 39 | 19 |
