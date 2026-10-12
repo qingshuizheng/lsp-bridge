@@ -45,6 +45,9 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== ERT: colour arithmetic and ace keys (test/lsp-bridge-peek-test.el)"
+run_ert test/lsp-bridge-peek-test.el
+
 echo "== ERT: finding textual occurrences (test/lsp-bridge-jump-test.el)"
 run_ert test/lsp-bridge-jump-test.el
 
