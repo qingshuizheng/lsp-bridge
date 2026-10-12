@@ -109,7 +109,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-ref.el` | 91 | 15 |
 | `lsp-bridge-remote.el` | 30 | 17 |
 | `lsp-bridge-rust.el` | 3 | 3 |
-| `lsp-bridge-semantic-tokens.el` | 50 | 7 |
+| `lsp-bridge-semantic-tokens.el` | 50 | 8 |
 | `lsp-bridge-transport.el` | 59 | 17 |
 | `lsp-bridge-ui.el` | 14 | 12 |
 | `lsp-bridge-workspace.el` | 30 | 12 |
@@ -122,10 +122,10 @@ Modules with at least 8 names of which a quarter or fewer are mentioned by anyth
 under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
-| `lsp-bridge-semantic-tokens.el` | 7/50 | 14% |
 | `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
 | `core/remote_file.py` | 5/34 | 15% |
 | `lsp-bridge.el` | 17/114 | 15% |
+| `lsp-bridge-semantic-tokens.el` | 8/50 | 16% |
 | `lsp-bridge-ref.el` | 15/91 | 16% |
 | `lsp-bridge-org-babel.el` | 2/12 | 17% |
 | `acm/acm-frame.el` | 4/22 | 18% |

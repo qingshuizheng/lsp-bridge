@@ -85,5 +85,54 @@
   (should (equal (lsp-bridge-semantic-tokens--combine-faces '(bold))
                  '((t :weight bold)))))
 
+(defun lsp-bridge-semantic-tokens-test--face (name &rest attributes)
+  "Make a face NAME with ATTRIBUTES and return it, for the tests to use."
+  (let ((face (make-face name)))
+    (while attributes
+      (set-face-attribute face nil (car attributes) (cadr attributes))
+      (setq attributes (cddr attributes)))
+    face))
+
+(ert-deftest lsp-bridge-semantic-tokens-test-combining-faces ()
+  "Combining faces gives one face carrying the attributes they name."
+  (let ((first (lsp-bridge-semantic-tokens-test--face
+                'lsp-bridge-semantic-tokens-test-first :foreground "red"))
+        (second (lsp-bridge-semantic-tokens-test--face
+                 'lsp-bridge-semantic-tokens-test-second :weight 'bold)))
+    (let ((combined (lsp-bridge-semantic-tokens--combine-faces (list first second))))
+      ;; The result is one face spec, so its own car is the t that matches anything.
+      (should (equal (caar combined) 't))
+      (should (equal (plist-get (cdr (car combined)) :foreground) "red"))
+      (should (equal (plist-get (cdr (car combined)) :weight) 'bold)))
+    ;; A face that names nothing contributes nothing.
+    (should (equal (lsp-bridge-semantic-tokens--combine-faces nil) '((t))))))
+
+(ert-deftest lsp-bridge-semantic-tokens-test-the-foreground-of-a-face ()
+  "The foreground is followed through the faces a face inherits from."
+  (let* ((parent (lsp-bridge-semantic-tokens-test--face
+                  'lsp-bridge-semantic-tokens-test-parent :foreground "blue"))
+         (child (lsp-bridge-semantic-tokens-test--face
+                 'lsp-bridge-semantic-tokens-test-child :inherit parent))
+         (bare (lsp-bridge-semantic-tokens-test--face
+                'lsp-bridge-semantic-tokens-test-bare)))
+    (should (equal (lsp-bridge-semantic-tokens-get-face-foreground parent) "blue"))
+    (should (equal (lsp-bridge-semantic-tokens-get-face-foreground child) "blue"))
+    (should-not (lsp-bridge-semantic-tokens-get-face-foreground bare))))
+
+(ert-deftest lsp-bridge-semantic-tokens-test-deleting-overlays ()
+  "The overlays of the keys given are deleted, and their keys forgotten."
+  (with-temp-buffer
+    (insert "one two three\n")
+    (let ((lsp-bridge-semantic-tokens--overlays (make-hash-table :test 'equal))
+          (first (make-overlay 1 4)) (second (make-overlay 5 8)))
+      (puthash "a" first lsp-bridge-semantic-tokens--overlays)
+      (puthash "b" second lsp-bridge-semantic-tokens--overlays)
+      (lsp-bridge-semantic-tokens--delete-overlays (list "a" "missing"))
+      (should-not (overlayp (gethash "a" lsp-bridge-semantic-tokens--overlays)))
+      (should-not (gethash "a" lsp-bridge-semantic-tokens--overlays))
+      (should (gethash "b" lsp-bridge-semantic-tokens--overlays))
+      ;; The key that was not there is not an error.
+      (should-not (gethash "missing" lsp-bridge-semantic-tokens--overlays)))))
+
 (provide 'lsp-bridge-semantic-tokens-test)
 ;;; lsp-bridge-semantic-tokens-test.el ends here
