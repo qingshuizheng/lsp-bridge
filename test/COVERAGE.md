@@ -77,7 +77,7 @@ python3 scripts/coverage-report.py
 | `core/handler/rust_reload_workspace.py` | 3 | 3 |
 | `core/handler/semantic_tokens.py` | 12 | 7 |
 | `core/handler/signature_help.py` | 3 | 3 |
-| `core/handler/solidity.py` | 27 | 11 |
+| `core/handler/solidity.py` | 27 | 13 |
 | `core/handler/textpos.py` | 9 | 7 |
 | `core/handler/volar_proxy.py` | 9 | 4 |
 | `core/handler/workspace_diagnostics.py` | 3 | 3 |

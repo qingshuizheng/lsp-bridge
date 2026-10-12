@@ -25,6 +25,8 @@ from core.handler.solidity import (
     _get_solidity_call_arity_at_cursor,
     _read_solidity_remappings,
     _find_symbol_in_file,
+    _get_solidity_server_name,
+    _resolve_import_file_path,
 )
 
 
@@ -285,6 +287,80 @@ class FindSymbolInFileTest(unittest.TestCase):
         self.assertEqual(_find_symbol_in_file(path, "f", 1), {"line": 0, "character": 0})
         self.assertEqual(_find_symbol_in_file(path, "f", 2), {"line": 1, "character": 0})
         self.assertIsNone(_find_symbol_in_file(path, "f", 3))
+
+class ServerNameTest(unittest.TestCase):
+    """The name of the server a file action is served by."""
+
+    def action(self, **attributes):
+        """Return an object holding the attributes given as a file action."""
+        return type("Action", (), attributes)()
+
+    def test_a_file_with_one_server(self):
+        server = type("Server", (), {"server_info": {"name": "solc"}})()
+        self.assertEqual(_get_solidity_server_name(self.action(file_action=self.action(single_server=server))),
+                         "solc")
+
+    def test_a_file_with_many_servers(self):
+        # The names are asked of the file action itself, so they are a method of it.
+        class Action:
+            multi_servers = {"a": 1}
+
+            def get_lsp_server_names(self):
+                return ["first", "second"]
+
+        self.assertEqual(_get_solidity_server_name(self.action(file_action=Action())),
+                         "first,second")
+
+    def test_a_file_action_with_neither(self):
+        self.assertEqual(_get_solidity_server_name(self.action(file_action=self.action())), "")
+
+
+class ResolveImportPathTest(unittest.TestCase):
+    """Turning an import path into the file it names."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp(prefix="lsp-bridge-imports")
+        self.addCleanup(shutil.rmtree, self.root, True)
+        self.contracts = os.path.join(self.root, "contracts")
+        os.makedirs(os.path.join(self.contracts, "lib"))
+        self.file = os.path.join(self.contracts, "Token.sol")
+        with open(self.file, "w") as f:
+            f.write("contract Token {}\n")
+
+    def make(self, relative, content=""):
+        """Write a file at RELATIVE under the project and return its path."""
+        path = os.path.join(self.root, relative)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            f.write(content)
+        return path
+
+    def test_a_path_next_to_the_importing_file(self):
+        other = self.make("contracts/Other.sol")
+        self.assertEqual(_resolve_import_file_path("./Other.sol", self.file, self.root), other)
+
+    def test_a_path_found_by_walking_up(self):
+        target = self.make("shared/Shared.sol")
+        self.assertEqual(_resolve_import_file_path("shared/Shared.sol", self.file, None), target)
+
+    def test_a_path_from_the_project_root(self):
+        target = self.make("src/Deep.sol")
+        self.assertEqual(_resolve_import_file_path("src/Deep.sol", self.file, self.root), target)
+
+    def test_a_path_rewritten_by_a_remapping(self):
+        target = self.make("lib/openzeppelin/ERC20.sol")
+        with open(os.path.join(self.root, "remappings.txt"), "w") as f:
+            f.write("@openzeppelin/=lib/openzeppelin/\n")
+        self.assertEqual(_resolve_import_file_path("@openzeppelin/ERC20.sol", self.file, self.root),
+                         target)
+
+    def test_an_absolute_path(self):
+        target = self.make("elsewhere/Absolute.sol")
+        self.assertEqual(_resolve_import_file_path(target, self.file, self.root), target)
+
+    def test_a_path_that_names_nothing(self):
+        self.assertIsNone(_resolve_import_file_path("nowhere/Nothing.sol", self.file, self.root))
+        self.assertIsNone(_resolve_import_file_path("", self.file, self.root))
 
 if __name__ == "__main__":
     unittest.main()
