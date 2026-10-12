@@ -45,6 +45,9 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== ERT: drawing the inlay hints of a buffer (test/lsp-bridge-inlay-hint-test.el)"
+run_ert test/lsp-bridge-inlay-hint-test.el
+
 echo "== ERT: rendering the documentation of a symbol (test/lsp-bridge-document-test.el)"
 run_ert test/lsp-bridge-document-test.el
 

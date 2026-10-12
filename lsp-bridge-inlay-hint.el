@@ -103,6 +103,11 @@
 
 (defvar-local lsp-bridge-inlay-hint-last-update-pos nil
   "The window end position at the last inlay hint request.")
+(defvar-local lsp-bridge-inlay-hint-cache-time nil
+  "When the inlay hints in `lsp-bridge-inlay-hint-cache' were drawn.
+Used to drop an answer that arrives within half a second of the one before it,
+which servers send when a change follows a request closely.")
+
 (defvar-local lsp-bridge-inlay-hint-cache nil
   "We use `lsp-bridge-inlay-hint-cache' avoid screen flicker if two respond result is same.")
 (defvar-local lsp-bridge-inlay-hint-overlays '()

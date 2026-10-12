@@ -100,7 +100,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-document.el` | 23 | 5 |
 | `lsp-bridge-epc.el` | 62 | 13 |
 | `lsp-bridge-imenu.el` | 4 | 1 |
-| `lsp-bridge-inlay-hint.el` | 14 | 1 |
+| `lsp-bridge-inlay-hint.el` | 15 | 9 |
 | `lsp-bridge-jdtls.el` | 14 | 8 |
 | `lsp-bridge-jump.el` | 52 | 18 |
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
@@ -125,7 +125,6 @@ covered because some of it is.
 | `acm/acm-backend-lsp.el` | 1/22 | 5% |
 | `core/lspserver.py` | 3/64 | 5% |
 | `acm/acm-backend-elisp.el` | 1/18 | 6% |
-| `lsp-bridge-inlay-hint.el` | 1/14 | 7% |
 | `lsp-bridge-ui.el` | 1/14 | 7% |
 | `core/ctags.py` | 1/13 | 8% |
 | `lsp-bridge-ref.el` | 7/91 | 8% |
