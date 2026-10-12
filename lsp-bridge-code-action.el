@@ -166,18 +166,18 @@ This quits the popup and applies the action of the entry at
 
 (defun lsp-bridge-code-action-popup-quit ()
   "Quit the code action popup.
-This cancels the preview timer, deletes the popup frame and
-buffer, removes the code action advices from the call hierarchy
-commands and reselects the buffer the action was requested from."
+This cancels the preview timer, deletes the popup frame and buffer - which is
+where the keys and the call hierarchy override of the popup lived, so killing it
+is all the cleanup there is - and reselects the buffer the action was requested
+from."
   (interactive)
   (acm-cancel-timer lsp-bridge-code-action-popup-maybe-preview-timer)
 
   (acm-frame-delete-frame lsp-bridge-call-hierarchy--frame)
   (kill-buffer "*lsp-bridge-code-action-menu*")
 
-  (advice-remove 'lsp-bridge-call-hierarchy-maybe-preview #'lsp-bridge-code-action-popup-maybe-preview)
-  (advice-remove 'lsp-bridge-call-hierarchy-select #'lsp-bridge-code-action-popup-select)
-  (advice-remove 'lsp-bridge-call-hierarchy-quit #'lsp-bridge-code-action-popup-quit)
+  ;; The keymap and the preview override live in the menu buffer, so killing it
+  ;; is all the cleanup there is.
   (when (get-buffer-window lsp-bridge-code-action--current-buffer)
     (select-window (get-buffer-window lsp-bridge-code-action--current-buffer))))
 
@@ -355,9 +355,20 @@ when it is not already visible."
       (acm-frame-set-frame-size lsp-bridge-call-hierarchy--frame menu-width
                                 (min menu-length (/ (frame-height acm-frame--emacs-frame) 4))))
 
-    (advice-add 'lsp-bridge-call-hierarchy-maybe-preview :override #'lsp-bridge-code-action-popup-maybe-preview)
-    (advice-add 'lsp-bridge-call-hierarchy-select :override #'lsp-bridge-code-action-popup-select)
-    (advice-add 'lsp-bridge-call-hierarchy-quit :override #'lsp-bridge-code-action-popup-quit)
+    ;; The menu buffer is driven by the call hierarchy keys, but the three that
+    ;; choose, quit and preview have to be the ones of this popup.  That is a
+    ;; buffer-local keymap and a buffer-local override, not advice on the call
+    ;; hierarchy commands, which stay as they are.
+    (setq-local lsp-bridge-call-hierarchy-overrides
+                '((lsp-bridge-call-hierarchy-maybe-preview . lsp-bridge-code-action-popup-maybe-preview)))
+    (use-local-map (let ((map (make-sparse-keymap)))
+                     (set-keymap-parent map lsp-bridge-call-hierarchy-mode-map)
+                     (define-key map (kbd "m") #'lsp-bridge-code-action-popup-select)
+                     (define-key map (kbd "RET") #'lsp-bridge-code-action-popup-select)
+                     (define-key map (kbd "q") #'lsp-bridge-code-action-popup-quit)
+                     (define-key map (kbd "C-g") #'lsp-bridge-code-action-popup-quit)
+                     (define-key map (kbd "<escape>") #'lsp-bridge-code-action-popup-quit)
+                     map))
 
     (lsp-bridge-code-action-popup-maybe-preview)))
 

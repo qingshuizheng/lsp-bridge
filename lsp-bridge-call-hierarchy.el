@@ -89,23 +89,38 @@ CALL provides the keys :name, :rel_path and :icon."
             (lsp-bridge-call-hierarchy-format-call-string name lsp-bridge-call-hierarchy-name-width)
             (lsp-bridge-call-hierarchy-format-call-string path lsp-bridge-call-hierarchy-path-width))))
 
+(defvar-local lsp-bridge-call-hierarchy-overrides nil
+  "Alist of command to the function that takes it over in this buffer.
+A popup that is driven by the same keys but shows something else - the code
+action menu is one - puts an entry here instead of advising the command, so the
+command keeps its own definition and no other file has to be touched.")
+
+(defun lsp-bridge-call-hierarchy--override (command)
+  "Return the function taking COMMAND over in this buffer, or nil."
+  (cdr (assq command lsp-bridge-call-hierarchy-overrides)))
+
 (defun lsp-bridge-call-hierarchy-maybe-preview ()
   "Preview the call selected in the call hierarchy popup.
 Do nothing when `lsp-bridge-call-hierarchy-preview-height' is 0.
 This switches to the preview window, shows the call and hides the
-mode line of the previewed buffer."
-  (when (> lsp-bridge-call-hierarchy-preview-height 0)
-    (other-window 1)
-    (lsp-bridge-call-hierarchy-show)
-    (recenter)
+mode line of the previewed buffer.  Whatever
+`lsp-bridge-call-hierarchy-overrides' says takes the command over here is
+called instead."
+  (let ((override (lsp-bridge-call-hierarchy--override 'lsp-bridge-call-hierarchy-maybe-preview)))
+    (if override
+        (funcall override)
+      (when (> lsp-bridge-call-hierarchy-preview-height 0)
+        (other-window 1)
+        (lsp-bridge-call-hierarchy-show)
+        (recenter)
 
-    (if (and mode-line-format
-             (not (member (current-buffer) lsp-bridge-call-hierarchy--temp-buffers)))
-      (add-to-list 'lsp-bridge-call-hierarchy--local-modelines
-                   (list (current-buffer) mode-line-format)))
+        (if (and mode-line-format
+                 (not (member (current-buffer) lsp-bridge-call-hierarchy--temp-buffers)))
+            (add-to-list 'lsp-bridge-call-hierarchy--local-modelines
+                         (list (current-buffer) mode-line-format)))
 
-    (setq-local mode-line-format nil)
-    (other-window -1)))
+        (setq-local mode-line-format nil)
+        (other-window -1)))))
 
 (defun lsp-bridge-call-hierarchy--popup (response)
   "Show the call hierarchy popup for RESPONSE.
