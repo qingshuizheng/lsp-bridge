@@ -45,6 +45,9 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== ERT: diagnostics over the buffer (test/lsp-bridge-diagnostic-test.el)"
+run_ert test/lsp-bridge-diagnostic-test.el
+
 echo "== ERT: what the small backends offer (test/acm-backend-candidates-test.el)"
 run_ert test/acm-backend-candidates-test.el
 

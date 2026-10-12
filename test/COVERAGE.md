@@ -24,7 +24,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-elisp.el` | 18 | 1 |
 | `acm/acm-backend-jupyter.el` | 5 | 0 |
 | `acm/acm-backend-lsp-workspace-symbol.el` | 7 | 0 |
-| `acm/acm-backend-lsp.el` | 22 | 0 |
+| `acm/acm-backend-lsp.el` | 22 | 1 |
 | `acm/acm-backend-path.el` | 5 | 5 |
 | `acm/acm-backend-search-file-words.el` | 11 | 5 |
 | `acm/acm-backend-tabby.el` | 7 | 0 |
@@ -96,7 +96,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-completion.el` | 60 | 15 |
 | `lsp-bridge-core.el` | 70 | 7 |
 | `lsp-bridge-dart.el` | 5 | 0 |
-| `lsp-bridge-diagnostic.el` | 33 | 0 |
+| `lsp-bridge-diagnostic.el` | 33 | 12 |
 | `lsp-bridge-document.el` | 23 | 1 |
 | `lsp-bridge-epc.el` | 62 | 1 |
 | `lsp-bridge-imenu.el` | 4 | 1 |
