@@ -45,6 +45,9 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== Lisp: names used but never declared (scripts/check-no-byte-compile.el)"
+emacs -Q --batch -L . -L acm -l scripts/check-no-byte-compile.el . || exit 1
+
 echo "== ERT: positions, edits and the LSP cache (test/acm-backend-lsp-test.el)"
 run_ert test/acm-backend-lsp-test.el
 
