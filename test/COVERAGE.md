@@ -102,17 +102,17 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-imenu.el` | 4 | 1 |
 | `lsp-bridge-inlay-hint.el` | 14 | 1 |
 | `lsp-bridge-jdtls.el` | 14 | 8 |
-| `lsp-bridge-jump.el` | 52 | 15 |
+| `lsp-bridge-jump.el` | 52 | 17 |
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
 | `lsp-bridge-org-babel.el` | 12 | 2 |
 | `lsp-bridge-peek.el` | 62 | 1 |
 | `lsp-bridge-ref.el` | 91 | 7 |
-| `lsp-bridge-remote.el` | 30 | 2 |
+| `lsp-bridge-remote.el` | 30 | 5 |
 | `lsp-bridge-rust.el` | 3 | 0 |
 | `lsp-bridge-semantic-tokens.el` | 50 | 7 |
 | `lsp-bridge-transport.el` | 59 | 14 |
 | `lsp-bridge-ui.el` | 14 | 1 |
-| `lsp-bridge-workspace.el` | 30 | 1 |
+| `lsp-bridge-workspace.el` | 30 | 10 |
 | `lsp-bridge.el` | 114 | 10 |
 | `lsp_bridge.py` | 24 | 21 |
 
@@ -123,12 +123,10 @@ under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
 | `lsp-bridge-peek.el` | 1/62 | 2% |
-| `lsp-bridge-workspace.el` | 1/30 | 3% |
 | `lsp-bridge-document.el` | 1/23 | 4% |
 | `acm/acm-backend-lsp.el` | 1/22 | 5% |
 | `core/lspserver.py` | 3/64 | 5% |
 | `acm/acm-backend-elisp.el` | 1/18 | 6% |
-| `lsp-bridge-remote.el` | 2/30 | 7% |
 | `lsp-bridge-inlay-hint.el` | 1/14 | 7% |
 | `lsp-bridge-ui.el` | 1/14 | 7% |
 | `core/ctags.py` | 1/13 | 8% |
@@ -143,6 +141,7 @@ covered because some of it is.
 | `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
 | `core/search_file_words.py` | 2/12 | 17% |
 | `lsp-bridge-org-babel.el` | 2/12 | 17% |
+| `lsp-bridge-remote.el` | 5/30 | 17% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `lsp-bridge-epc.el` | 13/62 | 21% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |

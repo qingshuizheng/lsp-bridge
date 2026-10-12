@@ -45,6 +45,12 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== ERT: paths, symbols and highlights (test/lsp-bridge-workspace-test.el)"
+run_ert test/lsp-bridge-workspace-test.el
+
+echo "== ERT: naming and decoding remote files (test/lsp-bridge-remote-test.el)"
+run_ert test/lsp-bridge-remote-test.el
+
 echo "== ERT: the deferred queue behind every request (test/lsp-bridge-epc-test.el)"
 run_ert test/lsp-bridge-epc-test.el
 
