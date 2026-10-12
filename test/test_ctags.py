@@ -14,6 +14,7 @@ import tempfile
 import unittest
 
 from core.ctags import Ctags, remove_prefix
+from core.utils import get_remote_connection_info
 
 
 def make_ctags():
@@ -143,6 +144,67 @@ class LocateDominatingFileTest(unittest.TestCase):
     def test_not_found_at_all(self):
         with tempfile.TemporaryDirectory() as root:
             self.assertIsNone(make_ctags().locate_dominating_file(root, "no-such-file"))
+
+
+class MakeXrefTest(unittest.TestCase):
+    """A parsed tag becomes the item a jump-to-definition is made of."""
+
+    def setUp(self):
+        self.ctags = make_ctags()
+
+    def test_the_fields_of_an_item(self):
+        item = self.ctags.make_xref(
+            {"tagfile": "src/a.py", "line": "12", "tagaddress": "/^def myFunction($/",
+             "kind": "function", "scope": "MyClass"},
+            "/tmp/project")
+        self.assertEqual(item["ext-abspath"],
+                         get_remote_connection_info() + os.path.join("/tmp/project", "src/a.py"))
+        self.assertEqual(item["line"], 12)
+        self.assertEqual(item["annotation"], "function@MyClass")
+
+    def test_the_pattern_is_stripped_of_its_delimiters(self):
+        # readtags writes the pattern as /^text$/ and the item wants the text.
+        item = self.ctags.make_xref({"tagname": "a", "tagaddress": "/^def myFunction($/"}, "/tmp")
+        self.assertEqual(item["str"], "def myFunction(")
+
+    def test_a_tag_without_a_line_starts_at_one(self):
+        item = self.ctags.make_xref({"tagname": "a", "tagfile": "a.py"}, "/tmp")
+        self.assertEqual(item["line"], 1)
+
+
+class MakeCompleteTest(unittest.TestCase):
+    """Completion from the tags file that governs a file."""
+
+    def setUp(self):
+        self.ctags = make_ctags()
+        self.ctags.locate_dominating_file = lambda _file, _name: "/tmp/tags"
+        self.dispatched = None
+        self.ctags.dispatch = lambda candidates, offset: setattr(self, "dispatched", (candidates, offset))
+
+    def test_the_cursor_offset_is_remembered_even_when_nothing_is_done(self):
+        self.ctags.make_complete("symbol", "", 10, 42)
+        self.assertEqual(self.ctags.current_cursor_offset, 42)
+
+    def test_no_filename_asks_nothing(self):
+        self.ctags.make_complete("symbol", "", 10, 1)
+        self.assertIsNone(self.dispatched)
+
+    def test_no_tags_file_asks_nothing(self):
+        self.ctags.locate_dominating_file = lambda _file, _name: None
+        self.ctags.make_complete("symbol", "/tmp/a.py", 10, 1)
+        self.assertIsNone(self.dispatched)
+
+    def test_the_lines_are_parsed_and_at_most_the_maximum_is_kept(self):
+        self.ctags.run_cmd_in_path = lambda _cmd, _file: [
+            'myFunction\t/tmp/a.py\t/^def myFunction($/;"\tkind:function',
+            'myOther\t/tmp/a.py\t/^def myOther($/;"\tkind:function',
+        ]
+        self.ctags.make_complete("my", "/tmp/a.py", 1, 7)
+        candidates, offset = self.dispatched
+        self.assertEqual(offset, 7)
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0]["label"], "myFunction")
+        self.assertEqual(candidates[0]["backend"], "ctags")
 
 
 if __name__ == "__main__":

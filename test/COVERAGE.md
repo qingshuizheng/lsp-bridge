@@ -43,7 +43,7 @@ python3 scripts/coverage-report.py
 | `core/bridge_search.py` | 10 | 9 |
 | `core/bridge_server.py` | 15 | 5 |
 | `core/copilot.py` | 17 | 6 |
-| `core/ctags.py` | 13 | 8 |
+| `core/ctags.py` | 13 | 11 |
 | `core/fileaction.py` | 39 | 5 |
 | `core/handler/breadcrumb.py` | 3 | 3 |
 | `core/handler/call_hierarchy.py` | 9 | 4 |
@@ -89,7 +89,7 @@ python3 scripts/coverage-report.py
 | `core/search_file_words.py` | 12 | 2 |
 | `core/search_list.py` | 7 | 2 |
 | `core/search_paths.py` | 7 | 1 |
-| `core/utils.py` | 65 | 11 |
+| `core/utils.py` | 65 | 12 |
 | `lsp-bridge-breadcrumb.el` | 21 | 3 |
 | `lsp-bridge-call-hierarchy.el` | 31 | 7 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
@@ -133,7 +133,7 @@ covered because some of it is.
 | `lsp-bridge-core.el` | 10/70 | 14% |
 | `core/search_file_words.py` | 2/12 | 17% |
 | `lsp-bridge-org-babel.el` | 2/12 | 17% |
-| `core/utils.py` | 11/65 | 17% |
+| `core/utils.py` | 12/65 | 18% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `lsp-bridge-epc.el` | 13/62 | 21% |
 | `lsp-bridge-document.el` | 5/23 | 22% |
