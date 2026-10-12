@@ -43,7 +43,7 @@ python3 scripts/coverage-report.py
 | `core/bridge_search.py` | 10 | 9 |
 | `core/bridge_server.py` | 15 | 5 |
 | `core/copilot.py` | 17 | 6 |
-| `core/ctags.py` | 13 | 1 |
+| `core/ctags.py` | 13 | 8 |
 | `core/fileaction.py` | 39 | 4 |
 | `core/handler/breadcrumb.py` | 3 | 3 |
 | `core/handler/call_hierarchy.py` | 9 | 4 |
@@ -125,7 +125,6 @@ covered because some of it is.
 | `core/lspserver.py` | 3/64 | 5% |
 | `acm/acm-backend-elisp.el` | 1/18 | 6% |
 | `lsp-bridge-ui.el` | 1/14 | 7% |
-| `core/ctags.py` | 1/13 | 8% |
 | `lsp-bridge-ref.el` | 7/91 | 8% |
 | `acm/acm-frame.el` | 2/22 | 9% |
 | `lsp-bridge.el` | 11/114 | 10% |
