@@ -246,6 +246,19 @@ when it is already non-nil, otherwise it is set to the new timer."
      (setq ,timer
            (run-with-idle-timer ,idle t #'(lambda () (funcall ,func))))))
 
+(defvar acm-ui-overrides nil
+  "Alist of function to the function that answers it instead here.
+The menu of acm is drawn with child frames, which a terminal does not have; a
+front end that draws it another way - `acm-terminal' is one - puts an entry for
+each function it takes over here.  This is the extension point for that, rather
+than advice on the functions of this package.")
+
+(defun acm-ui-override (function)
+  "Return the function taking FUNCTION over here, or nil.
+The lookup is by `eq' on the symbol, and the value is what a front end left in
+`acm-ui-overrides' for it."
+  (cdr (assq function acm-ui-overrides)))
+
 (cl-defmacro acm-with-cache-candidates (cache-candidates &rest body)
   "Return the list cached in CACHE-CANDIDATES, computing it if needed.
 CACHE-CANDIDATES names a buffer-local variable holding a candidate
@@ -768,8 +781,12 @@ Checks for the pgtk window system and the GdkWaylandDisplay backend."
 
 (defun acm-doc-hide ()
   "Hide the doc frame and drop any pending markdown render.
-Thin wrapper around `acm-doc--hide'."
-  (acm-doc--hide))
+Thin wrapper around `acm-doc--hide'.  A front end that draws the documentation
+itself takes it over through `acm-ui-overrides'."
+  (let ((override (acm-ui-override 'acm-doc-hide)))
+    (if override
+        (funcall override)
+      (acm-doc--hide))))
 
 (defun acm-doc--hide()
   "Hide the documentation frame and clear the pending markdown render state.
@@ -1338,20 +1355,30 @@ With `acm-menu-cycle' non-nil, the first candidate wraps to the last."
           (setq-local acm-menu-offset (- acm-menu-offset acm-menu-length))))))
 
 (defun acm-doc-scroll-up ()
-  "Scroll the doc frame buffer up by one screen."
+  "Scroll the doc frame buffer up by one screen.
+A front end that draws the documentation itself takes it over through
+`acm-ui-overrides'."
   (interactive)
-  (with-current-buffer (acm-popup doc-buffer)
-    (when (framep (acm-popup menu-frame))
-      (with-selected-frame (acm-popup doc-frame)
-        (scroll-up-command)))))
+  (let ((override (acm-ui-override 'acm-doc-scroll-up)))
+    (if override
+        (funcall override)
+      (with-current-buffer (acm-popup doc-buffer)
+        (when (framep (acm-popup menu-frame))
+          (with-selected-frame (acm-popup doc-frame)
+            (scroll-up-command)))))))
 
 (defun acm-doc-scroll-down ()
-  "Scroll the doc frame buffer down by one screen."
+  "Scroll the doc frame buffer down by one screen.
+A front end that draws the documentation itself takes it over through
+`acm-ui-overrides'."
   (interactive)
-  (with-current-buffer (acm-popup doc-buffer)
-    (when (framep (acm-popup menu-frame))
-      (with-selected-frame (acm-popup doc-frame)
-        (scroll-down-command)))))
+  (let ((override (acm-ui-override 'acm-doc-scroll-down)))
+    (if override
+        (funcall override)
+      (with-current-buffer (acm-popup doc-buffer)
+        (when (framep (acm-popup menu-frame))
+          (with-selected-frame (acm-popup doc-frame)
+            (scroll-down-command)))))))
 
 (defun acm-doc-toggle ()
   "Toggle documentation preview for selected candidate."

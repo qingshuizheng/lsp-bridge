@@ -347,5 +347,24 @@ sit inside the string for this test."
   (should (equal (acm-icon-convert-to-svg-color "not-a-colour-at-all")
                  "not-a-colour-at-all")))
 
+(ert-deftest acm-test-ui-override-looks-up-the-alist ()
+  "A front end takes a function over by putting it in `acm-ui-overrides'."
+  (let ((acm-ui-overrides '((acm-doc-hide . ignore))))
+    (should (eq (acm-ui-override 'acm-doc-hide) 'ignore))
+    (should-not (acm-ui-override 'acm-hide))))
+
+(ert-deftest acm-test-ui-override-is-honoured ()
+  "The function a front end left in the alist is the one that runs."
+  (let* ((called nil)
+         (acm-ui-overrides (list (cons 'acm-doc-hide (lambda () (setq called 'override))))))
+    (cl-letf (((symbol-function 'acm-doc--hide) (lambda () (setq called 'default))))
+      (acm-doc-hide))
+    (should (eq called 'override))
+    (setq called nil)
+    (let ((acm-ui-overrides nil))
+      (cl-letf (((symbol-function 'acm-doc--hide) (lambda () (setq called 'default))))
+        (acm-doc-hide)))
+    (should (eq called 'default))))
+
 (provide 'acm-test)
 ;;; acm-test.el ends here
