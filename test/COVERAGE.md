@@ -85,11 +85,11 @@ python3 scripts/coverage-report.py
 | `core/lspserver.py` | 64 | 23 |
 | `core/mergedeep.py` | 7 | 1 |
 | `core/pystardict.py` | 35 | 9 |
-| `core/remote_file.py` | 34 | 5 |
+| `core/remote_file.py` | 34 | 9 |
 | `core/search_file_words.py` | 12 | 3 |
 | `core/search_list.py` | 7 | 3 |
 | `core/search_paths.py` | 7 | 2 |
-| `core/utils.py` | 65 | 26 |
+| `core/utils.py` | 65 | 27 |
 | `lsp-bridge-breadcrumb.el` | 21 | 3 |
 | `lsp-bridge-call-hierarchy.el` | 31 | 7 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
@@ -123,7 +123,6 @@ under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
 | `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
-| `core/remote_file.py` | 5/34 | 15% |
 | `lsp-bridge.el` | 17/114 | 15% |
 | `lsp-bridge-semantic-tokens.el` | 8/50 | 16% |
 | `lsp-bridge-ref.el` | 15/91 | 16% |
