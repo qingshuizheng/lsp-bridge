@@ -13,6 +13,12 @@ import re
 from core.utils import *
 from core.handler.textpos import *
 
+# The namespaces Solidity itself provides: a member access from one of them is not
+# a symbol of the project, so the fallback has nothing to look up.  `_is_solidity_
+# builtin_member_access' reads this set and it was never defined, which made that
+# function raise `NameError' whenever it was reached.
+_SOLIDITY_BUILTIN_NAMESPACES = frozenset(("msg", "block", "tx", "abi"))
+
 __all__ = [
     "_detect_solidity_project_root",
     "_find_import_file_for_symbol",

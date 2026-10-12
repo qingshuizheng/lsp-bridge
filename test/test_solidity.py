@@ -8,6 +8,7 @@ asked here directly, with the text as the input and no project on disk.
 """
 
 import os
+import shutil
 import tempfile
 import unittest
 from unittest import mock
@@ -19,6 +20,10 @@ from core.handler.solidity import (
     _is_inside_inline_assembly,
     _normalize_solidity_type_name,
     _parse_all_imports,
+    _get_member_access_receiver,
+    _is_solidity_builtin_member_access,
+    _get_solidity_call_arity_at_cursor,
+    _read_solidity_remappings,
 )
 
 
@@ -141,6 +146,110 @@ class DetectProjectRootTest(unittest.TestCase):
             with mock.patch("core.handler.solidity.os.path.exists", return_value=False):
                 self.assertEqual(_detect_solidity_project_root(root), os.path.abspath(root))
 
+
+class MemberAccessTest(unittest.TestCase):
+    """Reading the receiver of `receiver.symbol` from the text of a file."""
+
+    def file_with(self, text):
+        """Return the path of a file holding TEXT."""
+        handle, path = tempfile.mkstemp(prefix="lsp-bridge-solidity", suffix=".sol")
+        with os.fdopen(handle, "w") as f:
+            f.write(text)
+        self.addCleanup(os.unlink, path)
+        return path
+
+    def test_the_receiver_of_a_member_access(self):
+        path = self.file_with("contract C {\n  foo.bar();\n}\n")
+        # The cursor is on `bar`, which is on line 1 (counted from nought).
+        self.assertEqual(_get_member_access_receiver(path, {"line": 1, "character": 7}), "foo")
+
+    def test_spaces_around_the_dot_are_skipped(self):
+        path = self.file_with("  foo  .  bar()\n")
+        self.assertEqual(_get_member_access_receiver(path, {"line": 0, "character": 11}), "foo")
+
+    def test_a_symbol_with_no_receiver(self):
+        path = self.file_with("  bar();\n")
+        self.assertIsNone(_get_member_access_receiver(path, {"line": 0, "character": 4}))
+
+    def test_a_line_that_is_not_there(self):
+        path = self.file_with("  foo.bar()\n")
+        self.assertIsNone(_get_member_access_receiver(path, {"line": 9, "character": 0}))
+
+    def test_the_builtin_namespaces(self):
+        # The namespaces Solidity itself provides, each of which had to be defined
+        # before this function could answer at all.
+        for namespace in ("msg", "block", "tx", "abi"):
+            line = "  {}.sender".format(namespace)
+            path = self.file_with(line + "\n")
+            # The cursor is on , which begins after the namespace and its dot.
+            self.assertTrue(_is_solidity_builtin_member_access(
+                path, {"line": 0, "character": len(namespace) + 3}), namespace)
+        other = self.file_with("  myToken.sender\n")
+        self.assertFalse(_is_solidity_builtin_member_access(other, {"line": 0, "character": 10}))
+
+
+class CallArityTest(unittest.TestCase):
+    """Counting the arguments of the call the cursor is in."""
+
+    def file_with(self, text):
+        """Return the path of a file holding TEXT."""
+        handle, path = tempfile.mkstemp(prefix="lsp-bridge-solidity-arity", suffix=".sol")
+        with os.fdopen(handle, "w") as f:
+            f.write(text)
+        self.addCleanup(os.unlink, path)
+        return path
+
+    def arity(self, text, character=2):
+        """Return the arity of the call `foo` on the first line of TEXT."""
+        return _get_solidity_call_arity_at_cursor(self.file_with(text),
+                                                  {"line": 0, "character": character}, "foo")
+
+    def test_a_call_with_no_arguments(self):
+        self.assertEqual(self.arity("  foo()\n"), 0)
+
+    def test_a_call_with_one_argument(self):
+        self.assertEqual(self.arity("  foo(a)\n"), 1)
+
+    def test_a_call_with_arguments_over_more_than_one_line(self):
+        self.assertEqual(self.arity("  foo(a, bar(b, c))\n"), 2)
+
+    def test_a_symbol_that_is_not_called(self):
+        self.assertIsNone(self.arity("  foo;\n"))
+
+
+class RemappingsTest(unittest.TestCase):
+    """Reading remappings.txt, which is a file of its own conventions."""
+
+    def project_with(self, text):
+        """Return the path of a project directory holding REMAPPINGS.TXT as TEXT."""
+        path = tempfile.mkdtemp(prefix="lsp-bridge-project")
+        self.addCleanup(shutil.rmtree, path, True)
+        with open(os.path.join(path, "remappings.txt"), "w") as f:
+            f.write(text)
+        return path
+
+    def test_the_pairs_are_read_in_order(self):
+        project = self.project_with("@openzeppelin/=lib/openzeppelin/\n"
+                                    "solmate/=lib/solmate/src/\n")
+        self.assertEqual(_read_solidity_remappings(project),
+                         [("@openzeppelin/", "lib/openzeppelin/"),
+                          ("solmate/", "lib/solmate/src/")])
+
+    def test_comments_blank_lines_and_lines_without_a_pair_are_skipped(self):
+        project = self.project_with("# a comment\n"
+                                    "\n"
+                                    "not a remapping\n"
+                                    "@oz/=lib/oz/\n")
+        self.assertEqual(_read_solidity_remappings(project), [("@oz/", "lib/oz/")])
+
+    def test_the_context_prefix_and_the_quotes_are_taken_off(self):
+        project = self.project_with("ctx:@oz/='lib/oz/'\n")
+        self.assertEqual(_read_solidity_remappings(project), [("@oz/", "lib/oz/")])
+
+    def test_a_project_with_no_remappings_file(self):
+        path = tempfile.mkdtemp(prefix="lsp-bridge-project-none")
+        self.addCleanup(shutil.rmtree, path, True)
+        self.assertEqual(_read_solidity_remappings(path), [])
 
 if __name__ == "__main__":
     unittest.main()

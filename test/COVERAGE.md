@@ -77,7 +77,7 @@ python3 scripts/coverage-report.py
 | `core/handler/rust_reload_workspace.py` | 3 | 3 |
 | `core/handler/semantic_tokens.py` | 12 | 7 |
 | `core/handler/signature_help.py` | 3 | 3 |
-| `core/handler/solidity.py` | 27 | 6 |
+| `core/handler/solidity.py` | 27 | 10 |
 | `core/handler/textpos.py` | 9 | 7 |
 | `core/handler/volar_proxy.py` | 9 | 4 |
 | `core/handler/workspace_diagnostics.py` | 3 | 3 |
@@ -127,7 +127,6 @@ covered because some of it is.
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `lsp-bridge.el` | 23/114 | 20% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
-| `core/handler/solidity.py` | 6/27 | 22% |
 | `acm/acm-terminal.el` | 9/38 | 24% |
 
 ## What cannot be covered locally
