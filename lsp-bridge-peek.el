@@ -953,7 +953,7 @@ error when not peeking or when the current symbol has no parent."
 			                 (brother-list (nth 4 parent-symbol))
 			                 (selected-brother (nth 5 parent-symbol)))
 	      (if selected-brother
-	          (progn
+	          (let ((already-changed nil))
 		        (setq already-changed nil)
 		        (unless (or (< (+ num selected-brother) 0)
 			                (> (+ num selected-brother) (1- (length brother-list))))

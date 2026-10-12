@@ -777,6 +777,10 @@ ARGS are ignored; the function is added as `:after' advice to
                 (acm-reset-colors)))
   (advice-add #'load-theme :after #'acm-reset-colors))
 
+;; Declared without a value: on a pgtk build this is Emacs's own variable, and this
+;; function sets it to nought to keep child frames from waiting on events.
+(defvar pgtk-wait-for-event-timeout)
+
 (defun acm-running-in-wayland-native ()
   "Return non-nil if Emacs runs on a native Wayland display.
 Checks for the pgtk window system and the GdkWaylandDisplay backend."
