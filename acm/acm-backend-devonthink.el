@@ -362,22 +362,17 @@ inserting it would put a link to nothing in the buffer, so it is ignored."
         (delete-region start (point))
         (insert text)))))
 
-(with-eval-after-load 'lsp-bridge
-  ;; ":" is in `lsp-bridge-completion-hide-characters', which would keep the menu
-  ;; from appearing right after the trigger.  The exception is as narrow as the
-  ;; trigger itself, so no other ":" is affected.
-  ;; Emacs warns about every `define-advice' name it does not know yet, and the
-  ;; advice is added here on purpose before lsp-bridge is loaded.
-  (with-no-warnings
-    (define-advice lsp-bridge--not-match-hide-characters (:around (orig) devonthink-trigger)
-      "Keep the popup alive right after the DEVONthink trigger."
-      ;; The popup is asked for on every keystroke, so the trigger does not have to
-      ;; be the last thing before point: "dt:", "dt:f" and "dt:foo" all count.
-      (if (looking-back (concat (regexp-quote acm-backend-devonthink-trigger) "[^ \t\n]*")
-                        (line-beginning-position))
-          t
-        (funcall orig))))
-    )
+(defun acm-backend-devonthink--trigger-visible-p ()
+  "Return non-nil when the text before point is the DEVONthink trigger.
+The trigger ends in \":\", which is in `lsp-bridge-completion-hide-characters'
+and would otherwise keep the menu from appearing right after it.  The popup is
+asked for on every keystroke, so the trigger does not have to be the last thing
+before point: \"dt:\", \"dt:f\" and \"dt:foo\" all count."
+  (looking-back (concat (regexp-quote acm-backend-devonthink-trigger) "[^ \t\n]*")
+                (line-beginning-position)))
+
+(add-hook 'lsp-bridge-completion-hide-character-functions
+          #'acm-backend-devonthink--trigger-visible-p)
 
 (provide 'acm-backend-devonthink)
 

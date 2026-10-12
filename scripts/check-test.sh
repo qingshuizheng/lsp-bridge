@@ -42,6 +42,7 @@ echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
 echo "== ERT: backend registry (test/acm-backend-test.el)"
+run_ert test/lsp-bridge-completion-test.el
 run_ert test/lsp-bridge-live-rename-test.el
 run_ert test/acm-backend-test.el
 

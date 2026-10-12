@@ -467,24 +467,26 @@ PREVIEW non-nil shows the candidate in an overlay instead of inserting it."
 ;;; Keeping telega's own triggers reachable
 
 (with-eval-after-load 'lsp-bridge
-  ;; lsp-bridge hides completion right after ":" by default. Bypass that
-  ;; for ":" in telega-chat-mode so emoji popup triggers immediately.
-  (define-advice lsp-bridge--not-match-hide-characters (:around (orig) telega-colon)
-    "Keep the emoji popup alive right after \":\" in telega chats."
-    (if (and (derived-mode-p 'telega-chat-mode)
-             (eq (char-before) ?:))
-        t
-      (funcall orig)))
-  ;; Allow completion inside strings in telega chat (for ```lang)
-  (define-advice lsp-bridge--not-in-string (:around (orig) telega-chat)
-    "Allow completion inside strings in telega chat (for ```lang)."
-    (if (derived-mode-p 'telega-chat-mode)
-        t
-      (funcall orig))))
+  ;; The two questions a telega chat answers differently from the syntax table
+  ;; are answered through the hooks lsp-bridge offers for them.
+  (add-hook 'lsp-bridge-completion-hide-character-functions
+            #'acm-backend-telega--colon-visible-p)
+  (add-hook 'lsp-bridge-completion-in-string-functions
+            #'acm-backend-telega--chat-buffer-p))
 
 ;; Update userlist when first switch to telega buffer.
 (advice-add 'telega-chatbuf--switch-in
             :after #'acm-backend-telega-update-items)
+
+(defun acm-backend-telega--colon-visible-p ()
+  "Return non-nil in a telega chat, where a colon starts an emoji keyword.
+lsp-bridge hides the menu right after \":\" by default; here it may not."
+  (and (derived-mode-p 'telega-chat-mode)
+       (eq (char-before) ?:)))
+
+(defun acm-backend-telega--chat-buffer-p ()
+  "Return non-nil in a telega chat, where a code fence is completed in a string."
+  (derived-mode-p 'telega-chat-mode))
 
 (provide 'acm-backend-telega)
 ;;; acm-backend-telega.el ends here

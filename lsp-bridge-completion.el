@@ -222,6 +222,9 @@ regexp that opens an interpolation."
 (defun lsp-bridge--not-in-string ()
   "Hide completion if cursor in string area."
   (or
+   ;; Sources that know better than the syntax table, such as one that completes
+   ;; a code fence language inside what the table calls a string.
+   (run-hook-with-args-until-success 'lsp-bridge-completion-in-string-functions)
    ;; Allow completion in string.
    lsp-bridge-enable-completion-in-string
    ;; For some languages, allow popup completion menu in string.
@@ -268,12 +271,29 @@ regexp that opens an interpolation."
       ;; Keep completion after a space inside a Vulpea link bracket.
       (acm-in-vulpea-bracket-p)))
 
+(defvar lsp-bridge-completion-hide-character-functions nil
+  "Functions that may keep the menu from being hidden.
+Each is called with no arguments in the buffer completion was asked in and
+should return non-nil when the character before point must not hide the menu -
+a chat buffer where a colon starts a keyword, for instance.  This is the
+extension point for that question, rather than advice on
+`lsp-bridge--not-match-hide-characters', which is this package's own function.")
+
+(defvar lsp-bridge-completion-in-string-functions nil
+  "Functions that may allow the menu inside a string.
+Each is called with no arguments and should return non-nil when completion has
+to work inside a string anyway - a source that completes a code fence language,
+for instance.  This is the extension point for that question, rather than
+advice on `lsp-bridge--not-in-string', which is this package's own function.")
+
 (defun lsp-bridge--not-match-hide-characters ()
   "Return non-nil if the character before point allows completion.
-A character listed in `lsp-bridge-completion-hide-characters' hides
-the menu unless it is a trigger character of the language server."
+A character listed in `lsp-bridge-completion-hide-characters' hides the menu
+unless it is a trigger character of the language server, or a function in
+`lsp-bridge-completion-hide-character-functions' says otherwise."
   (let ((char (ignore-errors (char-to-string (char-before)))))
-    (or (and lsp-bridge-completion-obey-trigger-characters-p
+    (or (run-hook-with-args-until-success 'lsp-bridge-completion-hide-character-functions)
+        (and lsp-bridge-completion-obey-trigger-characters-p
              (member char (if (boundp 'acm-backend-lsp-completion-trigger-characters)
                               (symbol-value 'acm-backend-lsp-completion-trigger-characters))))
         (not (member char lsp-bridge-completion-hide-characters)))))
