@@ -241,7 +241,7 @@ fills in the documentation and additional text edits of the item."
     lsp-bridge--is-evil-state
     lsp-bridge--is-meow-state
 
-    lsp-brige--not-in-chatgpt-response
+    lsp-bridge--not-in-chatgpt-response
 
     lsp-bridge--not-complete-manually)
   "Predicate functions that decide whether to popup completion.
@@ -1263,7 +1263,7 @@ this lets langserver rules hold either a name or a variable."
               auto-mode-alist
               'string-match-p)))
 
-(defun lsp-brige-get-mode (filepath)
+(defun lsp-bridge-get-mode (filepath)
   "Return the major mode of the buffer visiting FILEPATH.
 The mode of an open buffer is preferred and
 `lsp-bridge-get-mode-name-from-file-path' is used for files that are
@@ -1278,7 +1278,7 @@ not open."
   "Return the multi lang server name for FILENAME.
 The major mode of the file is looked up in
 `lsp-bridge-multi-lang-server-mode-list'."
-  (when-let* ((mode (lsp-brige-get-mode filename))
+  (when-let* ((mode (lsp-bridge-get-mode filename))
               (langserver-info (lsp-bridge-lang-server-by-mode mode lsp-bridge-multi-lang-server-mode-list)))
     (lsp-bridge-get-symbol-string-value (cdr langserver-info))))
 
@@ -1314,7 +1314,7 @@ If no sub-buffer is active, use the Org buffer for inline Babel lookup."
                (lsp-bridge-use-ds-pinyin-in-org-mode "ds-pinyin")
                (lsp-bridge-enable-org-babel
                 (lsp-bridge-org-babel-check-lsp-server)))))))
-    (let* ((mode (lsp-brige-get-mode filename))
+    (let* ((mode (lsp-bridge-get-mode filename))
            (langserver-info (lsp-bridge-lang-server-by-mode mode lsp-bridge-single-lang-server-mode-list)))
       (cond (langserver-info
              (lsp-bridge-get-symbol-string-value (cdr langserver-info)))

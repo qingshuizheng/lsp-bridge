@@ -333,7 +333,7 @@ unless it is a trigger character of the language server, or a function in
   (not (and (featurep 'multiple-cursors)
             multiple-cursors-mode)))
 
-(defun lsp-brige--not-in-chatgpt-response ()
+(defun lsp-bridge--not-in-chatgpt-response ()
   "Don't popup completion menu if ChatGPT is responsing."
   (not (and (boundp 'mind-wave-is-response-p)
             mind-wave-is-response-p)))

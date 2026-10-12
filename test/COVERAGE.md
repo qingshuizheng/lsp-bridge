@@ -113,7 +113,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-transport.el` | 59 | 18 |
 | `lsp-bridge-ui.el` | 14 | 12 |
 | `lsp-bridge-workspace.el` | 30 | 12 |
-| `lsp-bridge.el` | 114 | 17 |
+| `lsp-bridge.el` | 114 | 23 |
 | `lsp_bridge.py` | 24 | 22 |
 
 ## Where the surface is still thin
@@ -122,10 +122,10 @@ Modules with at least 8 names of which a quarter or fewer are mentioned by anyth
 under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
-| `lsp-bridge.el` | 17/114 | 15% |
 | `lsp-bridge-semantic-tokens.el` | 8/50 | 16% |
 | `lsp-bridge-ref.el` | 18/91 | 20% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
+| `lsp-bridge.el` | 23/114 | 20% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
 | `core/handler/solidity.py` | 6/27 | 22% |
 | `acm/acm-terminal.el` | 9/38 | 24% |
