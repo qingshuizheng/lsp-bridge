@@ -24,6 +24,7 @@ from core.handler.solidity import (
     _is_solidity_builtin_member_access,
     _get_solidity_call_arity_at_cursor,
     _read_solidity_remappings,
+    _find_symbol_in_file,
 )
 
 
@@ -250,6 +251,40 @@ class RemappingsTest(unittest.TestCase):
         path = tempfile.mkdtemp(prefix="lsp-bridge-project-none")
         self.addCleanup(shutil.rmtree, path, True)
         self.assertEqual(_read_solidity_remappings(path), [])
+
+class FindSymbolInFileTest(unittest.TestCase):
+    """Finding where a name is defined in the text of a file."""
+
+    def file_with(self, text):
+        """Return the path of a file holding TEXT."""
+        handle, path = tempfile.mkstemp(prefix="lsp-bridge-solidity-symbol", suffix=".sol")
+        with os.fdopen(handle, "w") as f:
+            f.write(text)
+        self.addCleanup(os.unlink, path)
+        return path
+
+    def test_a_contract_is_found(self):
+        # The pattern that finds a definition is built from the keywords a
+        # definition begins with, which had to be defined first.
+        path = self.file_with("// a comment\npragma solidity ^0.8.0;\n\ncontract MyToken {\n}\n")
+        self.assertEqual(_find_symbol_in_file(path, "MyToken"),
+                         # The position of a definition is where its keyword begins.
+                         {"line": 3, "character": 0})
+
+    def test_a_struct_and_a_function_are_found(self):
+        path = self.file_with("struct Point { uint x; }\nfunction transfer(uint a) {}\n")
+        self.assertEqual(_find_symbol_in_file(path, "Point"), {"line": 0, "character": 0})
+        self.assertEqual(_find_symbol_in_file(path, "transfer"), {"line": 1, "character": 0})
+
+    def test_a_name_that_is_not_defined(self):
+        path = self.file_with("contract MyToken {\n  uint other;\n}\n")
+        self.assertIsNone(_find_symbol_in_file(path, "Nowhere"))
+
+    def test_the_arity_picks_between_overloads(self):
+        path = self.file_with("function f(uint a) {}\nfunction f(uint a, uint b) {}\n")
+        self.assertEqual(_find_symbol_in_file(path, "f", 1), {"line": 0, "character": 0})
+        self.assertEqual(_find_symbol_in_file(path, "f", 2), {"line": 1, "character": 0})
+        self.assertIsNone(_find_symbol_in_file(path, "f", 3))
 
 if __name__ == "__main__":
     unittest.main()

@@ -13,6 +13,15 @@ import re
 from core.utils import *
 from core.handler.textpos import *
 
+# What a definition of a name can begin with, as the fragment a pattern is built
+# from: the name is looked for right after one of these.  `_find_symbol_in_file'
+# reads it as the first half of its `definition_pattern' and the name was defined
+# nowhere, so that pattern raised `NameError' when it was built.
+_SOLIDITY_DEF_KEYWORDS = (
+    r"\b(?:contract|interface|library|struct|enum|event|error|function|modifier|"
+    r"constructor|type)\s+"
+)
+
 # The namespaces Solidity itself provides: a member access from one of them is not
 # a symbol of the project, so the fallback has nothing to look up.  `_is_solidity_
 # builtin_member_access' reads this set and it was never defined, which made that
