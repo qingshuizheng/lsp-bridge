@@ -115,7 +115,7 @@ The wait starts when a window is scrolled or the buffer is changed."
 
 (defface lsp-bridge-semantic-tokens-type-parameter-face
   '((t (:inherit font-lock-variable-name-face)))
-  "Face used for parameter name."
+  "Face used for the name of a type parameter."
   :group 'lsp-bridge-semantic-tokens)
 
 (defface lsp-bridge-semantic-tokens-parameter-face

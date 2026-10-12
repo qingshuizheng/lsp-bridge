@@ -142,8 +142,8 @@ Default is `lsp-bridge-ref-popup-window-default-handler'."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-command
-  '((t (:foreground "Gray30" :bold t)))
-  "Face for filepath."
+  '((t :inherit font-lock-function-name-face :bold t))
+  "Face for a command named in the results."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-file
@@ -177,13 +177,17 @@ Default is `lsp-bridge-ref-popup-window-default-handler'."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-mark-changed
-  '((t (:foreground "White" :background "#007aff" :bold t)))
-  "Face for keyword match."
+  '((t :inherit match :bold t))
+  "Face for keyword match.
+It inherits `match', the face for what a search found, so a changed line is
+shown in the colour of the theme in use."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-mark-deleted
-  '((t (:foreground "#ff3b30" :bold t)))
-  "Face for keyword match."
+  '((t :inherit error :bold t))
+  "Face for a line that the results say is gone.
+It inherits `error', the theme's face for something removed, rather than
+naming a red of its own."
   :group 'lsp-bridge-ref)
 
 (defface lsp-bridge-ref-font-lock-function-location

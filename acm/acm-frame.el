@@ -28,10 +28,10 @@
   "Default face, foreground and background colors used for the popup.")
 
 (defface acm-frame-border-face
-  '((((class color) (min-colors 88) (background dark)) :background "#323232")
-    (((class color) (min-colors 88) (background light)) :background "#d7d7d7")
-    (t :background "gray"))
-  "The background color used for the thin border.")
+  '((t :inherit border))
+  "The background color used for the thin border.
+It inherits `border', the face of a frame's border, so the fallback colour
+follows the theme; the callers that set it from the text colour still do.")
 
 (defface acm-frame-select-face
   '()

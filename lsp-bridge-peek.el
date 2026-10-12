@@ -159,8 +159,10 @@ The third is the buffer before ace peek.  The fourth is the buffer where the sym
 The fifth is the position where the symbol is.")
 
 (defface lsp-bridge-peek--highlight-symbol-face
-  `((t :foreground "white" :background "#623d73"))
-  "Face for highlighting the symbol you want to look through."
+  '((t :inherit secondary-selection))
+  "Face for highlighting the symbol you want to look through.
+It inherits the face the theme uses for the other places something appears,
+so the symbol is shown in the theme's colours rather than in fixed ones."
   :group 'lsp-bridge-peek)
 
 (defface lsp-bridge-peek-border-face
@@ -171,11 +173,10 @@ height and background properties of the face."
   :group 'lsp-bridge-peek)
 
 (defface lsp-bridge-peek-ace-str-face
-  '((((background light))
-     :foreground "#dddddd" :background "#666666")
-    (t
-     :foreground "#222222" :background "#c0c0c0"))
-  "Face used for ace strings."
+  '((t :inherit help-key-binding))
+  "Face used for ace strings.
+Ace strings are keys that can be typed, so they are shown with the face Emacs
+uses for a key it names in help, which every theme colours."
   :group 'lsp-bridge-peek)
 
 (defcustom lsp-bridge-peek-file-content-height 12

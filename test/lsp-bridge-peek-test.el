@@ -13,6 +13,8 @@
 
 (require 'ert)
 (require 'lsp-bridge-peek)
+(require 'lsp-bridge-ref)
+(require 'acm-frame)
 ;; The content helpers convert protocol positions with this one.
 (require 'acm-backend-lsp)
 
@@ -174,6 +176,20 @@
       ;; The line and character of the protocol are counted from one for people.
       (should (string-match-p "1:1" text))
       (should (string-match-p "5:3" text)))))
+
+(ert-deftest lsp-bridge-peek-test-the-faces-follow-the-theme ()
+  "The peek, results and popup faces inherit, rather than naming colours."
+  (should (equal (face-attribute 'lsp-bridge-peek--highlight-symbol-face :inherit)
+                 'secondary-selection))
+  (should (equal (face-attribute 'lsp-bridge-peek-ace-str-face :inherit)
+                 'help-key-binding))
+  (should (equal (face-attribute 'lsp-bridge-ref-font-lock-mark-changed :inherit)
+                 'match))
+  (should (equal (face-attribute 'lsp-bridge-ref-font-lock-mark-deleted :inherit)
+                 'error))
+  (should (equal (face-attribute 'lsp-bridge-ref-font-lock-command :inherit)
+                 'font-lock-function-name-face))
+  (should (equal (face-attribute 'acm-frame-border-face :inherit) 'border)))
 
 (provide 'lsp-bridge-peek-test)
 ;;; lsp-bridge-peek-test.el ends here
