@@ -922,7 +922,8 @@ Do nothing when the current line has no line:column prefix."
 Quit the reference buffer and restore its window configuration
 first, so the code goes back where the search started."
   (interactive)
-  (let ((current-line (save-excursion
+  (let ((start nil) (end nil)
+        (current-line (save-excursion
                         (beginning-of-line)
                         (search-forward-regexp lsp-bridge-ref-regexp-position nil t)
                         (setq start (point))
@@ -944,11 +945,11 @@ Create a new reference window with
 `lsp-bridge-ref-popup-window-handler' when the buffer is not
 displayed in any window."
   ;; Keep cursor in search buffer's window.
-  (setq ref-buffer-window (get-buffer-window lsp-bridge-ref-buffer))
-  (if ref-buffer-window
-      (select-window ref-buffer-window)
-    ;; Create window if `lsp-bridge-ref-buffer' is not exist in windows.
-    (funcall lsp-bridge-ref-popup-window-handler)))
+  (let ((ref-buffer-window (get-buffer-window lsp-bridge-ref-buffer)))
+    (if ref-buffer-window
+        (select-window ref-buffer-window)
+      ;; Create window if `lsp-bridge-ref-buffer' is not exist in windows.
+      (funcall lsp-bridge-ref-popup-window-handler))))
 
 ;;;###autoload
 (defun lsp-bridge-ref-open-file (&optional stay)

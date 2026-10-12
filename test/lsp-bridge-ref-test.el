@@ -152,5 +152,17 @@
           (should (equal (lsp-bridge-ref-get-line-content buffer 2) " other code")))
       (kill-buffer buffer))))
 
+(ert-deftest lsp-bridge-ref-test-switching-to-the-ref-window ()
+  "The window showing the reference buffer is the one that is selected."
+  (let ((lsp-bridge-ref-buffer (get-buffer-create "*lsp-bridge-ref-window-test*"))
+        selected)
+    (unwind-protect
+        (cl-letf (((symbol-function 'get-buffer-window) (lambda (&rest _) 'the-window))
+                  ((symbol-function 'select-window)
+                   (lambda (window &rest _) (setq selected window))))
+          (lsp-bridge-switch-to-ref-window)
+          (should (eq selected 'the-window)))
+      (kill-buffer lsp-bridge-ref-buffer))))
+
 (provide 'lsp-bridge-ref-test)
 ;;; lsp-bridge-ref-test.el ends here
