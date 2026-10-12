@@ -6,12 +6,19 @@ with, for instance, has two shapes and a count that is reported to the user.  Wh
 is checked here is that kind of logic, so it runs anywhere and fast.
 """
 
+import importlib
+import inspect
+import pkgutil
 import unittest
 
+from core.handler import Handler
+from core.handler.code_action import CodeAction
 from core.handler.completion import Completion
 from core.handler.completion_workspace_symbol import CompletionWorkspaceSymbol
+from core.handler.document_highlight import DocumentHighlight
 from core.handler.execute_command import ExecuteCommand
 from core.handler.hover import Hover, make_code_block
+from core.handler.prepare_rename import PrepareRename
 from core.handler.rename import count_workspace_edits
 from core.handler.semantic_tokens import SemanticTokens
 
@@ -258,6 +265,98 @@ class ParseHoverContentsTest(unittest.TestCase):
 
     def test_nothing_to_render(self):
         self.assertEqual(self.parse([]), "")
+
+
+def collected_handlers():
+    """Return the concrete handler classes under core/handler, by class name.
+
+    Importing every module is part of the check: a handler that cannot be
+    imported is a handler the bridge cannot use.  A class that only exists to be
+    inherited from - `CallHierarchy' needs a method its two subclasses supply -
+    is left out, since the bridge instantiates the concrete ones."""
+    import core.handler
+    found = {}
+    for info in pkgutil.walk_packages(core.handler.__path__, "core.handler."):
+        module = importlib.import_module(info.name)
+        for name, obj in inspect.getmembers(module, inspect.isclass):
+            if (obj is not Handler and issubclass(obj, Handler)
+                    and obj.__module__ == module.__name__):
+                found[name] = obj
+    bases = {base for handler in found.values() for base in handler.__mro__[1:]
+             if base in found.values()}
+    return {name: handler for name, handler in found.items() if handler not in bases}
+
+
+class HandlerInterfaceTest(unittest.TestCase):
+    """The shape every handler has to have, which the bridge relies on."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.handlers = collected_handlers()
+
+    def test_there_are_handlers_to_check(self):
+        self.assertGreater(len(self.handlers), 20)
+
+    def test_every_handler_declares_a_name_and_a_method(self):
+        for name, handler in self.handlers.items():
+            self.assertIsInstance(getattr(handler, "name", None), str, name)
+            self.assertIsInstance(getattr(handler, "method", None), str, name)
+
+    def test_handler_names_are_unique(self):
+        names = [handler.name for handler in self.handlers.values()]
+        self.assertEqual(sorted(names), sorted(set(names)))
+
+    def test_every_handler_answers_both_ways(self):
+        for name, handler in self.handlers.items():
+            self.assertTrue(callable(getattr(handler, "process_request", None)), name)
+            self.assertTrue(callable(getattr(handler, "process_response", None)), name)
+
+    def test_every_handler_documents_itself(self):
+        for name, handler in self.handlers.items():
+            self.assertTrue(inspect.getdoc(handler), name)
+
+
+class PrepareRenameTest(unittest.TestCase):
+    """The placeholder a rename would replace."""
+
+    def test_the_position_is_sent_as_it_is(self):
+        position = {"line": 3, "character": 7}
+        self.assertEqual(PrepareRename.process_request(bare(PrepareRename), position),
+                         {"position": position})
+
+
+class DocumentHighlightTest(unittest.TestCase):
+    """The occurrences of the symbol at the cursor."""
+
+    def test_the_position_is_sent_as_it_is(self):
+        position = {"line": 0, "character": 1}
+        self.assertEqual(
+            DocumentHighlight.process_request(bare(DocumentHighlight), position),
+            {"position": position})
+
+    def test_a_change_cancels_the_request(self):
+        self.assertTrue(DocumentHighlight.cancel_on_change)
+
+
+class CodeActionTest(unittest.TestCase):
+    """The actions a server offers for a range, and the filter it asks for."""
+
+    def setUp(self):
+        self.handler = bare(CodeAction)
+
+    def test_a_string_kind_is_sent_as_the_only_filter(self):
+        params = self.handler.process_request("pyright", [{"code": 1}],
+                                              {"line": 1}, {"line": 2}, "quickfix")
+        self.assertEqual(params, {"range": {"start": {"line": 1}, "end": {"line": 2}},
+                                  "context": {"diagnostics": [{"code": 1}],
+                                              "only": ["quickfix"]}})
+        self.assertEqual(self.handler.action_kind, "quickfix")
+        self.assertEqual(self.handler.lsp_server_name, "pyright")
+
+    def test_a_kind_that_is_not_a_string_leaves_the_filter_out(self):
+        params = self.handler.process_request("clangd", [], {"line": 0}, {"line": 0}, None)
+        self.assertEqual(params["context"], {"diagnostics": []})
+        self.assertIsNone(self.handler.action_kind)
 
 
 if __name__ == "__main__":
