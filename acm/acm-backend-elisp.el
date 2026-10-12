@@ -89,7 +89,7 @@
   :group 'acm)
 
 (defcustom acm-backend-elisp-candidate-min-length 0
-  "Minimal length of candidate."
+  "Minimal length of an elisp candidate."
   :type 'integer
   :group 'acm-backend-elisp)
 

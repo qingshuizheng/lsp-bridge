@@ -8,6 +8,11 @@ both and reports the ones nothing in the package defines.
 Only the names this package owns are looked at: `Location' or `completionItem' is
 the protocol talking, and ``json.load()`` is somebody else's function.
 
+Three more claims are asked of the docstrings themselves: that the default
+an option's docstring names is the default it has, that no two definitions share
+a docstring (which is how one gets copied from the definition above it), and that
+every option names a `:type' for the Custom interface.
+
 Run it from the repository root:
 
     python3 scripts/check-doc-references.py
@@ -195,6 +200,70 @@ def default_claims(root):
                        f" but its docstring says {said}")
 
 
+DEFINITION = re.compile(
+    r"^\((defun|defmacro|defsubst|cl-defun|cl-defmacro|defvar|defvar-local|"
+    r"defcustom|defface|define-minor-mode)\s+([a-zA-Z0-9*+!?<>=/:_-]+)", re.M)
+STRING = re.compile(r'"((?:[^"\\]|\\.)*)"', re.S)
+
+
+def definitions(root):
+    """Yield (path, kind, name, docstring) for every definition of the Elisp side.
+
+    A definition runs from its own line to the next definition, which is how the
+    docstring of one is told from the docstring of the next.  The longest string
+    inside that stretch is taken to be the docstring: the value of a `defcustom' is
+    otherwise the first string, and a docstring is nearly always the longest string a
+    definition holds.
+    """
+    for path in elisp_files(root):
+        text = path.read_text(errors="ignore")
+        starts = [m for m in DEFINITION.finditer(text) if m.start() == 0 or text[m.start() - 1] == "\n"]
+        for index, match in enumerate(starts):
+            if match.group(1) not in ("defface", "defcustom", "defvar", "defvar-local"):
+                continue
+            end = starts[index + 1].start() if index + 1 < len(starts) else len(text)
+            block = text[match.start():end]
+            # A docstring stands right before the first keyword line, so what comes
+            # before that is the value: taking the longest string instead would pick
+            # up a `defcustom' whose value is a string.
+            first_keyword = re.search(r"^\s+:[a-z-]+", block, re.M)
+            if not first_keyword:
+                # A definition with no keyword line has no docstring to ask about:
+                # what looks like one would be the value it holds.
+                continue
+            strings = STRING.findall(block[:first_keyword.start()])
+            docstring = strings[-1].strip() if strings else ""
+            yield path, match.group(1), match.group(2), docstring
+
+
+def shared_docstrings(root):
+    """Yield the definitions whose docstring another definition also uses.
+
+    A docstring copied from the definition above it is how a face ends up saying it is
+    for a filepath, or a type parameter saying it is for a parameter.
+    """
+    seen = {}
+    for path, kind, name, docstring in definitions(root):
+        if len(docstring) < 20:
+            continue
+        seen.setdefault(docstring, []).append(f"{path.relative_to(root)}:{name}")
+    for docstring, where in sorted(seen.items()):
+        if len(where) > 1:
+            first = docstring.splitlines()[0]
+            yield f"{where[0]} and {where[1]}: \"{first}\"" + ("" if len(where) == 2 else f" (+{len(where) - 2} more)")
+
+
+def options_without_type(root):
+    """Yield the options that name no `:type' for the Custom interface."""
+    for path in elisp_files(root):
+        text = path.read_text(errors="ignore")
+        for match in re.finditer(r"^\(defcustom\s+([a-zA-Z0-9-]+)", text, re.M):
+            end = text.find("\n(", match.end())
+            block = text[match.start():end if end != -1 else len(text)]
+            if ":type" not in block:
+                yield f"{path.relative_to(root)}:{match.group(1)}"
+
+
 def main():
     """Report the references nothing defines, and fail when there are any."""
     root = repository()
@@ -216,7 +285,15 @@ def main():
     print(f"boolean options whose docstring names the wrong default: {len(defaults)}")
     for line in defaults:
         print(f"  {line}")
-    return 1 if calls or comments or defaults else 0
+    shared = list(shared_docstrings(root))
+    print(f"docstrings that more than one definition uses: {len(shared)}")
+    for line in shared:
+        print(f"  {line}")
+    untyped = list(options_without_type(root))
+    print(f"options that name no :type: {len(untyped)}")
+    for line in untyped:
+        print(f"  {line}")
+    return 1 if calls or comments or defaults or shared or untyped else 0
 
 
 if __name__ == "__main__":

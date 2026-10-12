@@ -95,7 +95,7 @@
   :group 'acm-backend-yas)
 
 (defcustom acm-backend-yas-candidate-min-length 0
-  "Minimal length of candidate."
+  "Minimal length of a yas candidate."
   :type 'integer
   :group 'acm-backend-yas)
 

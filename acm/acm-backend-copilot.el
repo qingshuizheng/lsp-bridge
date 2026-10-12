@@ -46,6 +46,7 @@
 
 (defcustom acm-backend-copilot-show-trailing nil
   "Show only the trailing part of a Copilot candidate, like VSCode."
+  :type 'boolean
   :group 'acm-backend-copilot)
 
 (defcustom acm-backend-copilot-accept nil

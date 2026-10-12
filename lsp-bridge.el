@@ -664,15 +664,18 @@ If nil, lsp-bridge would try to detect by default."
                  (string)))
 
 (defcustom lsp-bridge-use-wenls-in-org-mode nil
-  "Whether to use the `wen' LSP server in `org-mode'.")
+  "Whether to use the `wen' LSP server in `org-mode'.")  :type 'boolean
+
 
 (defcustom lsp-bridge-use-ds-pinyin-in-org-mode nil
-  "Whether to use the `ds-pinyin' LSP server in `org-mode'.")
+  "Whether to use the `ds-pinyin' LSP server in `org-mode'.")  :type 'boolean
+
 
 (defcustom lsp-bridge-complete-manually nil
   "When non-nil, popup the completion menu only on explicit request.
 Users then call `lsp-bridge-popup-complete-menu' themselves instead of
-letting lsp-bridge pop the menu up while typing.")
+letting lsp-bridge pop the menu up while typing.")  :type 'boolean
+
 
 (defcustom lsp-bridge-multi-lang-server-mode-list
   '(((python-mode python-ts-mode) . lsp-bridge-python-multi-lsp-server)
@@ -928,10 +931,12 @@ letting lsp-bridge pop the menu up while typing.")
   :type '(repeat variable))
 
 (defcustom lsp-bridge-get-single-lang-server-by-project nil
-  "Get lang server with project path and file path.")
+  "Get lang server with project path and file path.")  :type 'function
+
 
 (defcustom lsp-bridge-get-multi-lang-server-by-project nil
-  "Get lang server with project path and file path.")
+  "Get lang server with project path and file path.")  :type 'function
+
 
 (defcustom lsp-bridge-get-language-id nil
   "Function that returns the languageId used for multi-server setup.
@@ -942,21 +947,24 @@ function with the project path, the file path, the server name and
 the file extension and uses the returned string as languageId.
 
 When this function returns nil, lsp-bridge parses languageId from
-file langserver/*.json instead.")
+file langserver/*.json instead.")  :type 'function
+
 
 (defcustom lsp-bridge-get-project-path-by-filepath nil
   "Function that returns the project path for a file path.
 
 By default lsp-bridge uses the output of `git rev-parse
 --show-toplevel'; customize this function to derive the project path
-from the given file path instead.")
+from the given file path instead.")  :type 'function
+
 
 (defcustom lsp-bridge-get-workspace-folder nil
   "Function that returns a workspace folder for a project path.
 
 In Java, several projects sometimes have to share one workspace
 folder; customize this function to map a project path to the workspace
-folder that lsp-bridge should report to the server.")
+folder that lsp-bridge should report to the server.")  :type 'function
+
 
 (defvar lsp-bridge-indent-two-level 2
   "Indentation width of two for the modes that use it.")

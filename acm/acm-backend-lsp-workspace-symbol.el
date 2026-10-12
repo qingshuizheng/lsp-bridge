@@ -94,12 +94,12 @@
   :group 'acm-backend-lsp-workspace-symbol)
 
 (defcustom acm-backend-lsp-workspace-symbol-candidate-min-length 0
-  "Minimal length of candidate."
+  "Minimal length of an lsp workspace symbol candidate."
   :type 'integer
   :group 'acm-backend-lsp-workspace-symbol)
 
 (defcustom acm-backend-lsp-workspace-symbol-candidates-max-number 100
-  "Maximal number of candidate of menu."
+  "Maximal number of LSP workspace symbol candidates in the menu."
   :type 'integer
   :group 'acm-backend-lsp-workspace-symbol)
 

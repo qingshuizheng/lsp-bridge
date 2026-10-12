@@ -6,12 +6,12 @@
 (require 'xref)
 
 (defcustom acm-backend-ctags-candidate-min-length 3
-  "Minimal length of candidate."
+  "Minimal length of a ctags candidate."
   :type 'integer
   :group 'acm-backend-ctags)
 
 (defcustom acm-enable-ctags t
-  "Popup search words completions when this option is turn on."
+  "Popup ctags completions when this option is turn on."
   :type 'boolean
   :group 'acm-backend-ctags)
 

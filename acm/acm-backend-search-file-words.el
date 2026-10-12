@@ -89,7 +89,7 @@
   :group 'acm)
 
 (defcustom acm-backend-search-file-words-candidate-min-length 0
-  "Minimal length of candidate."
+  "Minimal length of a search file words candidate."
   :type 'integer
   :group 'acm-backend-search-file-words)
 

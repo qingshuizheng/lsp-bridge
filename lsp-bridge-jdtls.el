@@ -9,7 +9,8 @@
 
 (defcustom lsp-bridge-jdtls-workspace
   (expand-file-name "~/.cache/lsp-bridge-jdtls")
-  "LSP-Bridge jdtls workspace directory.")
+  "LSP-Bridge jdtls workspace directory.")  :type 'directory
+
 
 (defvar lsp-bridge-jdtls-default-file
   (expand-file-name
@@ -22,7 +23,8 @@ The Windows variant is used on Windows systems.")
 
 (defcustom lsp-bridge-jdtls-jvm-args '()
   "Specifies additional VM parameters for starting the Java language server.
-E.g. Use `-javaagent:/home/user/.emacs.d/plugin/lombok.jar` to add lombok support")
+E.g. Use `-javaagent:/home/user/.emacs.d/plugin/lombok.jar` to add lombok support")  :type '(repeat string)
+
 
 (defun lsp-bridge-get-jdtls-server-by-project (project-path filepath)
   "Return the JDTLS configuration for PROJECT-PATH and FILEPATH."
