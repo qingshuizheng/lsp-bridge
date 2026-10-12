@@ -15,6 +15,7 @@
 (require 'acm-backend-copilot)
 (require 'acm-backend-lsp-workspace-symbol)
 (require 'acm-backend-search-file-words)
+(require 'acm-backend-tempel)
 
 ;; The cache variables of the backends are built with `intern' from a format
 ;; string, and the items of the workspace symbol backend are made with
@@ -119,6 +120,18 @@ point rather than about the service, which is why it can be asked here."
     (should (hash-table-p acm-backend-lsp-workspace-symbol-items))
     (should (equal (hash-table-count acm-backend-lsp-workspace-symbol-items) 0))
     (should-not acm-backend-lsp-workspace-symbol-cache-candidates)))
+
+(ert-deftest acm-backend-tempel-test-candidates-need-the-option-and-tempel ()
+  "Nothing is offered while the option is off, or while tempel is not loaded.
+The snippets themselves come out of tempel, so the two gates that decide whether
+it is asked at all are the part of this backend that can be asked here; the
+second one only means something on a machine without tempel, which is why it is
+skipped when tempel is loaded."
+  (let ((acm-enable-tempel nil))
+    (should-not (acm-backend-tempel-candidates "any")))
+  (unless (featurep 'tempel)
+    (let ((acm-enable-tempel t))
+      (should-not (acm-backend-tempel-candidates "any")))))
 
 (provide 'acm-backend-candidates-test)
 ;;; acm-backend-candidates-test.el ends here
