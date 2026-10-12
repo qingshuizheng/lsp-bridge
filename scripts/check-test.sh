@@ -45,6 +45,12 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== ERT: what the small backends offer (test/acm-backend-candidates-test.el)"
+run_ert test/acm-backend-candidates-test.el
+
+echo "== ERT: breadcrumb icons (test/lsp-bridge-breadcrumb-test.el)"
+run_ert test/lsp-bridge-breadcrumb-test.el
+
 echo "== ERT: terminal menu front end (test/acm-terminal-test.el)"
 run_ert test/acm-terminal-test.el
 
