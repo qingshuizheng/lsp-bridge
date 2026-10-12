@@ -45,6 +45,9 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== ERT: the reference buffer (test/lsp-bridge-ref-test.el)"
+run_ert test/lsp-bridge-ref-test.el
+
 echo "== ERT: semantic tokens on the buffer (test/lsp-bridge-semantic-tokens-test.el)"
 run_ert test/lsp-bridge-semantic-tokens-test.el
 

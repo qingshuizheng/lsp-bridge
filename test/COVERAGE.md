@@ -106,7 +106,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
 | `lsp-bridge-org-babel.el` | 12 | 2 |
 | `lsp-bridge-peek.el` | 62 | 1 |
-| `lsp-bridge-ref.el` | 91 | 0 |
+| `lsp-bridge-ref.el` | 91 | 7 |
 | `lsp-bridge-remote.el` | 30 | 2 |
 | `lsp-bridge-rust.el` | 3 | 0 |
 | `lsp-bridge-semantic-tokens.el` | 50 | 7 |
