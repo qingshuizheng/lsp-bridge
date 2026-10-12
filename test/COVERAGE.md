@@ -24,7 +24,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-elisp.el` | 18 | 9 |
 | `acm/acm-backend-jupyter.el` | 5 | 3 |
 | `acm/acm-backend-lsp-workspace-symbol.el` | 7 | 3 |
-| `acm/acm-backend-lsp.el` | 24 | 12 |
+| `acm/acm-backend-lsp.el` | 24 | 15 |
 | `acm/acm-backend-path.el` | 5 | 5 |
 | `acm/acm-backend-search-file-words.el` | 11 | 5 |
 | `acm/acm-backend-tabby.el` | 7 | 4 |

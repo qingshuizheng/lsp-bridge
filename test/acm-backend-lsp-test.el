@@ -141,5 +141,55 @@ void variable before they were declared."
         (acm-backend-lsp-candidate-doc (list :key "candidate" :server "server"))
         (should fetched)))))
 
+(ert-deftest acm-backend-lsp-test-snippet-expansion-needs-yas ()
+  "The snippet expander is offered only while yasnippet is on.
+The function is read as a special variable, so it is set rather than bound here."
+  (let ((was-bound (boundp 'yas-minor-mode))
+        (was-value (and (boundp 'yas-minor-mode) (symbol-value 'yas-minor-mode))))
+    (unwind-protect
+        (progn
+          (setq yas-minor-mode nil)
+          (should-not (acm-backend-lsp-snippet-expansion-fn))
+          (setq yas-minor-mode t)
+          (should (eq (acm-backend-lsp-snippet-expansion-fn) 'yas-expand-snippet)))
+      (if was-bound
+          (setq yas-minor-mode was-value)
+        (makunbound 'yas-minor-mode)))))
+
+(ert-deftest acm-backend-lsp-test-expand-inserts-the-insert-text ()
+  "Expanding a plain candidate replaces the text from the menu onwards.
+A completion replaces the rest of the word, and the rest of the line with it when
+no `textEdit' says otherwise: what the server offers is the whole of what should
+stand there."
+  (let ((acm-backend-lsp-enable-auto-import nil))
+    (with-temp-buffer
+      (insert "pref-rest\n")
+      (goto-char 10)
+      (acm-backend-lsp-candidate-expand (list :label "l" :insertText "prefix") 1)
+      (should (equal (buffer-string) "prefix\n")))))
+
+(ert-deftest acm-backend-lsp-test-expand-falls-back-to-the-label ()
+  "A candidate without an insert text inserts its label."
+  (let ((acm-backend-lsp-enable-auto-import nil))
+    (with-temp-buffer
+      (insert "pre-rest\n")
+      (goto-char 5)
+      (acm-backend-lsp-candidate-expand (list :label "prefix" :insertText nil) 1)
+      ;; Point was at 5, one past `pre-', so the label takes its place.
+      (should (equal (buffer-string) "prefixrest\n")))))
+
+(ert-deftest acm-backend-lsp-test-expand-in-preview-leaves-the-buffer ()
+  "A preview shows the text in an overlay and changes nothing."
+  (let ((acm-backend-lsp-enable-auto-import nil))
+    (with-temp-buffer
+      (insert "pre-rest\n")
+      (goto-char 5)
+      (let (shown)
+        (cl-letf (((symbol-function 'acm-preview-create-overlay)
+                   (lambda (bound-start bound-end text) (setq shown (list bound-start bound-end text)))))
+          (acm-backend-lsp-candidate-expand (list :label "prefix" :insertText "prefix") 1 t))
+        (should (equal (buffer-string) "pre-rest\n"))
+        (should shown)))))
+
 (provide 'acm-backend-lsp-test)
 ;;; acm-backend-lsp-test.el ends here
