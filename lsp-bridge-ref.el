@@ -628,7 +628,7 @@ change hook and make the buffer read-only again."
 With MATCH-REGEXP non-nil keep the lines that match the regexp and
 remove the others; otherwise remove the lines that match.  Report
 how many lines were removed and refresh the header line."
-  (let ((start nil) (line-content nil) (remove-counter 0)
+  (let ((line-content nil) (remove-counter 0)
           (filter-regexp (read-string
                         (format (if match-regexp
                                     "Filter result match regexp: "
@@ -637,7 +637,7 @@ how many lines were removed and refresh the header line."
       (with-current-buffer lsp-bridge-ref-buffer
         (setq remove-counter 0)
         (goto-char (point-min))
-        (while (setq start (search-forward-regexp lsp-bridge-ref-regexp-position nil t))
+        (while (search-forward-regexp lsp-bridge-ref-regexp-position nil t)
           (setq line-content (lsp-bridge-ref-get-line-content lsp-bridge-ref-buffer (line-number-at-pos)))
           (if match-regexp
               (unless (string-match filter-regexp line-content)
