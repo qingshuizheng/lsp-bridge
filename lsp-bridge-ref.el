@@ -965,8 +965,7 @@ non-nil, select the reference window again afterwards."
          (match-line (lsp-bridge-ref-get-match-line))
          (match-column (lsp-bridge-ref-get-match-column))
          (match-buffer (lsp-bridge-ref-get-match-buffer match-file))
-         in-org-link-content-p
-         ref-buffer-window)
+         in-org-link-content-p)
     (save-excursion
       (let ((inhibit-message t))
         ;; Try fill variables when in org file.
