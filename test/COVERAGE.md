@@ -93,8 +93,8 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-breadcrumb.el` | 21 | 3 |
 | `lsp-bridge-call-hierarchy.el` | 31 | 7 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
-| `lsp-bridge-completion.el` | 60 | 16 |
-| `lsp-bridge-core.el` | 70 | 8 |
+| `lsp-bridge-completion.el` | 60 | 17 |
+| `lsp-bridge-core.el` | 70 | 10 |
 | `lsp-bridge-dart.el` | 5 | 4 |
 | `lsp-bridge-diagnostic.el` | 33 | 12 |
 | `lsp-bridge-document.el` | 23 | 5 |
@@ -102,18 +102,18 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-imenu.el` | 4 | 1 |
 | `lsp-bridge-inlay-hint.el` | 15 | 10 |
 | `lsp-bridge-jdtls.el` | 14 | 8 |
-| `lsp-bridge-jump.el` | 54 | 21 |
+| `lsp-bridge-jump.el` | 54 | 22 |
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
 | `lsp-bridge-org-babel.el` | 12 | 2 |
 | `lsp-bridge-peek.el` | 62 | 8 |
 | `lsp-bridge-ref.el` | 91 | 7 |
-| `lsp-bridge-remote.el` | 30 | 5 |
+| `lsp-bridge-remote.el` | 30 | 17 |
 | `lsp-bridge-rust.el` | 3 | 0 |
 | `lsp-bridge-semantic-tokens.el` | 50 | 7 |
-| `lsp-bridge-transport.el` | 59 | 14 |
+| `lsp-bridge-transport.el` | 59 | 15 |
 | `lsp-bridge-ui.el` | 14 | 4 |
-| `lsp-bridge-workspace.el` | 30 | 10 |
-| `lsp-bridge.el` | 114 | 12 |
+| `lsp-bridge-workspace.el` | 30 | 12 |
+| `lsp-bridge.el` | 114 | 14 |
 | `lsp_bridge.py` | 24 | 21 |
 
 ## Where the surface is still thin
@@ -124,16 +124,15 @@ covered because some of it is.
 
 | `lsp-bridge-ref.el` | 7/91 | 8% |
 | `acm/acm-frame.el` | 2/22 | 9% |
-| `lsp-bridge.el` | 12/114 | 11% |
-| `lsp-bridge-core.el` | 8/70 | 11% |
 | `core/remote_file.py` | 4/34 | 12% |
+| `lsp-bridge.el` | 14/114 | 12% |
 | `core/fileaction.py` | 5/39 | 13% |
 | `lsp-bridge-peek.el` | 8/62 | 13% |
 | `lsp-bridge-semantic-tokens.el` | 7/50 | 14% |
 | `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
+| `lsp-bridge-core.el` | 10/70 | 14% |
 | `core/search_file_words.py` | 2/12 | 17% |
 | `lsp-bridge-org-babel.el` | 2/12 | 17% |
-| `lsp-bridge-remote.el` | 5/30 | 17% |
 | `core/utils.py` | 11/65 | 17% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `lsp-bridge-epc.el` | 13/62 | 21% |
@@ -144,7 +143,6 @@ covered because some of it is.
 | `core/pystardict.py` | 8/35 | 23% |
 | `core/lspserver.py` | 15/64 | 23% |
 | `acm/acm-terminal.el` | 9/38 | 24% |
-| `lsp-bridge-transport.el` | 14/59 | 24% |
 
 ## What cannot be covered locally
 
