@@ -29,9 +29,9 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-search-file-words.el` | 11 | 5 |
 | `acm/acm-backend-tabby.el` | 7 | 0 |
 | `acm/acm-backend-telega.el` | 27 | 6 |
-| `acm/acm-backend-tempel.el` | 5 | 0 |
+| `acm/acm-backend-tempel.el` | 6 | 4 |
 | `acm/acm-backend-vulpea.el` | 10 | 4 |
-| `acm/acm-backend-yas.el` | 16 | 0 |
+| `acm/acm-backend-yas.el` | 16 | 8 |
 | `acm/acm-backend.el` | 20 | 19 |
 | `acm/acm-frame.el` | 22 | 2 |
 | `acm/acm-icon.el` | 11 | 5 |
@@ -101,7 +101,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-epc.el` | 62 | 1 |
 | `lsp-bridge-imenu.el` | 4 | 1 |
 | `lsp-bridge-inlay-hint.el` | 14 | 1 |
-| `lsp-bridge-jdtls.el` | 14 | 0 |
+| `lsp-bridge-jdtls.el` | 14 | 8 |
 | `lsp-bridge-jump.el` | 52 | 15 |
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
 | `lsp-bridge-org-babel.el` | 12 | 2 |

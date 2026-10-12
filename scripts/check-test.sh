@@ -45,6 +45,12 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== ERT: where JDTLS keeps its caches (test/lsp-bridge-jdtls-test.el)"
+run_ert test/lsp-bridge-jdtls-test.el
+
+echo "== ERT: yasnippet template labelling (test/acm-backend-yas-test.el)"
+run_ert test/acm-backend-yas-test.el
+
 echo "== ERT: the reference buffer (test/lsp-bridge-ref-test.el)"
 run_ert test/lsp-bridge-ref-test.el
 
