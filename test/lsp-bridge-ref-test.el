@@ -137,5 +137,20 @@
                            "12:3:\n/tmp/a-file.py\n4:0:\n"))))
       (kill-buffer lsp-bridge-ref-buffer))))
 
+(ert-deftest lsp-bridge-ref-test-reading-the-code-of-a-line ()
+  "The code of a result line is what stands after its line and column."
+  (let ((buffer (get-buffer-create "*lsp-bridge-ref-line-test*")))
+    (unwind-protect
+        (progn
+          (with-current-buffer buffer
+            (erase-buffer)
+            (insert "12:3: some code here\n")
+            (insert "4:0: other code\n"))
+          ;; The result begins right after the line and column prefix, so it keeps
+          ;; the space that stands between the prefix and the code.
+          (should (equal (lsp-bridge-ref-get-line-content buffer 1) " some code here"))
+          (should (equal (lsp-bridge-ref-get-line-content buffer 2) " other code")))
+      (kill-buffer buffer))))
+
 (provide 'lsp-bridge-ref-test)
 ;;; lsp-bridge-ref-test.el ends here
