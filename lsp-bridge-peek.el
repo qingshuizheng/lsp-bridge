@@ -834,7 +834,7 @@ list."
 (defun lsp-bridge-ace-pick-point-in-peek-window ()
   "Pick a point in the buffer shown in peek window using \"ace\" operation.
 The buffer and the point is returned in a cons cell."
-  (let* ((selected-id (nth 1 lsp-bridge-peek-chosen-displaying-list))
+  (let* ((key nil) (selected-id (nth 1 lsp-bridge-peek-chosen-displaying-list))
 	     (selected-symbol (nth lsp-bridge-peek-selected-symbol lsp-bridge-peek-symbol-tree))
 	     (path-list (nth 1 selected-symbol))
 	     (pos-list (nth 2 selected-symbol))
@@ -883,7 +883,7 @@ The buffer and the point is returned in a cons cell."
   (setf (nth 2 lsp-bridge-peek-ace-list)
 	    (buffer-name))
   (with-temp-message ""
-    (let* ((file-pos (lsp-bridge-ace-pick-point-in-peek-window))
+    (let* ((temp-buf nil) (single-character nil) (file-pos (lsp-bridge-ace-pick-point-in-peek-window))
 	       (file (car file-pos))
 	       (pos (cdr file-pos)))
       (setq temp-buf (find-buffer-visiting file))
