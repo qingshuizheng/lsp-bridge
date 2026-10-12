@@ -105,7 +105,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-jump.el` | 54 | 22 |
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
 | `lsp-bridge-org-babel.el` | 12 | 2 |
-| `lsp-bridge-peek.el` | 62 | 8 |
+| `lsp-bridge-peek.el` | 62 | 11 |
 | `lsp-bridge-ref.el` | 91 | 7 |
 | `lsp-bridge-remote.el` | 30 | 17 |
 | `lsp-bridge-rust.el` | 3 | 0 |
@@ -127,12 +127,12 @@ covered because some of it is.
 | `core/remote_file.py` | 4/34 | 12% |
 | `lsp-bridge.el` | 14/114 | 12% |
 | `core/fileaction.py` | 5/39 | 13% |
-| `lsp-bridge-peek.el` | 8/62 | 13% |
 | `lsp-bridge-semantic-tokens.el` | 7/50 | 14% |
 | `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
 | `lsp-bridge-core.el` | 10/70 | 14% |
 | `core/search_file_words.py` | 2/12 | 17% |
 | `lsp-bridge-org-babel.el` | 2/12 | 17% |
+| `lsp-bridge-peek.el` | 11/62 | 18% |
 | `core/utils.py` | 12/65 | 18% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `lsp-bridge-epc.el` | 13/62 | 21% |

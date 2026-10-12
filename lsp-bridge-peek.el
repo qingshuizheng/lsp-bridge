@@ -742,10 +742,10 @@ when not peeking and sets `lsp-bridge-peek--content-update'."
 
 (defun lsp-bridge-peek--search-symbols (line)
   "Search for symbols from current position to LINEs after.
-The search jumps over comments/strings.
-
-The returned value is a list of cons pairs (START . END), the
-start/end position of each symbol.  Point will not be moved."
+The walk is by syntax, so it does not know about comments or strings: a word
+inside either of them is found like any other.  What is returned is a list of
+cons pairs (START . END), the start and end position of each symbol, and point
+is left where it was."
   (let ((bound (save-excursion
 		         (forward-line (1- line))
 		         (line-end-position)))

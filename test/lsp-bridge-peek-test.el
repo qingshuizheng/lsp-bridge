@@ -88,5 +88,47 @@
     ;; The last one left is answered by its index rather than by the list.
     (should (equal (lsp-bridge-peek--pop-ace-key-seqs (list nil (list ?s)) ?s) 1))))
 
+(defun lsp-bridge-peek-test--symbol-names (line)
+  "Return the text of the symbols `lsp-bridge-peek--search-symbols' finds for LINE."
+  (mapcar (lambda (pair) (buffer-substring-no-properties (car pair) (cdr pair)))
+          (lsp-bridge-peek--search-symbols line)))
+
+(ert-deftest lsp-bridge-peek-test-search-symbols ()
+  "The symbols of the next lines are found, as start and end pairs."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "alpha (beta gamma)\n")
+    (goto-char (point-min))
+    (should (equal (lsp-bridge-peek-test--symbol-names 1)
+                   '("alpha" "beta" "gamma")))))
+
+(ert-deftest lsp-bridge-peek-test-search-symbols-stops-at-the-line-asked-for ()
+  "Only the line asked for is searched, and point is left where it was."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "first-line\nsecond-line\n")
+    (goto-char (point-min))
+    (should (equal (lsp-bridge-peek-test--symbol-names 1) '("first-line")))
+    (should (equal (point) (point-min)))
+    (goto-char (point-min))
+    (should (equal (lsp-bridge-peek-test--symbol-names 2)
+                   '("first-line" "second-line")))))
+
+(ert-deftest lsp-bridge-peek-test-search-symbols-and-a-comment ()
+  "What a comment holds is searched like any other text."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "code ; a-comment\n")
+    (goto-char (point-min))
+    ;; The docstring of the function says comments are jumped over; the search
+    ;; walks by syntax, which does not know about them, so the comment is searched.
+    (should (equal (lsp-bridge-peek-test--symbol-names 1) '("code" "a-comment")))))
+
+(ert-deftest lsp-bridge-peek-test-make-border ()
+  "The border is a newline carrying the border face."
+  (let ((border (lsp-bridge-peek--make-border)))
+    (should (equal border "\n"))
+    (should (eq (get-text-property 0 'face border) 'lsp-bridge-peek-border-face))))
+
 (provide 'lsp-bridge-peek-test)
 ;;; lsp-bridge-peek-test.el ends here
