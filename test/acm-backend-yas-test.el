@@ -50,5 +50,74 @@
       (acm-backend-yas--cache-expire)
       (should acm-backend-yas--cache-expire-p))))
 
+(defun acm-backend-yas-test--with-yas-templates (templates body)
+  "Call BODY with TEMPLATES as the snippet tables of yasnippet.
+The accessors are read from the yasnippet library, so they are stood in for."
+  (cl-letf (((symbol-function 'yas--modes-to-activate) (lambda () '(prog-mode)))
+            ((symbol-function 'yas--get-snippet-tables) (lambda () 'tables))
+            ((symbol-function 'yas--all-templates) (lambda (_tables) templates)))
+    (funcall body)))
+
+(ert-deftest acm-backend-yas-test-candidates-need-yas-and-a-keyword ()
+  "Nothing is offered while yasnippet is off, or without a keyword."
+  (let ((acm-enable-yas nil)
+        (acm-backend-yas-candidate-min-length 0))
+    (should-not (acm-backend-yas-candidates "fo")))
+  (let ((acm-enable-yas t)
+        (acm-backend-yas-candidate-min-length 0))
+    (setq yas-minor-mode nil)
+    (should-not (acm-backend-yas-candidates "fo"))
+    (should-not (acm-backend-yas-candidates ""))))
+
+(ert-deftest acm-backend-yas-test-candidates-of-a-template ()
+  "A matching template becomes a candidate with its snippet body."
+  (let ((acm-enable-yas t)
+        (acm-backend-yas-candidate-min-length 0)
+        (acm-backend-yas-candidates-number 10)
+        (acm-backend-yas-show-trigger-keyword t)
+        (acm-backend-yas--cache nil)
+        (acm-backend-yas--cache-expire-p t))
+    (setq yas-minor-mode t)
+    (acm-backend-yas-test--with-yas-templates
+     (list (yas--make-template :name "foobar" :key "fb" :content "body-of-foobar"))
+     (lambda ()
+       (let ((candidate (car (acm-backend-yas-candidates "foo"))))
+         (should (equal (plist-get candidate :label) "foobar"))
+         (should (equal (plist-get candidate :icon) "snippet"))
+         (should (equal (plist-get candidate :annotation) "Yas-Snippet"))
+         (should (equal (plist-get candidate :content) "body-of-foobar"))
+         ;; The trigger is shown beside the name, and the name is what is matched.
+         (should (equal (substring-no-properties (plist-get candidate :displayLabel))
+                        "foobar (fb)")))))))
+
+(ert-deftest acm-backend-yas-test-candidates-show-the-trigger-as-configured ()
+  "A string option is used as the format itself."
+  (let ((acm-enable-yas t)
+        (acm-backend-yas-candidate-min-length 0)
+        (acm-backend-yas-candidates-number 10)
+        (acm-backend-yas-show-trigger-keyword " [%s]")
+        (acm-backend-yas--cache nil)
+        (acm-backend-yas--cache-expire-p t))
+    (setq yas-minor-mode t)
+    (acm-backend-yas-test--with-yas-templates
+     (list (yas--make-template :name "foobar" :key "fb" :content "body"))
+     (lambda ()
+       (should (equal (substring-no-properties
+                       (plist-get (car (acm-backend-yas-candidates "foo")) :displayLabel))
+                      "foobar [fb]"))))))
+
+(ert-deftest acm-backend-yas-test-candidate-expand-and-doc ()
+  "Expanding a candidate deletes up to the bound and expands its body."
+  (with-temp-buffer
+    (insert "pre-rest\n")
+    (goto-char 5)
+    (let (expanded)
+      (cl-letf (((symbol-function 'yas-expand-snippet) (lambda (content) (setq expanded content))))
+        (acm-backend-yas-candidate-expand (list :content "body") 1))
+      (should (equal (buffer-string) "rest\n"))
+      (should (equal expanded "body"))))
+  (should (equal (acm-backend-yas-candidate-doc (list :content "body")) "body"))
+  (should-not (acm-backend-yas-candidate-doc (list :label "no content"))))
+
 (provide 'acm-backend-yas-test)
 ;;; acm-backend-yas-test.el ends here

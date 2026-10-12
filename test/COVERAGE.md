@@ -31,7 +31,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-telega.el` | 27 | 6 |
 | `acm/acm-backend-tempel.el` | 6 | 4 |
 | `acm/acm-backend-vulpea.el` | 10 | 4 |
-| `acm/acm-backend-yas.el` | 16 | 8 |
+| `acm/acm-backend-yas.el` | 16 | 13 |
 | `acm/acm-backend.el` | 20 | 19 |
 | `acm/acm-frame.el` | 22 | 3 |
 | `acm/acm-icon.el` | 11 | 5 |
