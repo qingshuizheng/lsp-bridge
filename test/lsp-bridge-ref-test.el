@@ -60,5 +60,44 @@
     (goto-char (point-min))
     (should-not (lsp-bridge-ref-current-line-empty-p))))
 
+(ert-deftest lsp-bridge-ref-test-a-line-with-a-row-and-column-prefix ()
+  "The prefix of a result line is found, and its end is what is returned."
+  (with-temp-buffer
+    (insert "12:3: some code here\n")
+    (goto-char (point-min))
+    (should (equal (lsp-bridge-ref-get-row-column-position) 6))))
+
+(ert-deftest lsp-bridge-ref-test-a-line-without-a-row-and-column-prefix ()
+  "A line that does not begin with one has no such position."
+  (with-temp-buffer
+    (insert "some code here\n")
+    (goto-char (point-min))
+    (should-not (lsp-bridge-ref-get-row-column-position)))
+  (with-temp-buffer
+    (insert "/tmp/a-file.py\n")
+    (goto-char (point-min))
+    (should-not (lsp-bridge-ref-get-row-column-position))))
+
+(ert-deftest lsp-bridge-ref-test-counting-the-hits ()
+  "The hits counted are the regions carrying the match face."
+  (with-temp-buffer
+    (insert "one match, another match, and a plain word\n")
+    (should (equal (lsp-bridge-ref-stat-hits) 0))
+    (add-text-properties 1 4 '(face lsp-bridge-ref-font-lock-match))
+    (add-text-properties 16 19 '(face lsp-bridge-ref-font-lock-match))
+    (should (equal (lsp-bridge-ref-stat-hits) 2))))
+
+(ert-deftest lsp-bridge-ref-test-finding-the-buffer-of-a-file ()
+  "The buffer visiting a file is found by its name, and nothing else is."
+  (let ((file (make-temp-file "lsp-bridge-ref-test" nil ".py")))
+    (unwind-protect
+        (let ((buffer (find-file-noselect file)))
+          (should (eq (lsp-bridge-ref-get-match-buffer file) buffer))
+          ;; A path with no buffer of its own is nothing.
+          (should-not (lsp-bridge-ref-get-match-buffer "/tmp/not-open-at-all")))
+      (let ((buffer (get-file-buffer file)))
+        (when buffer (kill-buffer buffer)))
+      (delete-file file))))
+
 (provide 'lsp-bridge-ref-test)
 ;;; lsp-bridge-ref-test.el ends here

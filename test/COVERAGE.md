@@ -106,7 +106,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
 | `lsp-bridge-org-babel.el` | 12 | 10 |
 | `lsp-bridge-peek.el` | 62 | 20 |
-| `lsp-bridge-ref.el` | 91 | 15 |
+| `lsp-bridge-ref.el` | 91 | 18 |
 | `lsp-bridge-remote.el` | 30 | 17 |
 | `lsp-bridge-rust.el` | 3 | 3 |
 | `lsp-bridge-semantic-tokens.el` | 50 | 8 |
@@ -124,8 +124,8 @@ covered because some of it is.
 
 | `lsp-bridge.el` | 17/114 | 15% |
 | `lsp-bridge-semantic-tokens.el` | 8/50 | 16% |
-| `lsp-bridge-ref.el` | 15/91 | 16% |
 | `acm/acm-frame.el` | 4/22 | 18% |
+| `lsp-bridge-ref.el` | 18/91 | 20% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
 | `core/handler/solidity.py` | 6/27 | 22% |
