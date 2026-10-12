@@ -356,8 +356,13 @@ resolved for the items of that menu.")
   "Hide the completion menu, the doc frame and the acm filter.
 Turn off `acm-mode', remove the buffer-local `pre-command-hook' that
 `acm-update' installed, forget the cached menu size of the session, ask the
-backend of the current candidate to clean its cache and run `acm-hide-hook'."
+backend of the current candidate to clean its cache and run `acm-hide-hook'.
+A front end that draws the menu itself takes it over through `acm-ui-overrides'."
   (interactive)
+  (catch 'acm-ui-override
+    (let ((override (acm-ui-override 'acm-hide)))
+      (when override
+        (throw 'acm-ui-override (funcall override)))))
   (let* ((completion-menu-is-show-p (acm-frame-visible-p (acm-popup menu-frame)))
          (candidate-info (acm-menu-current-candidate))
          (backend (plist-get candidate-info :backend)))
@@ -649,7 +654,12 @@ Use CANDIDATE as the candidate list when it is non-nil, otherwise
 call `acm-update-candidates'.  This stores `acm-candidates',
 `acm-menu-candidates', `acm-menu-index' and `acm-menu-offset',
 enables `acm-mode', records the popup position, and then either hides
-the menu or renders it.  Return nil."
+the menu or renders it.  Return nil.  A front end that draws the menu itself
+takes it over through `acm-ui-overrides'."
+  (catch 'acm-ui-override
+    (let ((override (acm-ui-override 'acm-update)))
+      (when override
+        (throw 'acm-ui-override (funcall override candidate)))))
   ;; Init quick mode map.
   (acm-quick-access-init)
 
@@ -916,21 +926,30 @@ otherwise; read by `acm-menu-max-length' and
 `acm-menu-render-items'.")
 
 (defun acm-menu-max-length ()
-  "Get max length of menu candidates, use for adjust menu size dynamically."
-  (cl-reduce #'max
-             (mapcar (lambda (v)
-                       (funcall acm-string-width-function
-                                (format "%s %s"
-                                        (plist-get v :displayLabel)
-                                        (plist-get v :annotation))))
-                     acm-menu-candidates)))
+  "Get max length of menu candidates, use for adjust menu size dynamically.
+A front end that draws the menu itself takes it over through `acm-ui-overrides'
+and is given the length computed here to adjust."
+  (let ((return (cl-reduce #'max
+                           (mapcar (lambda (v)
+                                     (funcall acm-string-width-function
+                                              (format "%s %s"
+                                                      (plist-get v :displayLabel)
+                                                      (plist-get v :annotation))))
+                                   acm-menu-candidates))))
+    (let ((override (acm-ui-override 'acm-menu-max-length)))
+      (if override (funcall override return) return))))
 
 (defun acm-menu-render-items (items menu-index)
   "Insert one line per candidate of ITEMS into the current buffer.
 MENU-INDEX is the index of the selected line, which is highlighted
 with `acm-frame-select-face'.  Icons, quick-access keys and the
 right-aligned annotation column are rendered, and the last newline is
-removed.  Return nil."
+removed.  Return nil.  A front end that draws the menu itself takes it
+over through `acm-ui-overrides'."
+  (catch 'acm-ui-override
+    (let ((override (acm-ui-override 'acm-menu-render-items)))
+      (when override
+        (throw 'acm-ui-override (funcall override items menu-index)))))
   (let* ((item-index 0)
          (annotation-not-exits (cl-every (lambda (item) (string-empty-p (plist-get item :annotation))) items)))
     (dolist (v items)
@@ -1030,7 +1049,12 @@ non-nil UPDATE-COMPLETION-ITEM hides the doc frame when the backend
 is \"lsp\"; other backends always hide it here.  The backend is asked
 for the documentation even when `acm-enable-doc' is nil, because
 `completion_item_resolve' also fetches the `additionalTextEdits' used
-by auto import."
+by auto import.  A front end that draws the documentation itself takes it over
+through `acm-ui-overrides'."
+  (catch 'acm-ui-override
+    (let ((override (acm-ui-override 'acm-doc-try-show)))
+      (when override
+        (throw 'acm-ui-override (funcall override update-completion-item)))))
   ;; We need call `acm-backend-*-candidate-doc' function even option `acm-enable-doc' is nil,
   ;; because `completion_item_resolve' will fetch `additionalTextEdits', otherwise, auto import feature is miss.
   (let* ((candidate (acm-menu-current-candidate))
@@ -1176,7 +1200,12 @@ candidate number of the previous render, as held by
 the cached menu size and candidate number; the frame is
 only resized when they differ from the new values.  The cache
 variables are updated here, and `acm-doc-try-show' is called at the
-end."
+end.  A front end that draws the menu itself takes it over through
+`acm-ui-overrides'."
+  (catch 'acm-ui-override
+    (let ((override (acm-ui-override 'acm-menu-render)))
+      (when override
+        (throw 'acm-ui-override (funcall override menu-old-cache)))))
   (let* ((items acm-menu-candidates)
          (menu-old-max-length (car menu-old-cache))
          (menu-old-number (cdr menu-old-cache))

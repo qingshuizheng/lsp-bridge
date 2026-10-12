@@ -339,7 +339,12 @@ influence of C1 on the result."
 The menu background blends the frame's default background towards black
 on dark themes and towards grey on light ones.  FORCE recomputes the
 faces even when they are already set, which is what a theme change
-needs."
+needs.  A front end that draws the menu itself takes it over through
+`acm-ui-overrides'."
+  (catch 'acm-ui-override
+    (let ((override (acm-ui-override 'acm-frame-init-colors)))
+      (when override
+        (throw 'acm-ui-override (funcall override force)))))
   (let* ((is-dark-mode (string-equal (acm-frame-get-theme-mode) "dark"))
          (blend-background (if is-dark-mode "#000000" "#AAAAAA"))
          (default-background (if (or force (equal (face-attribute 'acm-frame-default-face :background) 'unspecified))
