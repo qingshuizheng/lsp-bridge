@@ -133,5 +133,51 @@
                 :type 'wrong-type-argument)
   (should-error (lsp-bridge-deferred-resignal 42) :type 'error))
 
+;;; The wire half
+
+(ert-deftest lsp-bridge-epc-test-uid-keeps-counting ()
+  "Every message gets an id of its own."
+  (let ((lsp-bridge-epc-uid 1))
+    (should (equal (lsp-bridge-epc-uid) 2))
+    (should (equal (lsp-bridge-epc-uid) 3))
+    (should (equal lsp-bridge-epc-uid 3))))
+
+(ert-deftest lsp-bridge-epc-test-prin1-to-string-keeps-text-readable ()
+  "Non-ASCII characters are written as themselves, and newlines as newlines."
+  (should (equal (lsp-bridge-epc-prin1-to-string "hello") "\"hello\""))
+  (should (equal (lsp-bridge-epc-prin1-to-string "你好") "\"你好\""))
+  ;; `print-escape-newlines' is off here, which is what the docstring promises.
+  (should (equal (lsp-bridge-epc-prin1-to-string "a\nb") "\"a\nb\""))
+  (should (equal (lsp-bridge-epc-prin1-to-string (list 1 "two" :three)) "(1 \"two\" :three)")))
+
+(ert-deftest lsp-bridge-epc-test-decode-length ()
+  "The six characters in front of a message are its length in hex."
+  (with-temp-buffer
+    (insert "0000ffrest")
+    (goto-char (point-min))
+    (should (equal (lsp-bridge-epc-net-decode-length) 255))))
+
+(ert-deftest lsp-bridge-epc-test-server-names ()
+  "The names of the process and its buffer are made from the id."
+  (should (equal (lsp-bridge-epc-server-process-name 7) "lsp-bridge-epc-server:7"))
+  (should (equal (lsp-bridge-epc-server-buffer-name 7) " *lsp-bridge-epc-server:7*")))
+
+(ert-deftest lsp-bridge-epc-test-net-send-frames-the-message ()
+  "A message is sent with its length in front of it, and the length is in bytes."
+  (let ((connection (make-lsp-bridge-epc-connection :process 'fake-process))
+        sent)
+    (cl-letf (((symbol-function 'process-send-string)
+               (lambda (_process string) (setq sent string))))
+      (lsp-bridge-epc-net-send connection (list :method "textDocument/hover"))
+      (let* ((body (lsp-bridge-epc-prin1-to-string (list :method "textDocument/hover")))
+             (expected-length (length (encode-coding-string (concat body "\n") 'utf-8-unix))))
+        (should (equal (substring sent 0 6) (format "%06x" expected-length)))
+        (should (equal (substring sent 6) (concat body "\n"))))
+      ;; A message of non-ASCII text is longer in bytes than it is in characters.
+      (setq sent nil)
+      (lsp-bridge-epc-net-send connection "你好")
+      (should (equal (string-to-number (substring sent 0 6) 16)
+                     (length (encode-coding-string "\"你好\"\n" 'utf-8-unix)))))))
+
 (provide 'lsp-bridge-epc-test)
 ;;; lsp-bridge-epc-test.el ends here

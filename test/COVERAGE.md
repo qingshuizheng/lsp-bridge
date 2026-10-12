@@ -98,7 +98,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-dart.el` | 5 | 4 |
 | `lsp-bridge-diagnostic.el` | 33 | 12 |
 | `lsp-bridge-document.el` | 23 | 10 |
-| `lsp-bridge-epc.el` | 62 | 13 |
+| `lsp-bridge-epc.el` | 62 | 20 |
 | `lsp-bridge-imenu.el` | 4 | 1 |
 | `lsp-bridge-inlay-hint.el` | 15 | 10 |
 | `lsp-bridge-jdtls.el` | 14 | 8 |
@@ -135,7 +135,6 @@ covered because some of it is.
 | `lsp-bridge-peek.el` | 11/62 | 18% |
 | `core/utils.py` | 12/65 | 18% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
-| `lsp-bridge-epc.el` | 13/62 | 21% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
 | `core/handler/solidity.py` | 6/27 | 22% |
 | `lsp-bridge-call-hierarchy.el` | 7/31 | 23% |
