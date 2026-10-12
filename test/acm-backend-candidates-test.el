@@ -17,10 +17,13 @@
 (require 'acm-backend-search-file-words)
 
 ;; The cache variables of the backends are built with `intern' from a format
-;; string, so the compiler cannot see them and has to be told about them.
+;; string, and the items of the workspace symbol backend are made with
+;; `make-hash-table' where they are recorded, so the compiler cannot see any of
+;; them and has to be told about them.
 (defvar acm-backend-ctags-cache-candiates)
 (defvar acm-backend-copilot-cache-candiates)
 (defvar acm-backend-lsp-workspace-symbol-cache-candidates)
+(defvar acm-backend-lsp-workspace-symbol-items)
 (defvar acm-backend-search-file-words-cache-candiates)
 
 (ert-deftest acm-backend-ctags-test-candidates-follow-option-and-length ()
