@@ -565,7 +565,7 @@ Any previous change overlay on LINE is removed first."
   (save-excursion
     (lsp-bridge-ref-mark-position-clear line)
     ;; Create mark changed overlay if not exists.
-    (let (start end)
+    (let (start end changed-overlay)
       (save-excursion
         (beginning-of-line)
         (setq start (point))

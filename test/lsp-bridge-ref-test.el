@@ -164,5 +164,26 @@
           (should (eq selected 'the-window)))
       (kill-buffer lsp-bridge-ref-buffer))))
 
+(ert-deftest lsp-bridge-ref-test-marking-a-result-line ()
+  "A marked line carries one overlay of the type and face it was marked with."
+  (with-temp-buffer
+    (insert "12:3: some code\n4:0: other code\n")
+    (goto-char (point-min))
+    ;; The line marked is the line point is on: the argument names the overlay
+    ;; being replaced, not a line to move to.
+    (lsp-bridge-ref-mark-position-changed (line-number-at-pos))
+    (let ((overlays (overlays-in (point-min) (point-max))))
+      (should (equal (length overlays) 1))
+      (should (equal (overlay-get (car overlays) 'overlay-type) "changed"))
+      (should (eq (overlay-get (car overlays) 'face)
+                  'lsp-bridge-ref-font-lock-mark-changed)))
+    ;; Marking the same line again replaces the overlay rather than adding one.
+    (lsp-bridge-ref-mark-position-deleted (line-number-at-pos))
+    (let ((overlays (overlays-in (point-min) (point-max))))
+      (should (equal (length overlays) 1))
+      (should (equal (overlay-get (car overlays) 'overlay-type) "deleted"))
+      (should (eq (overlay-get (car overlays) 'face)
+                  'lsp-bridge-ref-font-lock-mark-deleted)))))
+
 (provide 'lsp-bridge-ref-test)
 ;;; lsp-bridge-ref-test.el ends here
