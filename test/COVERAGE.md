@@ -22,12 +22,12 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-ctags.el` | 11 | 5 |
 | `acm/acm-backend-devonthink.el` | 24 | 10 |
 | `acm/acm-backend-elisp.el` | 18 | 1 |
-| `acm/acm-backend-jupyter.el` | 5 | 0 |
+| `acm/acm-backend-jupyter.el` | 5 | 3 |
 | `acm/acm-backend-lsp-workspace-symbol.el` | 7 | 3 |
 | `acm/acm-backend-lsp.el` | 22 | 1 |
 | `acm/acm-backend-path.el` | 5 | 5 |
 | `acm/acm-backend-search-file-words.el` | 11 | 5 |
-| `acm/acm-backend-tabby.el` | 7 | 0 |
+| `acm/acm-backend-tabby.el` | 7 | 4 |
 | `acm/acm-backend-telega.el` | 27 | 6 |
 | `acm/acm-backend-tempel.el` | 6 | 4 |
 | `acm/acm-backend-vulpea.el` | 10 | 4 |
@@ -95,7 +95,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-code-action.el` | 20 | 4 |
 | `lsp-bridge-completion.el` | 60 | 15 |
 | `lsp-bridge-core.el` | 70 | 7 |
-| `lsp-bridge-dart.el` | 5 | 0 |
+| `lsp-bridge-dart.el` | 5 | 4 |
 | `lsp-bridge-diagnostic.el` | 33 | 12 |
 | `lsp-bridge-document.el` | 23 | 1 |
 | `lsp-bridge-epc.el` | 62 | 1 |

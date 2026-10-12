@@ -15,6 +15,8 @@
 (require 'acm-backend-copilot)
 (require 'acm-backend-lsp-workspace-symbol)
 (require 'acm-backend-search-file-words)
+(require 'acm-backend-jupyter)
+(require 'acm-backend-tabby)
 (require 'acm-backend-tempel)
 
 ;; The cache variables of the backends are built with `intern' from a format
@@ -25,7 +27,13 @@
 (defvar acm-backend-copilot-cache-candiates)
 (defvar acm-backend-lsp-workspace-symbol-cache-candidates)
 (defvar acm-backend-lsp-workspace-symbol-items)
+(defvar acm-backend-jupyter-cache-candiates)
+(defvar acm-backend-tabby-cache-candiates)
 (defvar acm-backend-search-file-words-cache-candiates)
+;; Tempel's own variables are declared here for the same reason: the test sets
+;; them as the special variables the backend reads.
+(defvar tempel-template-sources)
+(defvar tempel-trigger-prefix)
 
 (ert-deftest acm-backend-ctags-test-candidates-follow-option-and-length ()
   "The ctags candidates are offered only past the option and the length."
@@ -141,12 +149,14 @@ itself to be loadable, which it is not in every environment."
   (require 'tempel nil t)
   (skip-unless (featurep 'tempel))
   (let ((acm-enable-tempel t)
-        (acm-backend-tempel-candidates-number 5)
-        (tempel-template-sources (list (lambda () '((acm-backend-tempel-test-foo ("x")))))))
-    ;; `setq' rather than `let': the variable is read by the backend as a special
-    ;; variable, and a lexical binding of it would not be the one it sees.
+        (acm-backend-tempel-candidates-number 5))
+    ;; `setq' rather than `let': both of these are read by the backend as special
+    ;; variables, and a lexical binding of one would not be the one it sees - the
+    ;; compiler says so, which is how the first version of this test was found to
+    ;; be configuring nothing at all.
     (unwind-protect
         (progn
+          (setq tempel-template-sources (list (lambda () '((acm-backend-tempel-test-foo ("x"))))))
           (setq tempel-trigger-prefix "@")
           (should (equal (mapcar (lambda (candidate) (plist-get candidate :label))
                                  (acm-backend-tempel-candidates "@acm"))
@@ -156,7 +166,38 @@ itself to be loadable, which it is not in every environment."
           (should (equal (mapcar (lambda (candidate) (plist-get candidate :label))
                                  (acm-backend-tempel-candidates "acm"))
                          '("acm-backend-tempel-test-foo"))))
-      (setq tempel-trigger-prefix nil))))
+      (setq tempel-trigger-prefix nil)
+      (setq tempel-template-sources nil))))
+
+(ert-deftest acm-backend-tabby-test-find-max-common ()
+  "Two strings are joined on their longest overlap, and only when they overlap."
+  (should (equal (acm-backend-tabby-find-max-common "abc" "cde") "abcde"))
+  (should (equal (acm-backend-tabby-find-max-common "abc" "abc") "abc"))
+  (should (equal (acm-backend-tabby-find-max-common "foo" "oo") "foo"))
+  (should (equal (acm-backend-tabby-find-max-common "abc" "cd") "abcd"))
+  (should-not (acm-backend-tabby-find-max-common "abc" "xyz")))
+
+(ert-deftest acm-backend-tabby-test-candidates-and-clean ()
+  "The candidates are the recorded items, sorted, and cleaned away."
+  (with-temp-buffer
+    (setq-local acm-backend-tabby-items (list (list :label "foo") (list :label "fo")))
+    (should (equal (mapcar (lambda (candidate) (plist-get candidate :label))
+                           (acm-backend-tabby-candidates "fo"))
+                   '("fo" "foo")))
+    (acm-backend-tabby-clean)
+    (should-not acm-backend-tabby-items)
+    (should-not acm-backend-tabby-cache-candiates)))
+
+(ert-deftest acm-backend-jupyter-test-candidates-and-clean ()
+  "The candidates are the recorded items, and cleaned away."
+  (with-temp-buffer
+    (setq-local acm-backend-jupyter-items (list (list :label "foo")))
+    (should (equal (mapcar (lambda (candidate) (plist-get candidate :label))
+                           (acm-backend-jupyter-candidates "fo"))
+                   '("foo")))
+    (acm-backend-jupyter-clean)
+    (should-not acm-backend-jupyter-items)
+    (should-not acm-backend-jupyter-cache-candiates)))
 
 (provide 'acm-backend-candidates-test)
 ;;; acm-backend-candidates-test.el ends here
