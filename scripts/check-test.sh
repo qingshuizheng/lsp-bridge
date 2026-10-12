@@ -45,6 +45,9 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== ERT: the deferred queue behind every request (test/lsp-bridge-epc-test.el)"
+run_ert test/lsp-bridge-epc-test.el
+
 echo "== ERT: the closing labels of Dart (test/lsp-bridge-dart-test.el)"
 run_ert test/lsp-bridge-dart-test.el
 
