@@ -314,12 +314,12 @@ target and `lsp-bridge-flash-line' highlights it."
 
 (defcustom lsp-bridge-rename-fallback-without-server t
   "Rename the buffer occurrences when no server can be asked.
-With a language server the rename always goes through it.  Without one - in an
-Emacs Lisp buffer, for instance - the request has nothing to answer it, and this
-hands over to `symbol-overlay-rename' instead, which renames the occurrences the
-buffer holds, inside a scope when it is set up for scopes.  Set it to nil to keep
-both rename commands server only, reporting that they cannot do anything here."
-  :type 'boolean
+With a language server the rename always goes through it.  Without one,
+in an Emacs Lisp buffer for instance, the request has nothing to answer
+it, and this hands over to `symbol-overlay-rename' instead, which renames
+the occurrences the buffer holds, inside a scope when it is set up for
+scopes.  Set it to nil to keep both rename commands server only, saying
+that they cannot do anything here.
   :group 'lsp-bridge)
 
 ;;; Live rename
