@@ -42,18 +42,18 @@ python3 scripts/coverage-report.py
 | `core/bridge_remote.py` | 16 | 9 |
 | `core/bridge_search.py` | 10 | 9 |
 | `core/bridge_server.py` | 15 | 5 |
-| `core/copilot.py` | 17 | 7 |
-| `core/ctags.py` | 13 | 11 |
-| `core/fileaction.py` | 39 | 5 |
+| `core/copilot.py` | 17 | 8 |
+| `core/ctags.py` | 13 | 12 |
+| `core/fileaction.py` | 39 | 8 |
 | `core/handler/breadcrumb.py` | 3 | 3 |
 | `core/handler/call_hierarchy.py` | 9 | 4 |
 | `core/handler/code_action.py` | 3 | 3 |
 | `core/handler/completion.py` | 10 | 6 |
 | `core/handler/completion_item.py` | 3 | 3 |
 | `core/handler/completion_workspace_symbol.py` | 4 | 4 |
-| `core/handler/csharp_uri_resolver.py` | 4 | 3 |
+| `core/handler/csharp_uri_resolver.py` | 4 | 4 |
 | `core/handler/decompile.py` | 1 | 0 |
-| `core/handler/deno_uri_resolver.py` | 4 | 3 |
+| `core/handler/deno_uri_resolver.py` | 4 | 4 |
 | `core/handler/diagnostic.py` | 3 | 3 |
 | `core/handler/document_highlight.py` | 3 | 3 |
 | `core/handler/document_symbol.py` | 3 | 3 |
@@ -66,7 +66,7 @@ python3 scripts/coverage-report.py
 | `core/handler/hover.py` | 5 | 5 |
 | `core/handler/imenu.py` | 3 | 3 |
 | `core/handler/inlay_hint.py` | 3 | 3 |
-| `core/handler/jdt_uri_resolver.py` | 4 | 3 |
+| `core/handler/jdt_uri_resolver.py` | 4 | 4 |
 | `core/handler/jdtls/jdtls_add_overridable_methods.py` | 3 | 3 |
 | `core/handler/jdtls/jdtls_list_overridable_methods.py` | 3 | 3 |
 | `core/handler/peek.py` | 4 | 4 |
@@ -75,21 +75,21 @@ python3 scripts/coverage-report.py
 | `core/handler/rename.py` | 4 | 4 |
 | `core/handler/rust_expand_macro.py` | 3 | 3 |
 | `core/handler/rust_reload_workspace.py` | 3 | 3 |
-| `core/handler/semantic_tokens.py` | 12 | 6 |
+| `core/handler/semantic_tokens.py` | 12 | 7 |
 | `core/handler/signature_help.py` | 3 | 3 |
 | `core/handler/solidity.py` | 27 | 6 |
 | `core/handler/textpos.py` | 9 | 7 |
-| `core/handler/volar_proxy.py` | 9 | 3 |
+| `core/handler/volar_proxy.py` | 9 | 4 |
 | `core/handler/workspace_diagnostics.py` | 3 | 3 |
 | `core/handler/workspace_symbol.py` | 3 | 3 |
-| `core/lspserver.py` | 64 | 18 |
+| `core/lspserver.py` | 64 | 23 |
 | `core/mergedeep.py` | 7 | 1 |
-| `core/pystardict.py` | 35 | 8 |
-| `core/remote_file.py` | 34 | 4 |
-| `core/search_file_words.py` | 12 | 2 |
-| `core/search_list.py` | 7 | 2 |
-| `core/search_paths.py` | 7 | 1 |
-| `core/utils.py` | 65 | 12 |
+| `core/pystardict.py` | 35 | 9 |
+| `core/remote_file.py` | 34 | 5 |
+| `core/search_file_words.py` | 12 | 3 |
+| `core/search_list.py` | 7 | 3 |
+| `core/search_paths.py` | 7 | 2 |
+| `core/utils.py` | 65 | 14 |
 | `lsp-bridge-breadcrumb.el` | 21 | 3 |
 | `lsp-bridge-call-hierarchy.el` | 31 | 7 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
@@ -114,7 +114,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-ui.el` | 14 | 12 |
 | `lsp-bridge-workspace.el` | 30 | 12 |
 | `lsp-bridge.el` | 114 | 16 |
-| `lsp_bridge.py` | 24 | 21 |
+| `lsp_bridge.py` | 24 | 22 |
 
 ## Where the surface is still thin
 
@@ -123,22 +123,21 @@ under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
 | `lsp-bridge-ref.el` | 7/91 | 8% |
-| `core/remote_file.py` | 4/34 | 12% |
-| `core/fileaction.py` | 5/39 | 13% |
 | `acm/acm-frame.el` | 3/22 | 14% |
 | `lsp-bridge-semantic-tokens.el` | 7/50 | 14% |
 | `lsp-bridge.el` | 16/114 | 14% |
 | `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
-| `core/search_file_words.py` | 2/12 | 17% |
+| `core/remote_file.py` | 5/34 | 15% |
 | `lsp-bridge-org-babel.el` | 2/12 | 17% |
 | `lsp-bridge-core.el` | 12/70 | 17% |
-| `core/utils.py` | 12/65 | 18% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
+| `core/fileaction.py` | 8/39 | 21% |
+| `core/utils.py` | 14/65 | 22% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
 | `core/handler/solidity.py` | 6/27 | 22% |
 | `lsp-bridge-call-hierarchy.el` | 7/31 | 23% |
-| `core/pystardict.py` | 8/35 | 23% |
 | `acm/acm-terminal.el` | 9/38 | 24% |
+| `core/search_file_words.py` | 3/12 | 25% |
 
 ## What cannot be covered locally
 

@@ -240,5 +240,90 @@ class CapabilitiesTest(unittest.TestCase):
             self.assertEqual(diagnostic["dataSupport"], enabled)
 
 
+class RecordingSender:
+    """A sender that keeps what it was asked to send, instead of sending it."""
+
+    def __init__(self):
+        self.sent = []
+
+    def send_request(self, method, params, request_id, **kwargs):
+        self.sent.append(("request", method, params, request_id, kwargs))
+
+    def send_notification(self, method, params, **kwargs):
+        self.sent.append(("notification", method, params))
+
+
+def make_talking_server(**attributes):
+    """Return a server whose sender records instead of sending."""
+    sender = RecordingSender()
+    server = make_server(sender=sender, server_info={}, project_path="/tmp/project",
+                         root_path="/tmp/project", initialize_id=1,
+                         # Read while the capabilities are built.
+                         enable_diagnostics=True, **attributes)
+    return server, sender
+
+
+class NotificationTest(unittest.TestCase):
+    """What the server is told when a file is opened, saved or closed."""
+
+    def test_the_initialize_request(self):
+        server, sender = make_talking_server()
+        with mock.patch("core.lspserver.get_emacs_func_result", return_value=None):
+            server.send_initialize_request()
+        kind, method, params, request_id, kwargs = sender.sent[0]
+        self.assertEqual(kind, "request")
+        self.assertEqual(method, "initialize")
+        self.assertEqual(request_id, 1)
+        # The initialization request goes to its own queue.
+        self.assertEqual(kwargs, {"init": True})
+        self.assertEqual(params["rootPath"], "/tmp/project")
+        self.assertEqual(params["rootUri"], path_to_uri("/tmp/project"))
+        self.assertEqual(params["clientInfo"]["name"], "emacs")
+        self.assertEqual(params["processId"], os.getpid())
+        self.assertIn("capabilities", params)
+
+    def test_a_file_is_opened_with_its_text(self):
+        server, sender = make_talking_server()
+        fa = mock.Mock()
+        fa.filepath = "/tmp/project/a.py"
+        fa.external_file_link = None
+        fa.read_file.return_value = "the text"
+        with mock.patch("core.lspserver.get_emacs_func_result", return_value=None), \
+             mock.patch.object(server, "get_language_id", return_value="python"):
+            server.send_did_open_notification(fa)
+        kind, method, params = sender.sent[0]
+        self.assertEqual(method, "textDocument/didOpen")
+        self.assertEqual(params["textDocument"]["text"], "the text")
+        self.assertEqual(params["textDocument"]["languageId"], "python")
+        self.assertEqual(params["textDocument"]["version"], 0)
+
+    def test_a_file_is_closed_by_its_uri_alone(self):
+        server, sender = make_talking_server()
+        server.send_did_close_notification("/tmp/project/a.py")
+        kind, method, params = sender.sent[0]
+        self.assertEqual(method, "textDocument/didClose")
+        self.assertEqual(params["textDocument"]["uri"], path_to_uri("/tmp/project/a.py"))
+        self.assertEqual(len(params["textDocument"]), 1)
+
+    def test_a_save_is_not_reported_when_the_server_did_not_ask(self):
+        server, sender = make_talking_server(save_file_provider=False)
+        server.send_did_save_notification("/tmp/project/a.py", "a.py")
+        self.assertEqual(sender.sent, [])
+
+    def test_a_save_carries_the_text_when_the_server_asked_for_it(self):
+        server, sender = make_talking_server(save_file_provider=True, save_include_text=True)
+        with mock.patch("core.lspserver.get_buffer_content", return_value="the text"):
+            server.send_did_save_notification("/tmp/project/a.py", "a.py")
+        kind, method, params = sender.sent[0]
+        self.assertEqual(method, "textDocument/didSave")
+        self.assertEqual(params["textDocument"]["text"], "the text")
+        self.assertEqual(params["textDocument"]["uri"], path_to_uri("/tmp/project/a.py"))
+
+    def test_a_save_without_the_text_has_the_uri_alone(self):
+        server, sender = make_talking_server(save_file_provider=True, save_include_text=False)
+        server.send_did_save_notification("/tmp/project/a.py", "a.py")
+        self.assertEqual(sender.sent[0][2], {"textDocument": {"uri": path_to_uri("/tmp/project/a.py")}})
+
+
 if __name__ == "__main__":
     unittest.main()
