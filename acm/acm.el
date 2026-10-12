@@ -333,11 +333,17 @@ Toggling it also (re)installs the overriding keys of
   ;; Set override map, avoid some language mode map conflict with acm-mode map.
   (acm-overriding-key-setup))
 
+(defvar acm-hide-hook nil
+  "Hook run at the end of `acm-hide'.
+The menu, the doc frame and the filter are gone by then, so a function here sees
+the state the menu left behind - which is what lsp-bridge needs to reset what it
+resolved for the items of that menu.")
+
 (defun acm-hide ()
   "Hide the completion menu, the doc frame and the acm filter.
 Turn off `acm-mode', remove the buffer-local `pre-command-hook' that
-`acm-update' installed, forget the cached menu size of the session and ask the
-backend of the current candidate to clean its cache."
+`acm-update' installed, forget the cached menu size of the session, ask the
+backend of the current candidate to clean its cache and run `acm-hide-hook'."
   (interactive)
   (let* ((completion-menu-is-show-p (acm-frame-visible-p (acm-popup menu-frame)))
          (candidate-info (acm-menu-current-candidate))
@@ -374,7 +380,10 @@ backend of the current candidate to clean its cache."
       (acm-backend-clean backend))
 
     ;; Remove override map when hide acm menu.
-    (acm-overriding-key-remove)))
+    (acm-overriding-key-remove)
+
+    ;; The menu is gone: tell whoever kept state for it.
+    (run-hooks 'acm-hide-hook)))
 
 (defun acm-overriding-key-setup ()
   "Some key define in language mode map will conflict with acm-mode map.

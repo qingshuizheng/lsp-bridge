@@ -315,5 +315,17 @@ sit inside the string for this test."
         (acm--post-command)
         (should-not hidden)))))
 
+(ert-deftest acm-test-hide-runs-its-hook ()
+  "`acm-hide' tells whoever kept state for the menu that it is gone."
+  (with-temp-buffer
+    (let (called)
+      (add-hook 'acm-hide-hook (lambda () (setq called t)) nil t)
+      (acm-hide)
+      (should called))))
+
+(ert-deftest acm-test-hide-is-not-advised ()
+  "lsp-bridge keeps its menu state through the hook, not through advice."
+  (should-not (advice-member-p 'lsp-bridge--reset-completion-item-ticker 'acm-hide)))
+
 (provide 'acm-test)
 ;;; acm-test.el ends here

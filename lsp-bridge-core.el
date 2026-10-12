@@ -627,7 +627,7 @@ Each element is a hook list in the form accepted by `add-hook'.")
     (dolist (hook lsp-bridge--internal-hooks)
       (apply #'add-hook hook))
 
-    (advice-add #'acm-hide :after #'lsp-bridge--completion-hide-advisor)))
+    (add-hook 'acm-hide-hook #'lsp-bridge--reset-completion-item-ticker)))
 
 (defun lsp-bridge-is-org-temp-buffer-p ()
   "Return non-nil if the current buffer is an org temporary buffer.
@@ -653,8 +653,8 @@ capture and must not start lsp-bridge."
   ;; Reset `acm-backend-elisp-symbols-update-size' to zero.
   (setq acm-backend-elisp-symbols-update-size 0)
 
-  ;; Remove hide advice.
-  (advice-remove #'acm-hide #'lsp-bridge--completion-hide-advisor))
+  ;; Remove the state this package keeps for the menu.
+  (remove-hook 'acm-hide-hook #'lsp-bridge--reset-completion-item-ticker))
 
 (defun lsp-bridge--turn-off-lsp-feature (filename filehost)
   "Mark the buffer of FILENAME on FILEHOST as having no LSP server.
@@ -707,10 +707,10 @@ the revert runs so that no `change_file' request is sent for it."
   (apply orig-fun arg args)
   (setq-local lsp-bridge-revert-buffer-flag nil))
 
-(defun lsp-bridge--completion-hide-advisor (&rest args)
+(defun lsp-bridge--reset-completion-item-ticker ()
   "Reset the resolved completion item ticker when the menu hides.
-ARGS are ignored; runs as :after advice on `acm-hide' so the next menu
-resolves its items again."
+Runs in `acm-hide-hook', so the next menu resolves its items again instead of
+reusing what was resolved for the one that just went away."
   (when lsp-bridge-mode
     ;; Clean LSP backend completion tick.
     (setq-local acm-backend-lsp-fetch-completion-item-ticker nil)))
