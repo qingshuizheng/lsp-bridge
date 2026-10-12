@@ -38,7 +38,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-quick-access.el` | 10 | 8 |
 | `acm/acm-session.el` | 9 | 9 |
 | `acm/acm-terminal.el` | 38 | 11 |
-| `acm/acm.el` | 101 | 50 |
+| `acm/acm.el` | 102 | 50 |
 | `core/bridge_remote.py` | 16 | 9 |
 | `core/bridge_search.py` | 10 | 9 |
 | `core/bridge_server.py` | 15 | 5 |
@@ -83,7 +83,7 @@ python3 scripts/coverage-report.py
 | `core/handler/workspace_diagnostics.py` | 3 | 3 |
 | `core/handler/workspace_symbol.py` | 3 | 3 |
 | `core/lspserver.py` | 64 | 23 |
-| `core/mergedeep.py` | 7 | 1 |
+| `core/mergedeep.py` | 7 | 2 |
 | `core/pystardict.py` | 35 | 9 |
 | `core/remote_file.py` | 34 | 9 |
 | `core/search_file_words.py` | 12 | 7 |
@@ -94,7 +94,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-call-hierarchy.el` | 31 | 12 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
 | `lsp-bridge-completion.el` | 60 | 18 |
-| `lsp-bridge-core.el` | 70 | 19 |
+| `lsp-bridge-core.el` | 71 | 19 |
 | `lsp-bridge-dart.el` | 5 | 4 |
 | `lsp-bridge-diagnostic.el` | 33 | 12 |
 | `lsp-bridge-document.el` | 23 | 13 |
@@ -105,8 +105,8 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-jump.el` | 55 | 28 |
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
 | `lsp-bridge-org-babel.el` | 12 | 10 |
-| `lsp-bridge-peek.el` | 62 | 20 |
-| `lsp-bridge-ref.el` | 91 | 22 |
+| `lsp-bridge-peek.el` | 63 | 21 |
+| `lsp-bridge-ref.el` | 94 | 27 |
 | `lsp-bridge-remote.el` | 30 | 17 |
 | `lsp-bridge-rust.el` | 3 | 3 |
 | `lsp-bridge-semantic-tokens.el` | 50 | 8 |
@@ -125,7 +125,6 @@ covered because some of it is.
 | `lsp-bridge-semantic-tokens.el` | 8/50 | 16% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
-| `lsp-bridge-ref.el` | 22/91 | 24% |
 | `lsp-bridge.el` | 28/114 | 25% |
 
 ## What cannot be covered locally
