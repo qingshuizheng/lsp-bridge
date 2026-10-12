@@ -89,7 +89,7 @@ python3 scripts/coverage-report.py
 | `core/search_file_words.py` | 12 | 3 |
 | `core/search_list.py` | 7 | 3 |
 | `core/search_paths.py` | 7 | 2 |
-| `core/utils.py` | 65 | 14 |
+| `core/utils.py` | 65 | 26 |
 | `lsp-bridge-breadcrumb.el` | 21 | 3 |
 | `lsp-bridge-call-hierarchy.el` | 31 | 7 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
@@ -132,7 +132,6 @@ covered because some of it is.
 | `lsp-bridge-core.el` | 12/70 | 17% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `core/fileaction.py` | 8/39 | 21% |
-| `core/utils.py` | 14/65 | 22% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
 | `core/handler/solidity.py` | 6/27 | 22% |
 | `lsp-bridge-call-hierarchy.el` | 7/31 | 23% |
