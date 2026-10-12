@@ -133,5 +133,30 @@ skipped when tempel is loaded."
     (let ((acm-enable-tempel t))
       (should-not (acm-backend-tempel-candidates "any")))))
 
+(ert-deftest acm-backend-tempel-test-the-trigger-prefix-when-there-is-one ()
+  "A tempel that still has a trigger prefix is honoured, and one that does not.
+Tempel dropped `tempel-trigger-prefix' upstream, so the versions that have it are
+the older ones; both are asked for what they expect.  The test needs tempel
+itself to be loadable, which it is not in every environment."
+  (require 'tempel nil t)
+  (skip-unless (featurep 'tempel))
+  (let ((acm-enable-tempel t)
+        (acm-backend-tempel-candidates-number 5)
+        (tempel-template-sources (list (lambda () '((acm-backend-tempel-test-foo ("x")))))))
+    ;; `setq' rather than `let': the variable is read by the backend as a special
+    ;; variable, and a lexical binding of it would not be the one it sees.
+    (unwind-protect
+        (progn
+          (setq tempel-trigger-prefix "@")
+          (should (equal (mapcar (lambda (candidate) (plist-get candidate :label))
+                                 (acm-backend-tempel-candidates "@acm"))
+                         '("acm-backend-tempel-test-foo")))
+          (should-not (acm-backend-tempel-candidates "acm"))
+          (setq tempel-trigger-prefix nil)
+          (should (equal (mapcar (lambda (candidate) (plist-get candidate :label))
+                                 (acm-backend-tempel-candidates "acm"))
+                         '("acm-backend-tempel-test-foo"))))
+      (setq tempel-trigger-prefix nil))))
+
 (provide 'acm-backend-candidates-test)
 ;;; acm-backend-candidates-test.el ends here

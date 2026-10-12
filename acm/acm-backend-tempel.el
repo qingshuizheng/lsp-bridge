@@ -18,15 +18,25 @@
   :type 'integer
   :group 'acm-backend-tempel)
 
+;; Tempel used to have a `tempel-trigger-prefix' that a keyword had to start with
+;; before its snippets were offered, and it does not any more (the last release
+;; that has it is older than the one this is written against).  It is declared
+;; here rather than read directly, so that the versions that still have it are
+;; honoured and the ones that do not are asked without any prefix.
+(defvar tempel-trigger-prefix)
+
 (defun acm-backend-tempel-candidates (keyword)
   "Return tempel snippet candidates matching KEYWORD.
-Return nil unless `acm-enable-tempel' is non-nil and tempel is loaded.
-When `tempel-trigger-prefix' is non-nil, KEYWORD must start with that
-prefix and is matched without it."
+Return nil unless `acm-enable-tempel' is non-nil and tempel is loaded.  When
+tempel still has a `tempel-trigger-prefix' and it is non-nil, KEYWORD has to
+start with it and is matched without it; tempel versions that dropped it are
+asked for the keyword as it is."
   (when (and acm-enable-tempel
              (featurep 'tempel)
-             (or (not tempel-trigger-prefix) (string-prefix-p tempel-trigger-prefix keyword)))
-    (let* ((keyword (if tempel-trigger-prefix
+             (or (not (boundp 'tempel-trigger-prefix))
+                 (not tempel-trigger-prefix)
+                 (string-prefix-p tempel-trigger-prefix keyword)))
+    (let* ((keyword (if (and (boundp 'tempel-trigger-prefix) tempel-trigger-prefix)
                         (string-remove-prefix tempel-trigger-prefix keyword)
                       keyword))
            (snippets (cl-loop for template in (tempel--templates)
