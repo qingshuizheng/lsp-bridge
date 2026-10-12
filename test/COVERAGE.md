@@ -44,7 +44,7 @@ python3 scripts/coverage-report.py
 | `core/bridge_server.py` | 15 | 5 |
 | `core/copilot.py` | 17 | 8 |
 | `core/ctags.py` | 13 | 12 |
-| `core/fileaction.py` | 39 | 8 |
+| `core/fileaction.py` | 39 | 10 |
 | `core/handler/breadcrumb.py` | 3 | 3 |
 | `core/handler/call_hierarchy.py` | 9 | 4 |
 | `core/handler/code_action.py` | 3 | 3 |
@@ -52,7 +52,7 @@ python3 scripts/coverage-report.py
 | `core/handler/completion_item.py` | 3 | 3 |
 | `core/handler/completion_workspace_symbol.py` | 4 | 4 |
 | `core/handler/csharp_uri_resolver.py` | 4 | 4 |
-| `core/handler/decompile.py` | 1 | 0 |
+| `core/handler/decompile.py` | 1 | 1 |
 | `core/handler/deno_uri_resolver.py` | 4 | 4 |
 | `core/handler/diagnostic.py` | 3 | 3 |
 | `core/handler/document_highlight.py` | 3 | 3 |
@@ -108,7 +108,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-peek.el` | 62 | 19 |
 | `lsp-bridge-ref.el` | 91 | 7 |
 | `lsp-bridge-remote.el` | 30 | 17 |
-| `lsp-bridge-rust.el` | 3 | 0 |
+| `lsp-bridge-rust.el` | 3 | 3 |
 | `lsp-bridge-semantic-tokens.el` | 50 | 7 |
 | `lsp-bridge-transport.el` | 59 | 17 |
 | `lsp-bridge-ui.el` | 14 | 12 |
@@ -131,7 +131,6 @@ covered because some of it is.
 | `lsp-bridge-org-babel.el` | 2/12 | 17% |
 | `lsp-bridge-core.el` | 12/70 | 17% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
-| `core/fileaction.py` | 8/39 | 21% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
 | `core/handler/solidity.py` | 6/27 | 22% |
 | `lsp-bridge-call-hierarchy.el` | 7/31 | 23% |
