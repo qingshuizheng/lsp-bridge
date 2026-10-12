@@ -276,10 +276,18 @@ is off, or while the minibuffer is active."
              (not (minibufferp)))
     (lsp-bridge-call-file-api "document_highlight" (lsp-bridge--position))))
 
+(defvar lsp-bridge-document-highlight-hook nil
+  "Hook run with the highlight list of a `document_highlight' answer.
+The list is the one `lsp-bridge-document-highlight-render' is about to draw,
+which is what lets a feature use the ranges for something else as well.")
+
 (defun lsp-bridge-document-highlight-render (highlights)
   "Draw an overlay for every range in HIGHLIGHTS.
 Existing highlight overlays are removed first and each overlay uses
-`lsp-bridge-document-highlight-face' in the selected window."
+`lsp-bridge-document-highlight-face' in the selected window.  Run
+`lsp-bridge-document-highlight-hook' first so that the answer can be used
+before the overlays are drawn."
+  (run-hook-with-args 'lsp-bridge-document-highlight-hook highlights)
   (remove-overlays (point-min) (point-max) 'face 'lsp-bridge-document-highlight-face)
   (dolist (highlight highlights)
     (let* ((range (plist-get highlight :range))

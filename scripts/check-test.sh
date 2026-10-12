@@ -59,7 +59,7 @@ echo "== ERT: Org Babel server lookup (test/lsp-bridge-org-babel-test.el)"
 run_ert test/lsp-bridge-org-babel-test.el
 
 echo "== Python: pure tests (langserver JSON, protocol)"
-run_python test.test_langserver test.test_protocol test.test_textpos test.test_bridge_surface
+run_python test.test_handlers test.test_langserver test.test_protocol test.test_textpos test.test_bridge_surface
 
 if [ "${1:-}" = "--all" ]; then
     echo "== Python: language server driven tests"

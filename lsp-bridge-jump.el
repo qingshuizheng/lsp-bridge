@@ -328,6 +328,7 @@ target and `lsp-bridge-flash-line' highlights it."
 (declare-function lsp-bridge-document-highlight-render "lsp-bridge-workspace")
 (declare-function lsp-bridge-document-highlight--position-to-point "lsp-bridge-workspace")
 (defvar lsp-bridge-document-highlight-face)
+(defvar lsp-bridge-document-highlight-hook)
 
 (defface lsp-bridge-live-rename-face
   '((t :inherit lsp-bridge-document-highlight-face :underline t))
@@ -420,15 +421,19 @@ those very positions itself."
     (when (and commit textual name (not (string-empty-p name)) (not (equal name original)))
       ;; no server to apply anything: the occurrences are text, so they are
       ;; written here, and all of it inside this command, which is one undo step
-      (save-excursion
-        (dolist (overlay lsp-bridge-live-rename--overlays)
-          (when (overlay-get overlay 'lsp-bridge-live-rename)
-            (let ((overlay-start (overlay-start overlay))
-                  (overlay-end (overlay-end overlay)))
-              (when (and overlay-start overlay-end (< overlay-start overlay-end))
-                (goto-char overlay-start)
-                (delete-region overlay-start overlay-end)
-                (insert name)))))))
+      (let ((renamed 0))
+        (save-excursion
+          (dolist (overlay lsp-bridge-live-rename--overlays)
+            (when (overlay-get overlay 'lsp-bridge-live-rename)
+              (let ((overlay-start (overlay-start overlay))
+                    (overlay-end (overlay-end overlay)))
+                (when (and overlay-start overlay-end (< overlay-start overlay-end))
+                  (goto-char overlay-start)
+                  (delete-region overlay-start overlay-end)
+                  (insert name)
+                  (setq renamed (1+ renamed)))))))
+        (message "Renamed %d %s." (1+ renamed)
+                 (if (zerop renamed) "occurrence" "occurrences"))))
     (unless (and commit name (not (string-empty-p name)) (not (equal name original)))
       (message "Live rename: nothing changed"))
     (lsp-bridge-live-rename--cleanup)))
@@ -548,7 +553,10 @@ other files, and `C-c C-k' puts the buffer back."
    (t
     (user-error "No language server here to rename through"))))
 
-(advice-add 'lsp-bridge-document-highlight-render :before #'lsp-bridge-live-rename--render-hook)
+(add-hook 'lsp-bridge-document-highlight-hook #'lsp-bridge-live-rename--render-hook)
+
+;; The count is said out loud for the occurrences that were written here, since no
+;; server edit comes back to report them.
 
 
 (provide 'lsp-bridge-jump)
