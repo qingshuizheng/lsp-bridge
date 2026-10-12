@@ -13,6 +13,8 @@
 
 (require 'ert)
 (require 'lsp-bridge-peek)
+;; The content helpers convert protocol positions with this one.
+(require 'acm-backend-lsp)
 
 (defun lsp-bridge-peek-test--close-to (expected actual)
   "Return non-nil when ACTUAL is EXPECTED within the tolerance of a colour."
@@ -129,6 +131,49 @@
   (let ((border (lsp-bridge-peek--make-border)))
     (should (equal border "\n"))
     (should (eq (get-text-property 0 'face border) 'lsp-bridge-peek-border-face))))
+
+(defun lsp-bridge-peek-test--tree ()
+  "Return a symbol tree with one symbol that has two references."
+  (list (list "symbol"
+              (list "/tmp/a.py" "/tmp/b.py")
+              (list (list :line 0 :character 0)
+                    (list :line 4 :character 2)))
+        nil))
+
+(ert-deftest lsp-bridge-peek-test-get-content ()
+  "The content around a position is taken for the height asked for."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "line one\nline two\nline three\nline four\n")
+    (setq-local lsp-bridge-peek-file-content-height 2)
+    (should (equal (lsp-bridge-peek--get-content '(:line 1 :character 0) 0)
+                   "line two\nline three\n"))))
+
+(ert-deftest lsp-bridge-peek-test-get-content-highlights-the-symbol ()
+  "The symbol at the position carries the highlight face in what is returned."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert "first\nsecond\n")
+    (setq-local lsp-bridge-peek-file-content-height 2)
+    (let ((content (lsp-bridge-peek--get-content '(:line 1 :character 0) 0)))
+      ;; The property holds the face itself, not a list of faces.
+      (should (eq (get-text-property 0 'face content)
+                  'lsp-bridge-peek--highlight-symbol-face)))))
+
+(ert-deftest lsp-bridge-peek-test-displaying-list ()
+  "The list names the first entry a definition and the rest references."
+  (let ((lsp-bridge-peek-list-height 3)
+        (lsp-bridge-peek-selected-symbol 0)
+        (lsp-bridge-peek-chosen-displaying-list '(0 1 nil))
+        (lsp-bridge-peek-symbol-tree (lsp-bridge-peek-test--tree)))
+    (let ((text (substring-no-properties (lsp-bridge-peek--displaying-list))))
+      (should (string-match-p "definition" text))
+      (should (string-match-p "reference" text))
+      (should (string-match-p "/tmp/a.py" text))
+      (should (string-match-p "/tmp/b.py" text))
+      ;; The line and character of the protocol are counted from one for people.
+      (should (string-match-p "1:1" text))
+      (should (string-match-p "5:3" text)))))
 
 (provide 'lsp-bridge-peek-test)
 ;;; lsp-bridge-peek-test.el ends here
