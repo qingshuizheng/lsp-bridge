@@ -66,6 +66,9 @@ run_ert test/lsp-bridge-peek-test.el
 echo "== ERT: the imenu command (test/lsp-bridge-imenu-test.el)"
 run_ert test/lsp-bridge-imenu-test.el
 
+echo "== ERT: the popup frame helpers (test/acm-frame-test.el)"
+run_ert test/acm-frame-test.el
+
 echo "== ERT: the rust-analyzer extras (test/lsp-bridge-rust-test.el)"
 run_ert test/lsp-bridge-rust-test.el
 

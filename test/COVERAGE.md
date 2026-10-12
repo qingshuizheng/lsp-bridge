@@ -33,7 +33,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-vulpea.el` | 10 | 4 |
 | `acm/acm-backend-yas.el` | 16 | 13 |
 | `acm/acm-backend.el` | 20 | 19 |
-| `acm/acm-frame.el` | 22 | 4 |
+| `acm/acm-frame.el` | 22 | 7 |
 | `acm/acm-icon.el` | 11 | 5 |
 | `acm/acm-quick-access.el` | 10 | 8 |
 | `acm/acm-session.el` | 9 | 9 |
@@ -124,7 +124,6 @@ covered because some of it is.
 
 | `lsp-bridge.el` | 17/114 | 15% |
 | `lsp-bridge-semantic-tokens.el` | 8/50 | 16% |
-| `acm/acm-frame.el` | 4/22 | 18% |
 | `lsp-bridge-ref.el` | 18/91 | 20% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
