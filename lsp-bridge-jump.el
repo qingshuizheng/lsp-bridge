@@ -348,8 +348,11 @@ target and `lsp-bridge-flash-line' highlights it."
 (defvar lsp-bridge-document-highlight-hook)
 
 (defface lsp-bridge-live-rename-face
-  '((t :inherit lsp-bridge-document-highlight-face :underline t))
-  "Face used for the occurrences of a live rename."
+  '((t :inherit secondary-selection :underline t))
+  "Face used for the occurrences of a live rename.
+`secondary-selection' is the face for the other places something appears, and
+it is one the themes colour, so the occurrences follow the theme rather than a
+grey of their own."
   :group 'lsp-bridge)
 
 (defvar-local lsp-bridge-live-rename--overlays nil

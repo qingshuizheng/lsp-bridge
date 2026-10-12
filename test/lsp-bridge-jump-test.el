@@ -176,5 +176,16 @@ the second in the one jumped to."
     (lsp-bridge-live-rename-abort)
     (should (equal (buffer-string) "one two one\n"))))
 
+(ert-deftest lsp-bridge-jump-test-the-highlight-faces-follow-the-theme ()
+  "Neither face names a colour of its own, so the theme decides how they look."
+  (should (equal (face-attribute 'lsp-bridge-live-rename-face :inherit)
+                 'secondary-selection))
+  (should (equal (face-attribute 'lsp-bridge-document-highlight-face :inherit)
+                 'highlight))
+  ;; A fixed background is what made the rename hard to see in a light theme, and
+  ;; which colour the themes give these faces is theirs to decide, so what is asked
+  ;; here is the inheritance alone.
+  )
+
 (provide 'lsp-bridge-jump-test)
 ;;; lsp-bridge-jump-test.el ends here

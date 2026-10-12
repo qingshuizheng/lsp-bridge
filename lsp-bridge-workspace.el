@@ -317,8 +317,10 @@ before the overlays are drawn."
     (point)))
 
 (defface lsp-bridge-document-highlight-face
-  '((t :inherit highlight :background "gray20"))
-  "Face used for document highlight overlays."
+  '((t :inherit highlight))
+  "Face used for document highlight overlays.
+It inherits `highlight' rather than naming a colour, so that the occurrences are
+shown in whatever the current theme uses for a highlight."
   :group 'lsp-bridge)
 
 (defun lsp-bridge-document-highlight-cleanup ()
