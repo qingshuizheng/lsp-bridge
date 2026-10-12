@@ -18,12 +18,12 @@ python3 scripts/coverage-report.py
 | --- | ---: | ---: |
 
 | `acm/acm-backend-capf.el` | 6 | 3 |
-| `acm/acm-backend-copilot.el` | 14 | 0 |
+| `acm/acm-backend-copilot.el` | 14 | 5 |
 | `acm/acm-backend-ctags.el` | 11 | 5 |
 | `acm/acm-backend-devonthink.el` | 24 | 10 |
 | `acm/acm-backend-elisp.el` | 18 | 1 |
 | `acm/acm-backend-jupyter.el` | 5 | 0 |
-| `acm/acm-backend-lsp-workspace-symbol.el` | 7 | 0 |
+| `acm/acm-backend-lsp-workspace-symbol.el` | 7 | 3 |
 | `acm/acm-backend-lsp.el` | 22 | 1 |
 | `acm/acm-backend-path.el` | 5 | 5 |
 | `acm/acm-backend-search-file-words.el` | 11 | 5 |
@@ -121,10 +121,17 @@ python3 scripts/coverage-report.py
 - The LSP driven commands (`test_completion`, `test_find_define`,
   `test_org_babel`) need a real language server and run under
   `scripts/check-test.sh --all`.
-- The backends that talk to another application (`acm-backend-telega`,
-  `acm-backend-devonthink`, `acm-backend-vulpea`, `acm-backend-yas`,
-  `acm-backend-tempel`, `acm-backend-copilot`, `acm-backend-tabby`,
-  `acm-backend-jupyter`) are tested where their own logic allows it, and the rest
-  needs the service they belong to.
+- The part of a backend that produces candidates belongs to the service it is
+  for, and cannot be asked here: `acm-backend-yas` requires yasnippet,
+  `acm-backend-tabby` requires tabby, `acm-backend-jupyter` requires jupyter and
+  its org client, `acm-backend-copilot` a Copilot through the Python side, and
+  `acm-backend-tempel` tempel.  What those backends do with the candidates once
+  they have them - the option, the minimum length, the cache, the reset, the
+  trimming of a label - is what `test/acm-backend-candidates-test.el` asks.
+- `lsp-bridge-jdtls` asks a JDTLS server over `lsp-bridge-call-file-api`, and
+  `lsp-bridge-dart` needs the Dart SDK to find its analysis server.
+- `lsp-bridge-lsp-installer` downloads language servers from GitHub releases with
+  `url-copy-file`: what it does is an installation, not a value a test can ask for.
 - `acm-frame.el` and what draws popups need a real frame;
-  `test/acm-session-test.el` covers the session bookkeeping around them.
+  `test/acm-session-test.el` covers the session bookkeeping around them, and
+  `test/acm-test.el` the menu state machine that stops before a frame is touched.
