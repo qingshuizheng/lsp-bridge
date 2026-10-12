@@ -14,6 +14,11 @@
 (require 'acm-backend-ctags)
 (require 'acm-backend-search-file-words)
 
+;; The cache variables of the backends are built with `intern' from a format
+;; string, so the compiler cannot see them and has to be told about them.
+(defvar acm-backend-ctags-cache-candiates)
+(defvar acm-backend-search-file-words-cache-candiates)
+
 (ert-deftest acm-backend-ctags-test-candidates-follow-option-and-length ()
   "The ctags candidates are offered only past the option and the length."
   (with-temp-buffer
