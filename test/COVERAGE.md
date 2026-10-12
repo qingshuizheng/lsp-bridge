@@ -44,7 +44,7 @@ python3 scripts/coverage-report.py
 | `core/bridge_server.py` | 15 | 5 |
 | `core/copilot.py` | 17 | 6 |
 | `core/ctags.py` | 13 | 8 |
-| `core/fileaction.py` | 39 | 4 |
+| `core/fileaction.py` | 39 | 5 |
 | `core/handler/breadcrumb.py` | 3 | 3 |
 | `core/handler/call_hierarchy.py` | 9 | 4 |
 | `core/handler/code_action.py` | 3 | 3 |
@@ -82,14 +82,14 @@ python3 scripts/coverage-report.py
 | `core/handler/volar_proxy.py` | 9 | 3 |
 | `core/handler/workspace_diagnostics.py` | 3 | 3 |
 | `core/handler/workspace_symbol.py` | 3 | 3 |
-| `core/lspserver.py` | 64 | 3 |
+| `core/lspserver.py` | 64 | 15 |
 | `core/mergedeep.py` | 7 | 1 |
 | `core/pystardict.py` | 35 | 8 |
 | `core/remote_file.py` | 34 | 4 |
 | `core/search_file_words.py` | 12 | 2 |
 | `core/search_list.py` | 7 | 2 |
 | `core/search_paths.py` | 7 | 1 |
-| `core/utils.py` | 65 | 8 |
+| `core/utils.py` | 65 | 11 |
 | `lsp-bridge-breadcrumb.el` | 21 | 3 |
 | `lsp-bridge-call-hierarchy.el` | 31 | 7 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
@@ -100,7 +100,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-document.el` | 23 | 5 |
 | `lsp-bridge-epc.el` | 62 | 13 |
 | `lsp-bridge-imenu.el` | 4 | 1 |
-| `lsp-bridge-inlay-hint.el` | 15 | 9 |
+| `lsp-bridge-inlay-hint.el` | 15 | 10 |
 | `lsp-bridge-jdtls.el` | 14 | 8 |
 | `lsp-bridge-jump.el` | 52 | 18 |
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
@@ -122,20 +122,19 @@ Modules with at least 8 names of which a quarter or fewer are mentioned by anyth
 under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
-| `core/lspserver.py` | 3/64 | 5% |
 | `lsp-bridge-ref.el` | 7/91 | 8% |
 | `acm/acm-frame.el` | 2/22 | 9% |
 | `lsp-bridge.el` | 11/114 | 10% |
 | `lsp-bridge-core.el` | 7/70 | 10% |
-| `core/fileaction.py` | 4/39 | 10% |
 | `core/remote_file.py` | 4/34 | 12% |
-| `core/utils.py` | 8/65 | 12% |
+| `core/fileaction.py` | 5/39 | 13% |
 | `lsp-bridge-peek.el` | 8/62 | 13% |
 | `lsp-bridge-semantic-tokens.el` | 7/50 | 14% |
 | `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
 | `core/search_file_words.py` | 2/12 | 17% |
 | `lsp-bridge-org-babel.el` | 2/12 | 17% |
 | `lsp-bridge-remote.el` | 5/30 | 17% |
+| `core/utils.py` | 11/65 | 17% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `lsp-bridge-epc.el` | 13/62 | 21% |
 | `lsp-bridge-document.el` | 5/23 | 22% |
@@ -143,6 +142,7 @@ covered because some of it is.
 | `core/handler/solidity.py` | 6/27 | 22% |
 | `lsp-bridge-call-hierarchy.el` | 7/31 | 23% |
 | `core/pystardict.py` | 8/35 | 23% |
+| `core/lspserver.py` | 15/64 | 23% |
 | `acm/acm-terminal.el` | 9/38 | 24% |
 | `lsp-bridge-transport.el` | 14/59 | 24% |
 | `acm/acm-backend-lsp.el` | 6/24 | 25% |
