@@ -86,7 +86,7 @@ python3 scripts/coverage-report.py
 | `core/mergedeep.py` | 7 | 1 |
 | `core/pystardict.py` | 35 | 9 |
 | `core/remote_file.py` | 34 | 9 |
-| `core/search_file_words.py` | 12 | 3 |
+| `core/search_file_words.py` | 12 | 7 |
 | `core/search_list.py` | 7 | 3 |
 | `core/search_paths.py` | 7 | 2 |
 | `core/utils.py` | 65 | 27 |
@@ -131,7 +131,6 @@ covered because some of it is.
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
 | `core/handler/solidity.py` | 6/27 | 22% |
 | `acm/acm-terminal.el` | 9/38 | 24% |
-| `core/search_file_words.py` | 3/12 | 25% |
 
 ## What cannot be covered locally
 
