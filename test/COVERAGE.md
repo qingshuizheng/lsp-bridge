@@ -116,6 +116,43 @@ python3 scripts/coverage-report.py
 | `lsp-bridge.el` | 114 | 10 |
 | `lsp_bridge.py` | 24 | 21 |
 
+## Where the surface is still thin
+
+Modules with at least 8 names of which a quarter or fewer are mentioned by anything
+under `test/`, thinnest first.  This is the list to work from; a module is not
+covered because some of it is.
+
+| `lsp-bridge-epc.el` | 1/62 | 2% |
+| `lsp-bridge-peek.el` | 1/62 | 2% |
+| `lsp-bridge-workspace.el` | 1/30 | 3% |
+| `lsp-bridge-document.el` | 1/23 | 4% |
+| `acm/acm-backend-lsp.el` | 1/22 | 5% |
+| `core/lspserver.py` | 3/64 | 5% |
+| `acm/acm-backend-elisp.el` | 1/18 | 6% |
+| `lsp-bridge-remote.el` | 2/30 | 7% |
+| `lsp-bridge-inlay-hint.el` | 1/14 | 7% |
+| `lsp-bridge-ui.el` | 1/14 | 7% |
+| `core/ctags.py` | 1/13 | 8% |
+| `lsp-bridge-ref.el` | 7/91 | 8% |
+| `lsp-bridge.el` | 10/114 | 9% |
+| `core/remote_file.py` | 3/34 | 9% |
+| `acm/acm-frame.el` | 2/22 | 9% |
+| `lsp-bridge-core.el` | 7/70 | 10% |
+| `core/fileaction.py` | 4/39 | 10% |
+| `core/utils.py` | 8/65 | 12% |
+| `lsp-bridge-semantic-tokens.el` | 7/50 | 14% |
+| `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
+| `core/search_file_words.py` | 2/12 | 17% |
+| `lsp-bridge-org-babel.el` | 2/12 | 17% |
+| `lsp-bridge-code-action.el` | 4/20 | 20% |
+| `acm/acm-backend-telega.el` | 6/27 | 22% |
+| `core/handler/solidity.py` | 6/27 | 22% |
+| `lsp-bridge-call-hierarchy.el` | 7/31 | 23% |
+| `core/pystardict.py` | 8/35 | 23% |
+| `acm/acm-terminal.el` | 9/38 | 24% |
+| `lsp-bridge-transport.el` | 14/59 | 24% |
+| `lsp-bridge-completion.el` | 15/60 | 25% |
+
 ## What cannot be covered locally
 
 - The LSP driven commands (`test_completion`, `test_find_define`,

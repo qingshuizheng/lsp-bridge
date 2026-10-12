@@ -42,6 +42,20 @@ python3 scripts/coverage-report.py
 | --- | ---: | ---: |
 """
 
+# Modules with at least this many names, and a quarter or fewer of them mentioned
+# by anything under test/, are listed separately.  Counting the modules with no
+# mention at all was the wrong measure: it called the package covered while some
+# of its largest modules had one name in sixty touched by a test.
+THIN_NAMES = 8
+
+THIN_HEADER = f"""
+## Where the surface is still thin
+
+Modules with at least {THIN_NAMES} names of which a quarter or fewer are mentioned by anything
+under `test/`, thinnest first.  This is the list to work from; a module is not
+covered because some of it is.
+"""
+
 FOOTER = """
 ## What cannot be covered locally
 
@@ -91,13 +105,24 @@ def main():
                       for path in (root / "test").glob("*") if path.is_file())
 
     lines = [HEADER]
+    thin = []
     for path in modules(root):
         names = names_of(path)
         mentioned = sum(1 for name in names if name in tests)
         lines.append(f"| `{path.relative_to(root)}` | {len(names)} | {mentioned} |")
+        if len(names) >= THIN_NAMES and mentioned * 4 <= len(names):
+            thin.append((mentioned / len(names), mentioned, len(names), path.relative_to(root)))
+    lines.append(THIN_HEADER)
+    if thin:
+        for ratio, mentioned, total, relative in sorted(thin):
+            lines.append(f"| `{relative}` | {mentioned}/{total} | {ratio:.0%} |")
+    else:
+        lines.append("Nothing under 25% is left.")
     lines.append(FOOTER)
     (root / "test" / "COVERAGE.md").write_text("\n".join(lines))
     print(f"test/COVERAGE.md written from {len(modules(root))} modules")
+    print(f"{len(thin)} of them have {THIN_NAMES} names or more and a quarter of them "
+          f"mentioned or less")
 
 
 if __name__ == "__main__":
