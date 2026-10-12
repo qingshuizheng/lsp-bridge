@@ -57,4 +57,43 @@ divides evenly - both of which the examples in the docstring used to get wrong."
                  '("foo" "bar"))))
 
 (provide 'acm-terminal-test)
+(ert-deftest acm-terminal-test-the-line-number-width ()
+  "The menu leaves room for the line numbers only while they are shown."
+  (with-temp-buffer
+    (display-line-numbers-mode -1)
+    (should (equal (acm-terminal-line-number-display-width) 0))
+    (display-line-numbers-mode 1)
+    (should (equal (acm-terminal-line-number-display-width)
+                   (+ (line-number-display-width) 2)))))
+
+(ert-deftest acm-terminal-test-the-menu-is-two-columns-wider ()
+  "The menu is as wide as the candidates need and no wider than the window."
+  (with-temp-buffer
+    (should (equal (acm-terminal-max-length 10) 12))
+    ;; It never goes past the width the window has room for.
+    (should (<= (acm-terminal-max-length 1000) (window-width)))))
+
+(ert-deftest acm-terminal-test-the-front-end-registers-itself ()
+  "Turning the terminal front end on is what puts its dispatch points in place."
+  (let ((before acm-ui-overrides))
+    (unwind-protect
+        (progn
+          (acm-terminal-deactive)
+          (should-not acm-ui-overrides)
+          (acm-terminal-active)
+          ;; The front end takes the menu and the documentation over through the
+          ;; alist, rather than advising the commands of the menu.
+          (should (eq acm-ui-overrides acm-terminal-ui-overrides))
+          ;; The alist is a dispatch point of acm to what the terminal does in its
+          ;; place: every key names one of those points, every value is a function.
+          (should acm-terminal-ui-overrides)
+          (should (seq-every-p #'symbolp (mapcar #'car acm-terminal-ui-overrides)))
+          (should (seq-every-p (lambda (pair) (functionp (cdr pair)))
+                               acm-terminal-ui-overrides))
+          ;; One of them is read out of the list above rather than guessed at.
+          (should (eq (cdr (assq 'acm-hide acm-terminal-ui-overrides))
+                      'acm-terminal-hide)))
+      ;; The alist is put back afterwards, whatever the tests above found.
+      (setq acm-ui-overrides before))))
+
 ;;; acm-terminal-test.el ends here

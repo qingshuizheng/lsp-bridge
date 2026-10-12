@@ -37,7 +37,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-icon.el` | 11 | 5 |
 | `acm/acm-quick-access.el` | 10 | 8 |
 | `acm/acm-session.el` | 9 | 9 |
-| `acm/acm-terminal.el` | 38 | 9 |
+| `acm/acm-terminal.el` | 38 | 11 |
 | `acm/acm.el` | 101 | 50 |
 | `core/bridge_remote.py` | 16 | 9 |
 | `core/bridge_search.py` | 10 | 9 |
@@ -127,7 +127,6 @@ covered because some of it is.
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `lsp-bridge.el` | 23/114 | 20% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
-| `acm/acm-terminal.el` | 9/38 | 24% |
 
 ## What cannot be covered locally
 
