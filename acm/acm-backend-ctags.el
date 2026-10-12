@@ -21,12 +21,10 @@
   :group 'acm-backend-ctags)
 
 (defface acm-backend-ctags-annotation-face
-  '((((background light))
-     :foreground "#666666" :slant italic)
-    (t
-     :foreground "#c0c0c0" :slant italic))
+  '((t :inherit shadow :slant italic))
   "Face used for annotations when presenting a tag.
-Annotations include kind, type, etc.")
+Annotations include kind, type, etc.  They are beside the tag rather than part
+of it, so they inherit `shadow' and follow the theme.")
 
 (defun acm-backend-ctags-xref--make-object (tag)
   "Make xref object of TAG."

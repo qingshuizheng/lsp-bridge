@@ -97,8 +97,10 @@
   :group 'lsp-bridge)
 
 (defface lsp-bridge-inlay-hint-face
-  `((t :foreground "#aaaaaa"))
-  "Face for inlay hint."
+  '((t :inherit shadow))
+  "Face for inlay hint.
+The hints are not part of the text, so they inherit `shadow' rather than
+naming a grey, and follow the theme."
   :group 'lsp-bridge-inlay-hint)
 
 (defvar-local lsp-bridge-inlay-hint-last-update-pos nil

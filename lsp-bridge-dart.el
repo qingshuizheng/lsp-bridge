@@ -91,8 +91,10 @@
 (require 'lsp-bridge-core)
 
 (defface lsp-bridge-dart-closing-label-face
-  `((t :foreground "#aaaaaa"))
-  "Face for dart closing tab."
+  '((t :inherit shadow))
+  "Face for the closing label a Dart block shows.
+It inherits `shadow', the face for text that is there but not the point, so the
+label is de-emphasised in whatever colours the theme uses."
   :group 'lsp-bridge-dart)
 
 (defvar-local lsp-bridge-dart-closing-label-overlays '()

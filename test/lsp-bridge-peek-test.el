@@ -15,6 +15,9 @@
 (require 'lsp-bridge-peek)
 (require 'lsp-bridge-ref)
 (require 'acm-frame)
+(require 'acm-backend-ctags)
+(require 'lsp-bridge-inlay-hint)
+(require 'lsp-bridge-dart)
 ;; The content helpers convert protocol positions with this one.
 (require 'acm-backend-lsp)
 
@@ -189,7 +192,13 @@
                  'error))
   (should (equal (face-attribute 'lsp-bridge-ref-font-lock-command :inherit)
                  'font-lock-function-name-face))
-  (should (equal (face-attribute 'acm-frame-border-face :inherit) 'border)))
+  (should (equal (face-attribute 'acm-frame-border-face :inherit) 'border))
+  ;; The three that are secondary text rather than the text itself.
+  (should (equal (face-attribute 'lsp-bridge-dart-closing-label-face :inherit)
+                 'shadow))
+  (should (equal (face-attribute 'lsp-bridge-inlay-hint-face :inherit) 'shadow))
+  (should (equal (face-attribute 'acm-backend-ctags-annotation-face :inherit)
+                 'shadow)))
 
 (provide 'lsp-bridge-peek-test)
 ;;; lsp-bridge-peek-test.el ends here
