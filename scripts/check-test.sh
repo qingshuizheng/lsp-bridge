@@ -51,6 +51,9 @@ emacs -Q --batch -L . -L acm -l scripts/check-no-byte-compile.el . || exit 1
 echo "== ERT: positions, edits and the LSP cache (test/acm-backend-lsp-test.el)"
 run_ert test/acm-backend-lsp-test.el
 
+echo "== ERT: what the mode line is told (test/lsp-bridge-ui-test.el)"
+run_ert test/lsp-bridge-ui-test.el
+
 echo "== ERT: drawing the inlay hints of a buffer (test/lsp-bridge-inlay-hint-test.el)"
 run_ert test/lsp-bridge-inlay-hint-test.el
 

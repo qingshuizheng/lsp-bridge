@@ -21,7 +21,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-copilot.el` | 14 | 5 |
 | `acm/acm-backend-ctags.el` | 11 | 5 |
 | `acm/acm-backend-devonthink.el` | 24 | 10 |
-| `acm/acm-backend-elisp.el` | 18 | 1 |
+| `acm/acm-backend-elisp.el` | 18 | 6 |
 | `acm/acm-backend-jupyter.el` | 5 | 3 |
 | `acm/acm-backend-lsp-workspace-symbol.el` | 7 | 3 |
 | `acm/acm-backend-lsp.el` | 24 | 6 |
@@ -111,7 +111,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-rust.el` | 3 | 0 |
 | `lsp-bridge-semantic-tokens.el` | 50 | 7 |
 | `lsp-bridge-transport.el` | 59 | 14 |
-| `lsp-bridge-ui.el` | 14 | 1 |
+| `lsp-bridge-ui.el` | 14 | 4 |
 | `lsp-bridge-workspace.el` | 30 | 10 |
 | `lsp-bridge.el` | 114 | 11 |
 | `lsp_bridge.py` | 24 | 21 |
@@ -123,8 +123,6 @@ under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
 | `core/lspserver.py` | 3/64 | 5% |
-| `acm/acm-backend-elisp.el` | 1/18 | 6% |
-| `lsp-bridge-ui.el` | 1/14 | 7% |
 | `lsp-bridge-ref.el` | 7/91 | 8% |
 | `acm/acm-frame.el` | 2/22 | 9% |
 | `lsp-bridge.el` | 11/114 | 10% |

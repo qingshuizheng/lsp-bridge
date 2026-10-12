@@ -83,7 +83,7 @@ the mode line, with a timer that clears it after a while."
 (defun lsp-bridge--format-progress-message (progress)
   "Return the mode line text for the work done PROGRESS message."
   (let* (;; Extract percentage like (96%%)
-         (percent-match (string-match "\\(([0-9]+%%)\\)" progress))
+         (percent-match (string-match "\\(([0-9]+%)\\)" progress))
          (percent (if percent-match
                       (replace-regexp-in-string "[()]" "" (match-string 1 progress))
                     ""))
