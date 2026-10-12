@@ -109,7 +109,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-ref.el` | 91 | 0 |
 | `lsp-bridge-remote.el` | 30 | 2 |
 | `lsp-bridge-rust.el` | 3 | 0 |
-| `lsp-bridge-semantic-tokens.el` | 50 | 0 |
+| `lsp-bridge-semantic-tokens.el` | 50 | 7 |
 | `lsp-bridge-transport.el` | 59 | 14 |
 | `lsp-bridge-ui.el` | 14 | 1 |
 | `lsp-bridge-workspace.el` | 30 | 1 |

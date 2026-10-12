@@ -45,6 +45,9 @@ run_ert test/acm-test.el
 echo "== ERT: per-frame popup sessions (test/acm-session-test.el)"
 run_ert test/acm-session-test.el
 
+echo "== ERT: semantic tokens on the buffer (test/lsp-bridge-semantic-tokens-test.el)"
+run_ert test/lsp-bridge-semantic-tokens-test.el
+
 echo "== ERT: diagnostics over the buffer (test/lsp-bridge-diagnostic-test.el)"
 run_ert test/lsp-bridge-diagnostic-test.el
 
