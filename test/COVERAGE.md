@@ -19,7 +19,7 @@ python3 scripts/coverage-report.py
 
 | `acm/acm-backend-capf.el` | 6 | 3 |
 | `acm/acm-backend-copilot.el` | 14 | 6 |
-| `acm/acm-backend-ctags.el` | 11 | 7 |
+| `acm/acm-backend-ctags.el` | 11 | 8 |
 | `acm/acm-backend-devonthink.el` | 24 | 10 |
 | `acm/acm-backend-elisp.el` | 18 | 9 |
 | `acm/acm-backend-jupyter.el` | 5 | 3 |
@@ -33,7 +33,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-vulpea.el` | 10 | 4 |
 | `acm/acm-backend-yas.el` | 16 | 13 |
 | `acm/acm-backend.el` | 20 | 19 |
-| `acm/acm-frame.el` | 22 | 3 |
+| `acm/acm-frame.el` | 22 | 4 |
 | `acm/acm-icon.el` | 11 | 5 |
 | `acm/acm-quick-access.el` | 10 | 8 |
 | `acm/acm-session.el` | 9 | 9 |
@@ -94,7 +94,7 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-call-hierarchy.el` | 31 | 7 |
 | `lsp-bridge-code-action.el` | 20 | 4 |
 | `lsp-bridge-completion.el` | 60 | 17 |
-| `lsp-bridge-core.el` | 70 | 12 |
+| `lsp-bridge-core.el` | 70 | 19 |
 | `lsp-bridge-dart.el` | 5 | 4 |
 | `lsp-bridge-diagnostic.el` | 33 | 12 |
 | `lsp-bridge-document.el` | 23 | 10 |
@@ -102,18 +102,18 @@ python3 scripts/coverage-report.py
 | `lsp-bridge-imenu.el` | 4 | 1 |
 | `lsp-bridge-inlay-hint.el` | 15 | 10 |
 | `lsp-bridge-jdtls.el` | 14 | 8 |
-| `lsp-bridge-jump.el` | 54 | 26 |
+| `lsp-bridge-jump.el` | 55 | 28 |
 | `lsp-bridge-lsp-installer.el` | 4 | 0 |
 | `lsp-bridge-org-babel.el` | 12 | 2 |
-| `lsp-bridge-peek.el` | 62 | 19 |
-| `lsp-bridge-ref.el` | 91 | 7 |
+| `lsp-bridge-peek.el` | 62 | 20 |
+| `lsp-bridge-ref.el` | 91 | 15 |
 | `lsp-bridge-remote.el` | 30 | 17 |
 | `lsp-bridge-rust.el` | 3 | 3 |
 | `lsp-bridge-semantic-tokens.el` | 50 | 7 |
 | `lsp-bridge-transport.el` | 59 | 17 |
 | `lsp-bridge-ui.el` | 14 | 12 |
 | `lsp-bridge-workspace.el` | 30 | 12 |
-| `lsp-bridge.el` | 114 | 16 |
+| `lsp-bridge.el` | 114 | 17 |
 | `lsp_bridge.py` | 24 | 22 |
 
 ## Where the surface is still thin
@@ -122,14 +122,13 @@ Modules with at least 8 names of which a quarter or fewer are mentioned by anyth
 under `test/`, thinnest first.  This is the list to work from; a module is not
 covered because some of it is.
 
-| `lsp-bridge-ref.el` | 7/91 | 8% |
-| `acm/acm-frame.el` | 3/22 | 14% |
 | `lsp-bridge-semantic-tokens.el` | 7/50 | 14% |
-| `lsp-bridge.el` | 16/114 | 14% |
 | `lsp-bridge-breadcrumb.el` | 3/21 | 14% |
 | `core/remote_file.py` | 5/34 | 15% |
+| `lsp-bridge.el` | 17/114 | 15% |
+| `lsp-bridge-ref.el` | 15/91 | 16% |
 | `lsp-bridge-org-babel.el` | 2/12 | 17% |
-| `lsp-bridge-core.el` | 12/70 | 17% |
+| `acm/acm-frame.el` | 4/22 | 18% |
 | `lsp-bridge-code-action.el` | 4/20 | 20% |
 | `acm/acm-backend-telega.el` | 6/27 | 22% |
 | `core/handler/solidity.py` | 6/27 | 22% |

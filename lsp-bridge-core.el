@@ -671,17 +671,22 @@ buffer is about to be replaced wholesale.")
 
 (defun lsp-bridge--rename-file-advisor (orig-fun &optional arg &rest args)
   "Tell the server about a rename before `rename-file' runs.
-ORIG-FUN, ARG and ARGS describe the advised call.  When the renamed
-file is the file of this buffer a `rename_file' request is sent, the
-old file is closed and the buffer file name is updated."
+ORIG-FUN, ARG and ARGS describe the advised call: `rename-file' is called
+with the file to rename and the name to give it, so ARG is the old name
+and the first of ARGS is the new one.  When the file being renamed is the
+file of this buffer a `rename_file' request is sent, the old file is
+closed and the buffer file name is updated."
   (let* ((current-file-name (buffer-file-name))
          (current-file-name (and current-file-name
                                  (expand-file-name current-file-name)))
-         (new-name (expand-file-name (nth 0 args))))
+         (old-name (and arg (expand-file-name arg)))
+         (new-name (and (nth 0 args) (expand-file-name (nth 0 args)))))
     (when (and lsp-bridge-mode
                (boundp 'acm-backend-lsp-filepath)
                current-file-name
-               (string-equal current-file-name new-name))
+               old-name
+               new-name
+               (string-equal current-file-name old-name))
       (lsp-bridge-call-file-api "rename_file" new-name)
       (if (lsp-bridge-is-remote-file)
           (lsp-bridge-remote-send-func-request "close_file" (list acm-backend-lsp-filepath))
