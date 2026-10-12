@@ -18,8 +18,8 @@ python3 scripts/coverage-report.py
 | --- | ---: | ---: |
 
 | `acm/acm-backend-capf.el` | 6 | 3 |
-| `acm/acm-backend-copilot.el` | 14 | 5 |
-| `acm/acm-backend-ctags.el` | 11 | 5 |
+| `acm/acm-backend-copilot.el` | 14 | 6 |
+| `acm/acm-backend-ctags.el` | 11 | 7 |
 | `acm/acm-backend-devonthink.el` | 24 | 10 |
 | `acm/acm-backend-elisp.el` | 18 | 9 |
 | `acm/acm-backend-jupyter.el` | 5 | 3 |
@@ -38,7 +38,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-quick-access.el` | 10 | 8 |
 | `acm/acm-session.el` | 9 | 9 |
 | `acm/acm-terminal.el` | 38 | 9 |
-| `acm/acm.el` | 101 | 49 |
+| `acm/acm.el` | 101 | 50 |
 | `core/bridge_remote.py` | 16 | 9 |
 | `core/bridge_search.py` | 10 | 9 |
 | `core/bridge_server.py` | 15 | 5 |

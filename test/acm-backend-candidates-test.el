@@ -199,5 +199,47 @@ itself to be loadable, which it is not in every environment."
     (should-not acm-backend-jupyter-items)
     (should-not acm-backend-jupyter-cache-candiates)))
 
+(ert-deftest acm-backend-ctags-test-xref-object ()
+  "A tag becomes an xref item with its annotation and its file location."
+  (let* ((tag (list :ext-abspath "/tmp/a.py" :line 12 :str "def myFunction(" :annotation "function"))
+         (item (acm-backend-ctags-xref--make-object tag))
+         (location (xref-item-location item)))
+    (should (string-match-p "def myFunction(" (xref-item-summary item)))
+    (should (string-match-p "(function)" (substring-no-properties (xref-item-summary item))))
+    (should (equal (xref-file-location-file location) "/tmp/a.py"))
+    (should (equal (xref-file-location-line location) 12))
+    (should (equal (xref-file-location-column location) 0))))
+
+(ert-deftest acm-backend-ctags-test-xref-object-without-an-annotation ()
+  "A tag with nothing to say about itself is its text alone."
+  (let ((item (acm-backend-ctags-xref--make-object (list :ext-abspath "/tmp/a.py" :line 1 :str "text"))))
+    (should (equal (substring-no-properties (xref-item-summary item)) "text"))))
+
+(ert-deftest acm-backend-ctags-test-candidate-expand-inserts-the-label ()
+  "Expanding a candidate replaces the text before point with its label."
+  (with-temp-buffer
+    (insert "prefix-rest\n")
+    (goto-char 8)
+    ;; Point is at 8, which is one past the seventh character of `prefix-'.
+    (acm-backend-ctags-candidate-expand (list :label "the-label") 1)
+    (should (equal (buffer-string) "the-labelrest\n"))))
+
+(ert-deftest acm-backend-ctags-test-candidate-expand-in-preview-leaves-the-buffer ()
+  "A preview shows the label in an overlay and changes nothing."
+  (with-temp-buffer
+    (insert "prefix-rest\n")
+    (goto-char 8)
+    (let (shown)
+      (cl-letf (((symbol-function 'acm-preview-create-overlay)
+                 (lambda (bound-start bound-end label) (setq shown (list bound-start bound-end label)))))
+        (acm-backend-ctags-candidate-expand (list :label "the-label") 1 t))
+      (should (equal (buffer-string) "prefix-rest\n"))
+      (should (equal shown (list 1 8 "the-label"))))))
+
+(ert-deftest acm-backend-copilot-test-candidate-doc ()
+  "The documentation of a Copilot candidate is the one it carries."
+  (should (equal (acm-backend-copilot-candidate-doc (list :documentation "the doc")) "the doc"))
+  (should-not (acm-backend-copilot-candidate-doc (list :label "no doc"))))
+
 (provide 'acm-backend-candidates-test)
 ;;; acm-backend-candidates-test.el ends here
