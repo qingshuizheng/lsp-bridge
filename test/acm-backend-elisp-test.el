@@ -119,5 +119,75 @@
     (should-not acm-backend-elisp-items)
     (should-not acm-backend-elisp-cache-candiates)))
 
+(ert-deftest acm-backend-elisp-test-open-feature-file ()
+  "A feature opens the library that defines it, and says so when there is none."
+  (let ((file (make-temp-file "lsp-bridge-elisp-test" nil ".el"))
+        opened)
+    (unwind-protect
+        (progn
+          (with-temp-file file (insert "(provide 'my-test-feature)\n"))
+          (cl-letf (((symbol-function 'locate-library) (lambda (_feature) file))
+                    ((symbol-function 'find-file) (lambda (name) (setq opened name))))
+            (acm-backend-elisp-open-feature-file "my-test-feature")
+            (should (equal opened file)))
+          (let (said)
+            (cl-letf (((symbol-function 'locate-library) (lambda (_feature) nil))
+                      ((symbol-function 'find-file) (lambda (_name) (setq opened 'wrong)))
+                      ;; `message' writes to stderr in batch, so it is watched here.
+                      ((symbol-function 'message) (lambda (format &rest args)
+                                                    (setq said (apply #'format format args)))))
+              (setq opened nil)
+              (acm-backend-elisp-open-feature-file "no-such-feature-anywhere")
+              (should-not opened)
+              (should (string-match-p "Feature not found" said)))))
+      (delete-file file))))
+
+(defun acm-backend-elisp-test--find-def-calls (symbol)
+  "Return the finder calls `acm-backend-elisp-find-def' makes for SYMBOL."
+  (with-temp-buffer
+    (emacs-lisp-mode)
+    (insert symbol)
+    ;; Point has to be on the symbol, not after it, for `thing-at-point' to see it.
+    (goto-char (point-min))
+    (let (calls)
+      (cl-letf (((symbol-function 'find-function)
+                 (lambda (s) (push (cons 'find-function s) calls)))
+                ((symbol-function 'find-variable)
+                 (lambda (s) (push (cons 'find-variable s) calls)))
+                ((symbol-function 'find-face-definition)
+                 (lambda (s) (push (cons 'find-face-definition s) calls)))
+                ((symbol-function 'acm-backend-elisp-open-feature-file)
+                 (lambda (s) (push (cons 'open-feature-file s) calls))))
+        (acm-backend-elisp-find-def))
+      (nreverse calls))))
+
+(ert-deftest acm-backend-elisp-test-find-def-dispatches-on-the-symbol-type ()
+  "Each kind of symbol is looked for with the finder that suits it."
+  (should (equal (acm-backend-elisp-test--find-def-calls "car")
+                 '((find-function . car))))
+  (should (equal (acm-backend-elisp-test--find-def-calls "when")
+                 '((find-function . when))))
+  (should (equal (acm-backend-elisp-test--find-def-calls "if")
+                 '((find-variable . if))))
+  (should (equal (acm-backend-elisp-test--find-def-calls "bold")
+                 '((find-face-definition . bold))))
+  (should (equal (acm-backend-elisp-test--find-def-calls "load-path")
+                 '((find-variable . load-path))))
+  ;; `emacs-version' is a function in this Emacs, not a variable.
+  (should (equal (acm-backend-elisp-test--find-def-calls "emacs-version")
+                 '((find-function . emacs-version))))
+  ;; A feature is asked for by name, and which names are features is this Emacs'.
+  (let ((feature (symbol-name (car features))))
+    (should (equal (acm-backend-elisp-test--find-def-calls feature)
+                   (list (cons 'open-feature-file feature))))))
+
+(ert-deftest acm-backend-elisp-test-global-symbols ()
+  "The global symbols are the names of the running Emacs."
+  (let ((symbols (acm-backend-elisp-global-symbols)))
+    (should (member "car" symbols))
+    (should (member "bold" symbols))
+    (should (member "load-path" symbols))
+    (should (cl-every #'stringp symbols))))
+
 (provide 'acm-backend-elisp-test)
 ;;; acm-backend-elisp-test.el ends here

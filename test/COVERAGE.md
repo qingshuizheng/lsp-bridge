@@ -21,7 +21,7 @@ python3 scripts/coverage-report.py
 | `acm/acm-backend-copilot.el` | 14 | 5 |
 | `acm/acm-backend-ctags.el` | 11 | 5 |
 | `acm/acm-backend-devonthink.el` | 24 | 10 |
-| `acm/acm-backend-elisp.el` | 18 | 6 |
+| `acm/acm-backend-elisp.el` | 18 | 9 |
 | `acm/acm-backend-jupyter.el` | 5 | 3 |
 | `acm/acm-backend-lsp-workspace-symbol.el` | 7 | 3 |
 | `acm/acm-backend-lsp.el` | 24 | 11 |
