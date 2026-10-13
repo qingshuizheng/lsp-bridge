@@ -412,5 +412,20 @@ sit inside the string for this test."
         (should (eq (lookup-key acm-mode-map (kbd "M-1"))
                     #'acm-complete-quick-access))))))
 
+(ert-deftest acm-test-hiding-the-documentation-cancels-its-timer ()
+  "The pending markdown render of the documentation is cancelled and forgotten.
+The timer lives in a session slot, so it is cancelled through the slot: passing it to
+`acm-cancel-timer', which takes a variable, expanded to a `setq' on a form."
+  (let ((stand-in 'acm-test-markdown-timer)
+        cancelled)
+    (acm-popup-set 'markdown-timer stand-in)
+    (acm-popup-set 'markdown-doc "rendered")
+    (cl-letf (((symbol-function 'acm-frame-hide-frame) (lambda (&rest _) nil))
+              ((symbol-function 'cancel-timer) (lambda (timer) (setq cancelled timer))))
+      (acm-doc--hide))
+    (should (eq cancelled stand-in))
+    (should-not (acm-popup markdown-timer))
+    (should-not (acm-popup markdown-doc))))
+
 (provide 'acm-test)
 ;;; acm-test.el ends here

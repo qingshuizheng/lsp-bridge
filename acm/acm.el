@@ -808,7 +808,13 @@ itself takes it over through `acm-ui-overrides'."
 Cancel the pending markdown render and forget the rendered text."
   (acm-frame-hide-frame (acm-popup doc-frame))
 
-  (acm-cancel-timer (acm-popup markdown-timer))
+  ;; A timer kept in a session slot is cancelled through the slot: `acm-cancel-timer'
+  ;; takes a variable to cancel and to set to nil, and a slot is not one - handing it one
+  ;; made it expand to `(setq (acm-popup markdown-timer) nil)', which is the crash this
+  ;; replaces.
+  (when-let* ((timer (acm-popup markdown-timer)))
+    (cancel-timer timer)
+    (acm-popup-set 'markdown-timer nil))
 
   (acm-popup-set 'markdown-doc nil))
 
@@ -1087,7 +1093,9 @@ through `acm-ui-overrides'."
 
             ;; Only render markdown styling when idle 200ms, because markdown render is expensive.
             (when (member backend '("lsp" "copilot"))
-              (acm-cancel-timer (acm-popup markdown-timer))
+              (when-let* ((timer (acm-popup markdown-timer)))
+                (cancel-timer timer)
+                (acm-popup-set 'markdown-timer nil))
               (cl-case acm-enable-doc-markdown-render
                 (async (acm-popup-set 'markdown-timer
                              (run-with-idle-timer 0.2 nil
