@@ -28,6 +28,32 @@
   :type 'boolean
   :group 'acm-backend-telega)
 
+(defcustom acm-backend-telega-quiet-member-list-error t
+  "Do not show telega's message about members that cannot be listed.
+
+A chat whose members are hidden answers the search for them with
+\"Member list is inaccessible\", and the request is made for the mention
+candidates whether or not it can be answered; the mention completion reads the
+names the buffer has rendered for exactly that case, so the message reports
+nothing that is wrong.  Every other message telega prints is left alone."
+  :type 'boolean
+  :group 'lsp-bridge)
+
+(defun acm-backend-telega--keep-quiet-about-inaccessible-members (orig format &rest args)
+  "Drop telega's own message about a member list that cannot be read.
+The message is the one `telega-server.el' prints for a failed request, and it is
+the request for the members of a chat whose members are hidden.  Only that
+message is dropped; anything else, from telega or from anywhere else, is passed
+on to ORIG with FORMAT and ARGS."
+  (if (and acm-backend-telega-quiet-member-list-error
+           (equal format "telega-server error: %s")
+           (equal (plist-get (car args) :message) "Member list is inaccessible"))
+      nil
+    (apply orig format args)))
+
+(advice-add 'message
+            :around #'acm-backend-telega--keep-quiet-about-inaccessible-members)
+
 (defcustom acm-backend-telega-buffer-scan-limit 50000
   "How many characters of the chat buffer the mention scan reads backwards.
 

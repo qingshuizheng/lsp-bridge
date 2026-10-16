@@ -427,5 +427,19 @@ The timer lives in a session slot, so it is cancelled through the slot: passing 
     (should-not (acm-popup markdown-timer))
     (should-not (acm-popup markdown-doc))))
 
+(ert-deftest acm-test-taking-a-candidate-out-of-read-only-text ()
+  "Taking a candidate writes over the token even where the text is read-only.
+Telega marks the messages of a chat buffer read-only, and what a candidate
+replaces is the token being completed; without the binding this signalled
+`text-read-only', which is what came out of the post-command hook."
+  (with-temp-buffer
+    (insert "Bob: hello @bo")
+    (add-text-properties (point-min) (point-max) '(read-only t))
+    (acm-popup-set 'popup-point (- (point) 3))
+    (cl-letf (((symbol-function 'acm-menu-current-candidate)
+               (lambda () (list :label "@bob" :backend "not-registered"))))
+      (acm-complete t)
+      (should (equal (buffer-string) "Bob: hello @bob")))))
+
 (provide 'acm-test)
 ;;; acm-test.el ends here

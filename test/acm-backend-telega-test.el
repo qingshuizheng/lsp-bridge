@@ -209,5 +209,40 @@ candidate and lsp-bridge took it by itself."
       ;; replaced, and telega's input line has nothing after the token.
       (should (equal (buffer-string) "Bob: hello @bob ")))))
 
+(ert-deftest acm-backend-telega-test-the-inaccessible-member-list-is-not-shown ()
+  "The one message that a hidden member list produces is dropped; others are not."
+  (let (shown)
+    (let ((acm-backend-telega-quiet-member-list-error t))
+      ;; The exact call telega's server makes for a failed request.
+      (should (null (acm-backend-telega--keep-quiet-about-inaccessible-members
+                     (lambda (&rest args) (setq shown args))
+                     "telega-server error: %s"
+                     (list :code 400 :message "Member list is inaccessible"))))
+      (should (null shown))
+      ;; Another server error is passed on, with its arguments.
+      (acm-backend-telega--keep-quiet-about-inaccessible-members
+       (lambda (&rest args) (setq shown args))
+       "telega-server error: %s"
+       (list :code 400 :message "Chat not found"))
+      (should (equal (cadr shown) (list :code 400 :message "Chat not found")))
+      ;; And so is anything else that goes through `message'.
+      (setq shown nil)
+      (acm-backend-telega--keep-quiet-about-inaccessible-members
+       (lambda (&rest args) (setq shown args)) "Fetch telega userlist... done.")
+      (should (equal (car shown) "Fetch telega userlist... done.")))
+    ;; The switch turns the filtering off.
+    (let ((acm-backend-telega-quiet-member-list-error nil))
+      (setq shown nil)
+      (acm-backend-telega--keep-quiet-about-inaccessible-members
+       (lambda (&rest args) (setq shown args))
+       "telega-server error: %s"
+       (list :code 400 :message "Member list is inaccessible"))
+      (should shown))))
+
+(ert-deftest acm-backend-telega-test-the-filter-is-installed ()
+  "The filtering is on the `message' function itself, not only written down."
+  (should (advice-member-p #'acm-backend-telega--keep-quiet-about-inaccessible-members
+                           #'message)))
+
 (provide 'acm-backend-telega-test)
 ;;; acm-backend-telega-test.el ends here

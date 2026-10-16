@@ -849,12 +849,16 @@ with when it has one, otherwise replace the input prefix by the candidate
 label.  Delete `acm-preview-overlay' and, unless NOT-HIDE
 is non-nil, hide the menu and the doc frame."
   (interactive)
-  (let* ((candidate-info (acm-menu-current-candidate))
-         (bound-start (acm-popup popup-point)))
-    (if (acm-backend-expand-p candidate-info)
-        (acm-backend-expand candidate-info bound-start)
-      (delete-region bound-start (point))
-      (insert (plist-get candidate-info :label))))
+  ;; The write goes with `inhibit-read-only' bound: the token being completed can
+  ;; sit in text a mode has marked read-only - telega marks the messages of a chat
+  ;; that way - and taking a candidate writes over that token and nothing else.
+  (let ((inhibit-read-only t))
+    (let* ((candidate-info (acm-menu-current-candidate))
+           (bound-start (acm-popup popup-point)))
+      (if (acm-backend-expand-p candidate-info)
+          (acm-backend-expand candidate-info bound-start)
+        (delete-region bound-start (point))
+        (insert (plist-get candidate-info :label)))))
 
   (when (overlayp acm-preview-overlay)
     (delete-overlay acm-preview-overlay))
@@ -926,7 +930,10 @@ otherwise."
 
       (if (and (> (length common-string) 0)
                (> (length common-string) (length input-prefix)))
-          (insert (substring common-string (length (acm-get-input-prefix))))
+          ;; Written with the same binding as taking a candidate: what is written is
+          ;; the rest of the word being completed.
+          (let ((inhibit-read-only t))
+            (insert (substring common-string (length (acm-get-input-prefix)))))
         (message "No common string found")))))
 
 (defvar acm-string-width-function
