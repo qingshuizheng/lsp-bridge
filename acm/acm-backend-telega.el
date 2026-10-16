@@ -466,101 +466,107 @@ Every source replaces the token at point, and the leading character of that
 token - \"@\", \"/\", \"#\", \":\" or the fence backtick - is part of the
 bound to delete.  A mention of a member without a username becomes a mention
 entity carrying the member id, which is the only way Telegram accepts it.
+Telega marks the messages of a chat buffer read-only, and the token being
+completed is written over when a candidate is taken, so the write happens
+with `inhibit-read-only' bound: without it, taking the one candidate of a
+mention - which lsp-bridge does by itself when there is only one - signalled
+`text-read-only' from the post-command hook.
 PREVIEW non-nil shows the candidate in an overlay instead of inserting it."
-  (cond
-   ;; Emoji, slash, precode and hashtag candidates all replace the token at point.
-   ((plist-get candidate-info :emoji)
-    (let ((text (plist-get candidate-info :emoji-char)))
-      (when (eq (char-before bound-start) ?:)
-        (setq bound-start (1- bound-start)))
-      (if preview
-          (acm-preview-create-overlay bound-start (point) text)
-        (delete-region bound-start (point))
-        (insert text))))
-   ((plist-get candidate-info :slash)
-    (let ((text (plist-get candidate-info :label)))
-      (when (eq (char-before bound-start) ?/)
-        (setq bound-start (1- bound-start)))
-      (if preview
-          (acm-preview-create-overlay bound-start (point) text)
-        (delete-region bound-start (point))
-        (insert text)
-        (insert " "))))
-   ((plist-get candidate-info :precode)
-    (let* ((text (plist-get candidate-info :label))
-           ;; `bound-start' begins the prefix.  With the string style that is the
-           ;; first backtick, so the fence is inside the replaced region and has to
-           ;; be inserted again; with the symbol styles it sits right after the
-           ;; fence, which the buffer already has.
-           (text (if (eq (char-before bound-start) ?`)
-                     text
-                   (concat "```" text))))
-      (if preview
-          (acm-preview-create-overlay bound-start (point) text)
-        (delete-region bound-start (point))
-        (insert text)
-        ;; Mirror telega: insert closing ``` on a new line, leave cursor between.
-        (insert "\n\n```")
-        (forward-line -1)
-        (beginning-of-line))))
-   ((plist-get candidate-info :hashtag)
-    (let ((text (plist-get candidate-info :label)))
-      (when (eq (char-before bound-start) ?#)
-        (setq bound-start (1- bound-start)))
-      (if preview
-          (acm-preview-create-overlay bound-start (point) text)
-        (delete-region bound-start (point))
-        (insert text)
-        (insert " "))))
-   ;; Mention candidate: insert @username, or a mention entity when the member
-   ;; has no username (which is also why the member is kept in the candidate).
-      ;; A name read out of the buffer's text is inserted as it stands: there is no
-      ;; sender object behind it, and its label is the `@username' the text holds.
-      ((and (null (plist-get candidate-info :member))
-            (plist-get candidate-info :label))
-       (let ((text (plist-get candidate-info :label)))
-         (if preview
-             (acm-preview-create-overlay bound-start (point) text)
-           (delete-region bound-start (point))
-           (insert text)
-           (insert " "))))
-   (t
-    (let* ((member (plist-get candidate-info :member))
-           (username (ignore-errors (telega-msg-sender-username member 'with-@)))
-           (title (ignore-errors
-                    (telega-msg-sender-title member
-                      :with-avatar-p nil
-                      :with-badges-p nil
-                      :with-title-faces-p nil)))
-           (label (or username title)))
-      ;; Delete the leading @ prefix (inserted label starts with @ for
-      ;; username users, or is a mention entity for no-username users)
-      (when (eq (char-before bound-start) ?@)
-        (setq bound-start (1- bound-start)))
-      (if preview
-          (acm-preview-create-overlay bound-start (point) label)
-        (delete-region bound-start (point))
-        (if username
-            (insert username)
-          (let ((start (point)))
-            (insert title)
-            (put-text-property start (point) :tl-entity-type
-                               (list :@type "textEntityTypeMentionName"
-                                     :user_id (plist-get member :id)))
-            (put-text-property start (point) 'face 'telega-entity-type-mention)))
-        ;; Append a space right after the mention, mirroring
-        ;; `telega-completions--username-post-completion' behaviour.
-        (insert " "))))))
+  (let ((inhibit-read-only t))
+    (cond
+     ;; Emoji, slash, precode and hashtag candidates all replace the token at point.
+     ((plist-get candidate-info :emoji)
+      (let ((text (plist-get candidate-info :emoji-char)))
+        (when (eq (char-before bound-start) ?:)
+          (setq bound-start (1- bound-start)))
+        (if preview
+            (acm-preview-create-overlay bound-start (point) text)
+          (delete-region bound-start (point))
+          (insert text))))
+     ((plist-get candidate-info :slash)
+      (let ((text (plist-get candidate-info :label)))
+        (when (eq (char-before bound-start) ?/)
+          (setq bound-start (1- bound-start)))
+        (if preview
+            (acm-preview-create-overlay bound-start (point) text)
+          (delete-region bound-start (point))
+          (insert text)
+          (insert " "))))
+     ((plist-get candidate-info :precode)
+      (let* ((text (plist-get candidate-info :label))
+             ;; `bound-start' begins the prefix.  With the string style that is the
+             ;; first backtick, so the fence is inside the replaced region and has to
+             ;; be inserted again; with the symbol styles it sits right after the
+             ;; fence, which the buffer already has.
+             (text (if (eq (char-before bound-start) ?`)
+                       text
+                     (concat "```" text))))
+        (if preview
+            (acm-preview-create-overlay bound-start (point) text)
+          (delete-region bound-start (point))
+          (insert text)
+          ;; Mirror telega: insert closing ``` on a new line, leave cursor between.
+          (insert "\n\n```")
+          (forward-line -1)
+          (beginning-of-line))))
+     ((plist-get candidate-info :hashtag)
+      (let ((text (plist-get candidate-info :label)))
+        (when (eq (char-before bound-start) ?#)
+          (setq bound-start (1- bound-start)))
+        (if preview
+            (acm-preview-create-overlay bound-start (point) text)
+          (delete-region bound-start (point))
+          (insert text)
+          (insert " "))))
+     ;; Mention candidate: insert @username, or a mention entity when the member
+     ;; has no username (which is also why the member is kept in the candidate).
+        ;; A name read out of the buffer's text is inserted as it stands: there is no
+        ;; sender object behind it, and its label is the `@username' the text holds.
+        ((and (null (plist-get candidate-info :member))
+              (plist-get candidate-info :label))
+         (let ((text (plist-get candidate-info :label)))
+           (if preview
+               (acm-preview-create-overlay bound-start (point) text)
+             (delete-region bound-start (point))
+             (insert text)
+             (insert " "))))
+     (t
+      (let* ((member (plist-get candidate-info :member))
+             (username (ignore-errors (telega-msg-sender-username member 'with-@)))
+             (title (ignore-errors
+                      (telega-msg-sender-title member
+                        :with-avatar-p nil
+                        :with-badges-p nil
+                        :with-title-faces-p nil)))
+             (label (or username title)))
+        ;; Delete the leading @ prefix (inserted label starts with @ for
+        ;; username users, or is a mention entity for no-username users)
+        (when (eq (char-before bound-start) ?@)
+          (setq bound-start (1- bound-start)))
+        (if preview
+            (acm-preview-create-overlay bound-start (point) label)
+          (delete-region bound-start (point))
+          (if username
+              (insert username)
+            (let ((start (point)))
+              (insert title)
+              (put-text-property start (point) :tl-entity-type
+                                 (list :@type "textEntityTypeMentionName"
+                                       :user_id (plist-get member :id)))
+              (put-text-property start (point) 'face 'telega-entity-type-mention)))
+          ;; Append a space right after the mention, mirroring
+          ;; `telega-completions--username-post-completion' behaviour.
+          (insert " "))))))
 
-;;; Keeping telega's own triggers reachable
+  ;;; Keeping telega's own triggers reachable
 
-(with-eval-after-load 'lsp-bridge
-  ;; The two questions a telega chat answers differently from the syntax table
-  ;; are answered through the hooks lsp-bridge offers for them.
-  (add-hook 'lsp-bridge-completion-hide-character-functions
-            #'acm-backend-telega--colon-visible-p)
-  (add-hook 'lsp-bridge-completion-in-string-functions
-            #'acm-backend-telega--chat-buffer-p))
+  (with-eval-after-load 'lsp-bridge
+    ;; The two questions a telega chat answers differently from the syntax table
+    ;; are answered through the hooks lsp-bridge offers for them.
+    (add-hook 'lsp-bridge-completion-hide-character-functions
+              #'acm-backend-telega--colon-visible-p)
+    (add-hook 'lsp-bridge-completion-in-string-functions
+              #'acm-backend-telega--chat-buffer-p)))
 
 ;; Update userlist when first switch to telega buffer.
 (advice-add 'telega-chatbuf--switch-in

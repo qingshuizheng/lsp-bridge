@@ -192,5 +192,22 @@ appended to after it."
                                (acm-backend-telega-mention-candidates "a"))
                        '("@alice")))))))
 
+(ert-deftest acm-backend-telega-test-expanding-takes-the-token-out-of-a-read-only-line ()
+  "A mention is written over even where telega has marked the text read-only.
+The messages of a chat buffer are read-only, and the token a candidate replaces is
+written over: without `inhibit-read-only' this signalled `text-read-only', which is
+the error that came out of the post-command hook when a mention had a single
+candidate and lsp-bridge took it by itself."
+  (with-temp-buffer
+    (insert "Bob: hello @bo\n")
+    (add-text-properties (point-min) (point-max) '(read-only t))
+    (let ((start (- (point) 4)))          ; the "@" sits inside the read-only text
+      (should (null (acm-backend-telega-candidate-expand
+                     (list :key "@bob" :label "@bob" :backend "telega")
+                     start)))
+      ;; The newline went with the token: the region the caller names is what is
+      ;; replaced, and telega's input line has nothing after the token.
+      (should (equal (buffer-string) "Bob: hello @bob ")))))
+
 (provide 'acm-backend-telega-test)
 ;;; acm-backend-telega-test.el ends here
