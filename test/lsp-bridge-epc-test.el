@@ -18,6 +18,7 @@
 
 (require 'ert)
 (require 'lsp-bridge-epc)
+(require 'lsp-bridge-transport)
 
 (ert-deftest lsp-bridge-epc-test-new-object-defaults ()
   "A new object has the default callback, errorback and cancel, and no value."
@@ -178,6 +179,29 @@
       (lsp-bridge-epc-net-send connection "你好")
       (should (equal (string-to-number (substring sent 0 6) 16)
                      (length (encode-coding-string "\"你好\"\n" 'utf-8-unix)))))))
+
+(ert-deftest lsp-bridge-epc-test-connection-buffers-are-out-of-the-way ()
+  "The buffers the connections and the logs use do not show in the buffer list.
+A name beginning with a space is how Emacs is told to keep a buffer out of the
+way, and the server side of `lsp-bridge-epc.el' already names its own that way;
+the client side and the log buffers did not."
+  (should (string-prefix-p " " lsp-bridge-name))
+  (let* ((process (start-process "lsp-bridge-epc-test" nil "sleep" "5"))
+         (connection (cl-letf (((symbol-function 'open-network-stream)
+                                (lambda (&rest _) process)))
+                       (lsp-bridge-epc-connect "127.0.0.1" 9999))))
+    (unwind-protect
+        (progn
+          (should (string-prefix-p " " (buffer-name
+                                        (lsp-bridge-epc-connection-buffer connection))))
+          ;; The log is named the same way; it is only written while debugging, so
+          ;; the debug flag is what makes it appear here.
+          (let ((lsp-bridge-epc-debug t))
+            (lsp-bridge-epc-log "written by the test")
+            (should (string-prefix-p " "
+                                     (buffer-name (get-buffer " *lsp-bridge-epc-log*"))))))
+      (ignore-errors (kill-process process))
+      (ignore-errors (lsp-bridge-epc-disconnect connection)))))
 
 (provide 'lsp-bridge-epc-test)
 ;;; lsp-bridge-epc-test.el ends here

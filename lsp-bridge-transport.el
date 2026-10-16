@@ -119,7 +119,7 @@ Each element of VARS is a variable name string; see
 (defvar lsp-bridge-internal-process-args nil
   "Argument list used to start the lsp_bridge.py server.")
 
-(defcustom lsp-bridge-name "*lsp-bridge*"
+(defcustom lsp-bridge-name " *lsp-bridge*"
   "Name of LSP-Bridge buffer."
   :type 'string
   :group 'lsp-bridge)

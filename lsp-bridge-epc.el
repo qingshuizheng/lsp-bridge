@@ -48,7 +48,7 @@
 (defun lsp-bridge-deferred-log (&rest args)
   "[internal] Debug log function."
   (when lsp-bridge-deferred-debug
-    (with-current-buffer (get-buffer-create "*lsp-bridge-deferred-log*")
+    (with-current-buffer (get-buffer-create " *lsp-bridge-deferred-log*")
       (save-excursion
         (goto-char (point-max))
         (insert (format "%5i %s\n\n\n" lsp-bridge-deferred-debug-count (apply #'format args)))))
@@ -261,7 +261,7 @@ is a short cut of following code:
 
 (defun lsp-bridge-epc-log (&rest args)
   (when lsp-bridge-epc-debug
-    (with-current-buffer (get-buffer-create "*lsp-bridge-epc-log*")
+    (with-current-buffer (get-buffer-create " *lsp-bridge-epc-log*")
       (buffer-disable-undo)
       (goto-char (point-max))
       (insert (apply 'format args) "\n\n\n"))))
@@ -300,7 +300,9 @@ return lsp-bridge-epc-connection object."
   (lsp-bridge-epc-log ">> Connection start: %s:%s" host port)
   (let* ((connection-id (lsp-bridge-epc-uid))
          (connection-name (format "lsp-bridge-epc con %s" connection-id))
-         (connection-buf (lsp-bridge-epc-make-procbuf (format "*%s*" connection-name)))
+         ;; A leading space keeps it out of the buffer list, as the server side
+         ;; of this file already does for the buffer it accepts.
+         (connection-buf (lsp-bridge-epc-make-procbuf (format " *%s*" connection-name)))
          (connection-process
           (open-network-stream connection-name connection-buf host port))
          (channel (list connection-name nil))
