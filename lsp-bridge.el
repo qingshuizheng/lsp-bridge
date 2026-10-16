@@ -1342,8 +1342,7 @@ the file name through the multi and single lang server rules."
          acm-backend-lsp-server-names)
         ;; Search LSP rules.
         (t
-         (when-let* ((filename (or (ignore-errors (file-truename
-                                                   (lsp-bridge-get-buffer-file-name-text)))
+         (when-let* ((filename (or (lsp-bridge-get-buffer-truename)
                                    (when (lsp-bridge-is-remote-file)
                                      lsp-bridge-remote-file-path))))
            (let* ((multi-lang-server-name (or (lsp-bridge-get-multi-lang-server-by-extension filename)

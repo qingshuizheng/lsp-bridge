@@ -18,6 +18,21 @@
   (lsp-bridge-call-async "start_test")
   (while 't (sit-for 1)))
 
+(ert-deftest lsp-bridge-test-no-file-behind-a-buffer-asks-for-no-truename ()
+  "A buffer with no file, such as a telega chat, has no LSP server and no error.
+`lsp-bridge-has-lsp-server-p' looked the file name up with `file-truename' and
+caught the error it raised for nothing; with `debug-on-error' bound that error
+still reached the debugger.  The truename helper is nil-safe, so the question is
+answered without raising anything at all."
+  (with-temp-buffer
+    (setq-local lsp-bridge-mode t)
+    (should (null (lsp-bridge-get-buffer-file-name-text)))
+    ;; Bound the way the debugger would have it, to catch a swallowed error too.
+    (let ((debug-on-error t))
+      (should (null (lsp-bridge-has-lsp-server-p)))
+      (should (null (lsp-bridge-get-buffer-truename)))
+      (lsp-bridge-monitor-before-change (point) (point)))))
+
 (provide 'lsp-bridge-test)
 ;; The lookups asked below are the ones of the package itself.
 (require 'lsp-bridge)
