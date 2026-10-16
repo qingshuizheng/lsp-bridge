@@ -441,5 +441,12 @@ replaces is the token being completed; without the binding this signalled
       (acm-complete t)
       (should (equal (buffer-string) "Bob: hello @bob")))))
 
+(ert-deftest acm-test-the-two-options-are-on-by-default ()
+  "Cycling the menu and hiding it at a blank position are both the default.
+They are what this fork wants out of the box; a configuration that set them is
+left with nothing to set."
+  (should (default-value 'acm-menu-cycle))
+  (should (default-value 'acm-hide-on-blank)))
+
 (provide 'acm-test)
 ;;; acm-test.el ends here

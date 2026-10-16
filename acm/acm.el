@@ -109,7 +109,7 @@
   :type 'integer
   :group 'acm)
 
-(defcustom acm-menu-cycle nil
+(defcustom acm-menu-cycle t
   "If non-nil, selecting past the ends of the candidate list wraps around.
 With this on, `acm-select-next' on the last candidate selects the first one
 and `acm-select-prev' on the first selects the last, instead of stopping.
@@ -117,7 +117,7 @@ Only those two commands wrap; the page commands still stop at the ends."
   :type 'boolean
   :group 'acm)
 
-(defcustom acm-hide-on-blank nil
+(defcustom acm-hide-on-blank t
   "If non-nil, hide the menu when point ends up at a blank position.
 A blank position is the start of a line or right after whitespace.  It is
 checked after every command that runs while the menu is up,
