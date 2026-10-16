@@ -28,6 +28,17 @@
   :type 'boolean
   :group 'acm-backend-telega)
 
+(defcustom acm-backend-telega-buffer-scan-limit 50000
+  "How many characters of the chat buffer the mention scan reads backwards.
+
+The names are read out of the buffer the chat has already rendered, and a chat
+of any length would otherwise be read whole on every keystroke.  Only this much
+of the end of the buffer is read, which is where the messages last rendered
+are; a name whose last message is older than that is still completed once the
+member list has answered, and the member list is asked either way."
+  :type 'integer
+  :group 'lsp-bridge)
+
 (defcustom acm-backend-telega-corfu-exclusive nil
   "If non-nil, corfu and lsp-bridge exclude each other in telega chats.
 With this on, turning corfu on in a telega chat turns `lsp-bridge-mode' off
@@ -218,10 +229,14 @@ is only mentioned in a message is not rendered as a button of its own."
   (let ((candidates nil) (seen nil)
         ;; Where the user is typing: the occurrence that ends here is the prefix
         ;; being completed, not a name written in the chat.
-        (typed-end (point)))
+        (typed-end (point))
+        ;; Only the end of the buffer is read, so a long chat costs what its last
+        ;; messages cost however much history it holds.
+        (from (max (point-min) (- (point-max) acm-backend-telega-buffer-scan-limit))))
     (save-excursion
       ;; The buttons telega made, one per person it has rendered.
-      (let ((position (point-min)))
+      (goto-char from)
+      (let ((position from))
         (while (setq position (next-single-property-change position :telega-link))
           (when-let* ((link (get-text-property position :telega-link))
                       (sender (and (eq (car-safe link) 'sender) (cdr link)))
@@ -232,7 +247,7 @@ is only mentioned in a message is not rendered as a button of its own."
             (push label seen)
             (push candidate candidates))))
       ;; And the usernames written in the text, which carry no sender object.
-      (goto-char (point-min))
+      (goto-char from)
       (while (re-search-forward "@\\([[:alnum:]_]+\\)" nil t)
         (let ((label (match-string 0)))
           (unless (or (member label seen)
@@ -246,6 +261,16 @@ is only mentioned in a message is not rendered as a button of its own."
                           :backend "telega")
                     candidates)))))
     (nreverse candidates)))
+
+(defun acm-backend-telega--buffer-mention-candidates-safely ()
+  "Return `acm-backend-telega--buffer-mention-candidates', or nil on any error.
+
+The names are read out of a buffer that telega owns and that this function only
+knows the shape of; when it is not that shape, or when reading it fails for any
+other reason, the answer is nothing rather than an error - a mention scan that
+raised would take the emoji, the hashtags and the slash commands down with it,
+because the mention candidates are asked for first."
+  (ignore-errors (acm-backend-telega--buffer-mention-candidates)))
 
 (defun acm-backend-telega-mention-candidates (keyword)
   "Return the chat member candidates matching KEYWORD.
@@ -266,7 +291,7 @@ or annotation matches KEYWORD, sorted by prefix."
         ;; What the buffer has rendered is offered beside what the member list
         ;; answered, so a chat whose members cannot be fetched still completes.  A name
         ;; that comes from both is kept once, the member list's copy first.
-        (let* ((from-buffer (acm-backend-telega--buffer-mention-candidates))
+        (let* ((from-buffer (acm-backend-telega--buffer-mention-candidates-safely))
                (fetched (and (listp acm-backend-telega-items) acm-backend-telega-items))
                (labels (mapcar (lambda (item) (plist-get item :label)) fetched))
                (extra (seq-remove (lambda (item)

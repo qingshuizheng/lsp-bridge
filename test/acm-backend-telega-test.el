@@ -159,5 +159,38 @@ offered as the text it is."
      (point-min))
     (should (equal (buffer-string) "@bob "))))
 
+(ert-deftest acm-backend-telega-test-reading-the-buffer-is-bounded ()
+  "A long chat costs what the end of it costs, not what the whole of it costs."
+  (with-temp-buffer
+    (let ((acm-backend-telega-buffer-scan-limit 40))
+      ;; A name far from the end, then more than the limit of message text.
+      (insert "@old ")
+      (insert (make-string 200 ?x))
+      ;; A trailing space, so that the last name is not the prefix being typed:
+      ;; an occurrence that ends at point is taken for that and skipped.
+      (insert " @fresh ")
+      (let ((labels (mapcar (lambda (item) (plist-get item :label))
+                            (acm-backend-telega--buffer-mention-candidates))))
+        ;; Only what falls inside the window is read.
+        (should (member "@fresh" labels))
+        (should-not (member "@old" labels))))))
+
+(ert-deftest acm-backend-telega-test-a-failing-buffer-read-still-leaves-the-member-list ()
+  "The mention backend never takes the other completions down with it.
+Whatever the buffer read meets, the candidates the member list answered are
+still returned - the same list the emoji, hashtags and slash commands are
+appended to after it."
+  (with-temp-buffer
+    (insert "@a")
+    (let ((acm-backend-telega-items (list (list :key "@alice" :label "@alice"
+                                               :annotation "member" :backend "telega"))))
+      (cl-letf (((symbol-function 'acm-backend-telega-enabled-p) (lambda () t))
+                ((symbol-function 'acm-backend-telega--typed-prefix-p) (lambda (&rest _) t))
+                ((symbol-function 'acm-backend-telega--buffer-mention-candidates)
+                 (lambda () (error "the buffer was not the shape it expected"))))
+        (should (equal (mapcar (lambda (item) (plist-get item :label))
+                               (acm-backend-telega-mention-candidates "a"))
+                       '("@alice")))))))
+
 (provide 'acm-backend-telega-test)
 ;;; acm-backend-telega-test.el ends here
