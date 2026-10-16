@@ -202,6 +202,51 @@ what made only the slash command source complete."
         (= (char-before) char))))
 
 
+(defun acm-backend-telega--buffer-mention-candidates ()
+  "Return mention candidates for the people already rendered in this buffer.
+
+Telega wraps every name it renders - a message sender, a voter, an
+administrator - in a button whose `:telega-link' property holds the sender
+object itself, and that object is there whether or not the member has a
+username.  Reading those buttons back gives the people this buffer has shown,
+which is what completes while the member list cannot be fetched at all: a chat
+whose members are hidden answers `searchChatMembers' with nothing, and these
+names are the ones left.
+
+A bare `@username' written in the text is offered as well, because a name that
+is only mentioned in a message is not rendered as a button of its own."
+  (let ((candidates nil) (seen nil)
+        ;; Where the user is typing: the occurrence that ends here is the prefix
+        ;; being completed, not a name written in the chat.
+        (typed-end (point)))
+    (save-excursion
+      ;; The buttons telega made, one per person it has rendered.
+      (let ((position (point-min)))
+        (while (setq position (next-single-property-change position :telega-link))
+          (when-let* ((link (get-text-property position :telega-link))
+                      (sender (and (eq (car-safe link) 'sender) (cdr link)))
+                      (candidate (ignore-errors
+                                   (acm-backend-telega--mention-candidate sender)))
+                      (label (plist-get candidate :label))
+                      ((not (member label seen))))
+            (push label seen)
+            (push candidate candidates))))
+      ;; And the usernames written in the text, which carry no sender object.
+      (goto-char (point-min))
+      (while (re-search-forward "@\\([[:alnum:]_]+\\)" nil t)
+        (let ((label (match-string 0)))
+          (unless (or (member label seen)
+                      (= (match-end 0) typed-end))
+            (push label seen)
+            (push (list :key label
+                        :icon "at"
+                        :label label
+                        :displayLabel label
+                          :annotation "mentioned in this chat"
+                          :backend "telega")
+                    candidates)))))
+    (nreverse candidates)))
+
 (defun acm-backend-telega-mention-candidates (keyword)
   "Return the chat member candidates matching KEYWORD.
 Return nil unless lsp-bridge is enabled in the current telega chat buffer
@@ -218,17 +263,25 @@ or annotation matches KEYWORD, sorted by prefix."
     ;; a chat starts the fetch instead of relying on that one hook.
     (when (eq acm-backend-telega-items 'fetch)
       (acm-backend-telega-update-items))
-    (if (string-equal keyword "")
-        ;; While the request is in flight the slot holds the sentinel, which is not
-        ;; a candidate and must not be handed to the menu.
-        (and (listp acm-backend-telega-items) acm-backend-telega-items)
-      (acm-candidate-sort-by-prefix
-       keyword
-       (seq-filter
-        (lambda (item)
-          (or (string-match keyword (plist-get item :label))
-              (string-match keyword (plist-get item :annotation))))
-        acm-backend-telega-items)))))
+        ;; What the buffer has rendered is offered beside what the member list
+        ;; answered, so a chat whose members cannot be fetched still completes.  A name
+        ;; that comes from both is kept once, the member list's copy first.
+        (let* ((from-buffer (acm-backend-telega--buffer-mention-candidates))
+               (fetched (and (listp acm-backend-telega-items) acm-backend-telega-items))
+               (labels (mapcar (lambda (item) (plist-get item :label)) fetched))
+               (extra (seq-remove (lambda (item)
+                                    (member (plist-get item :label) labels))
+                                  from-buffer))
+               (items (append fetched extra)))
+          (if (string-equal keyword "")
+              items
+            (acm-candidate-sort-by-prefix
+             keyword
+             (seq-filter
+              (lambda (item)
+                (or (string-match keyword (plist-get item :label))
+                    (string-match keyword (plist-get item :annotation))))
+              items))))))
 
 ;;; Emoji: :<name> -> the emoji character
 
@@ -436,6 +489,16 @@ PREVIEW non-nil shows the candidate in an overlay instead of inserting it."
         (insert " "))))
    ;; Mention candidate: insert @username, or a mention entity when the member
    ;; has no username (which is also why the member is kept in the candidate).
+      ;; A name read out of the buffer's text is inserted as it stands: there is no
+      ;; sender object behind it, and its label is the `@username' the text holds.
+      ((and (null (plist-get candidate-info :member))
+            (plist-get candidate-info :label))
+       (let ((text (plist-get candidate-info :label)))
+         (if preview
+             (acm-preview-create-overlay bound-start (point) text)
+           (delete-region bound-start (point))
+           (insert text)
+           (insert " "))))
    (t
     (let* ((member (plist-get candidate-info :member))
            (username (ignore-errors (telega-msg-sender-username member 'with-@)))

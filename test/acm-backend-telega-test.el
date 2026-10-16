@@ -118,5 +118,46 @@
       (should (equal (complete (point-min)) (complete 4))))))
 
 
+(ert-deftest acm-backend-telega-test-the-people-the-buffer-has-rendered ()
+  "Names telega rendered in the buffer are candidates, member list or not.
+Telega wraps a rendered name in a button carrying the sender object under
+`:telega-link'; that object is what the candidate is built from, so a member
+without a username completes too.  A name merely written in the text is
+offered as the text it is."
+  (with-temp-buffer
+    (insert "hello ")
+    (let ((start (point)))
+      (insert "Alice")
+      (add-text-properties start (point) (list :telega-link (cons 'sender 'alice-user))))
+    (insert " and @bob and again Alice\n")
+    (let ((start (point)))
+      (insert "Alice")
+      (add-text-properties start (point) (list :telega-link (cons 'sender 'alice-user))))
+    (cl-letf (((symbol-function 'telega-msg-sender-username)
+               (lambda (user &optional _with-at)
+                 (pcase user
+                   ('alice-user "@alice")
+                   (_ nil))))
+              ((symbol-function 'telega-msg-sender-title)
+               (lambda (user &rest _) (format "%s" user))))
+      (let* ((candidates (acm-backend-telega--buffer-mention-candidates))
+             (labels (mapcar (lambda (item) (plist-get item :label)) candidates)))
+        ;; Alice is rendered twice and is one candidate; bob is only in the text.
+        (should (equal labels '("@alice" "@bob")))
+        ;; The rendered name keeps its sender object, which is what makes the
+        ;; mention entity possible for a member without a username.
+        (should (eq (plist-get (car candidates) :member) 'alice-user))
+        ;; The one read out of the text does not have one.
+        (should-not (plist-get (cadr candidates) :member))))))
+
+(ert-deftest acm-backend-telega-test-a-name-read-from-the-text-is-inserted ()
+  "A candidate with no sender object is inserted as the text its label holds."
+  (with-temp-buffer
+    (insert "@bo")
+    (acm-backend-telega-candidate-expand
+     (list :key "@bob" :label "@bob" :backend "telega")
+     (point-min))
+    (should (equal (buffer-string) "@bob "))))
+
 (provide 'acm-backend-telega-test)
 ;;; acm-backend-telega-test.el ends here
