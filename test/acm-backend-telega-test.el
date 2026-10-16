@@ -244,5 +244,38 @@ candidate and lsp-bridge took it by itself."
   (should (advice-member-p #'acm-backend-telega--keep-quiet-about-inaccessible-members
                            #'message)))
 
+(ert-deftest acm-backend-telega-test-mention-by-the-name-the-chat-renders ()
+  "A member is found by the name the chat shows, not only by the username.
+The label of a mention is the username, so a name typed as it appears in the
+chat - the title, or the text of the button the name was rendered in - has to be
+asked for as well; this is the case of someone whose name is not their @name."
+  (with-temp-buffer
+    (insert "hello ")
+    (let ((start (point)))
+      (insert "DT")
+      (add-text-properties start (point)
+                           (list :telega-link (cons 'sender 'dt-user))))
+    (insert " and more\n")
+    ;; The @ the mention candidates are asked after, and a member list that is
+    ;; already in hand, so that nothing tries to fetch one here.
+    (setq-local acm-backend-telega-items nil)
+    (goto-char (point-max))
+    (insert "@")
+    (cl-letf (((symbol-function 'acm-backend-telega-enabled-p) (lambda () t))
+              ((symbol-function 'acm-backend-telega--typed-prefix-p) (lambda (&rest _) t))
+              ((symbol-function 'telega-msg-sender-username)
+               (lambda (user &optional _) (pcase user ('dt-user "@thewawar") (_ nil))))
+              ((symbol-function 'telega-msg-sender-title)
+               (lambda (user &rest _) (pcase user ('dt-user "DT") (_ nil)))))
+      (let ((labels (lambda (keyword)
+                      (mapcar (lambda (item) (plist-get item :label))
+                              (acm-backend-telega-mention-candidates keyword)))))
+        ;; The username finds them, and so does the name the chat shows.
+        (should (equal (funcall labels "thewawar") '("@thewawar")))
+        (should (equal (funcall labels "DT") '("@thewawar")))
+        ;; And the candidate remembers the rendered name it was read from.
+        (should (equal (plist-get (car (acm-backend-telega-mention-candidates "DT")) :search)
+                       "DT DT @thewawar"))))))
+
 (provide 'acm-backend-telega-test)
 ;;; acm-backend-telega-test.el ends here

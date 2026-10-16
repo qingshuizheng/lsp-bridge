@@ -118,7 +118,7 @@ set, so that setting the option later still takes effect."
 
 ;;; The candidates of every source
 
-(defun acm-backend-telega--mention-candidate (user)
+(defun acm-backend-telega--mention-candidate (user &optional rendered-name)
   "Return the completion candidate of the chat member USER.
 The label is the username when USER has one - `telega-msg-sender-username'
 asked `with-@' - and the member title otherwise; the title always becomes
@@ -135,7 +135,11 @@ needs it to build a mention entity for a member without a username."
           :icon "at"
           :label label
           :displayLabel label
-          :annotation title
+:annotation title
+          ;; What the chat shows for this person, which is what someone typing their
+          ;; name has in mind: the title, the username, and, for a name read out of
+          ;; the buffer, the text of the button it was read from.
+          :search (mapconcat #'identity (delq nil (list rendered-name title username)) " ")
           :member user
           :backend "telega")))
 
@@ -266,8 +270,14 @@ is only mentioned in a message is not rendered as a button of its own."
         (while (setq position (next-single-property-change position :telega-link))
           (when-let* ((link (get-text-property position :telega-link))
                       (sender (and (eq (car-safe link) 'sender) (cdr link)))
+                      ;; The name as the chat renders it: the text of the button.
+                      (rendered (string-trim
+                                 (buffer-substring-no-properties
+                                  position (or (next-single-property-change
+                                                position :telega-link)
+                                               (point-max)))))
                       (candidate (ignore-errors
-                                   (acm-backend-telega--mention-candidate sender)))
+                                   (acm-backend-telega--mention-candidate sender rendered)))
                       (label (plist-get candidate :label))
                       ((not (member label seen))))
             (push label seen)
@@ -331,7 +341,11 @@ or annotation matches KEYWORD, sorted by prefix."
              (seq-filter
               (lambda (item)
                 (or (string-match keyword (plist-get item :label))
-                    (string-match keyword (plist-get item :annotation))))
+                   ;; The label is the username, the annotation the title and
+                   ;; `:search' what the chat rendered; the name typed may be any of
+                   ;; the three, so all three are asked.
+                   (string-match keyword (plist-get item :annotation))
+                   (string-match keyword (or (plist-get item :search) ""))))
               items))))))
 
 ;;; Emoji: :<name> -> the emoji character
