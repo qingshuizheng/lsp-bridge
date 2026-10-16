@@ -737,11 +737,20 @@ takes it over through `acm-ui-overrides'."
           (acm-popup-set 'popup-position
                          (acm-frame-get-popup-position (acm-popup popup-point)))
 
-          ;; Create menu frame if it not exists.
-          (acm-frame-create-frame-if-not-exist menu-frame (acm-popup menu-buffer) "acm frame" 0 t)
+          ;; Create menu frame if it not exists, and render into it.  The writing
+          ;; happens with `inhibit-read-only' bound: the mode owning the buffer being
+          ;; completed in may have marked it read-only - telega marks the messages of
+          ;; a chat that way - and the render reaches buffers of the session while
+          ;; the current buffer is still the one being typed in, where a write that
+          ;; only meant to reach the menu buffer raised `text-read-only' out of the
+          ;; post-command hook.  What is written is the menu and the documentation,
+          ;; in the buffers that hold them; the buffer being completed in is not
+          ;; written to here.
+          (let ((inhibit-read-only t))
+            (acm-frame-create-frame-if-not-exist menu-frame (acm-popup menu-buffer) "acm frame" 0 t)
 
-          ;; Render menu.
-          (acm-menu-render menu-old-cache))))
+            ;; Render menu.
+            (acm-menu-render menu-old-cache)))))
      (t
       (acm-hide)))))
 
