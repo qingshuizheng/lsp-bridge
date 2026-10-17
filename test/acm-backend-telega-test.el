@@ -376,5 +376,16 @@ and a list at least as long as the chat's member count is the whole of it."
                            (t nil)))))
           (should-not (funcall complete)))))))
 
+(ert-deftest acm-backend-telega-test-adding-members-keeps-the-list-and-adds-the-new ()
+  "The pages of a chat arrive one after another and the list grows with them."
+  (with-temp-buffer
+    (cl-letf (((symbol-function 'telega-msg-sender-username) (lambda (&rest _) nil))
+              ((symbol-function 'telega-msg-sender-title) (lambda (object &rest _) (format "%s" object))))
+      (setq-local acm-backend-telega-items
+                  (list (list :key "a" :label "a" :annotation "a")))
+      (acm-backend-telega-items-add '(a b))
+      (should (equal (mapcar (lambda (item) (plist-get item :label)) acm-backend-telega-items)
+                     '("a" "b"))))))
+
 (provide 'acm-backend-telega-test)
 ;;; acm-backend-telega-test.el ends here

@@ -28,16 +28,29 @@
   :type 'boolean
   :group 'acm-backend-telega)
 
-(defcustom acm-backend-telega-member-fetch-limit 500
-  "How many members the chat's member list is asked for at once.
+(defcustom acm-backend-telega-member-fetch-limit 200
+  "How many members are asked for when a chat is entered.
 
-Telega asks for two hundred of them by default, so a chat of a few hundred
-members answered with a part of itself and the mention completion fell back to
-reading the buffer for the members it was missing.  A limit at least as large as
-the chat makes that answer the whole chat, which is also what tells the mention
-completion that it need not read the buffer at all; chats larger than this still
-fall back to reading it."
+Two hundred is what the request answers with anyway, and it is enough to type a
+mention at once.  The members beyond it are paged in while Emacs is idle, by
+`acm-backend-telega--fetch-all-members', so that the whole chat is in hand
+without the first answer being waited on."
   :type 'integer
+  :group 'lsp-bridge)
+
+(defcustom acm-backend-telega-member-fetch-all-limit 2000
+  "How many members the idle fetch will page in at most.
+
+The pages are two hundred members each, so this is ten of them for the default.
+A chat larger than this keeps the first page and the ones up to it, and the
+mention completion reads the buffer for the rest; a chat of a few hundred is
+fetched whole."
+  :type 'integer
+  :group 'lsp-bridge)
+
+(defcustom acm-backend-telega-member-fetch-idle-delay 2
+  "Seconds of idleness before the rest of the members are fetched."
+  :type 'number
   :group 'lsp-bridge)
 
 (defcustom acm-backend-telega-quiet-member-list-error t
@@ -98,6 +111,9 @@ Number if async request has been made, but request is not yet completed.
 
 (defvar-local acm-backend-telega-hashtag-items nil
   "Hashtags the last `acm-backend-telega-hashtag-candidates' asked for.")
+
+(defvar-local acm-backend-telega--fetch-all-timer nil
+  "Timer that pages in the rest of this chat's members while Emacs is idle.")
 
 (defvar-local acm-backend-telega-hashtag-timer nil
   "Timer of the pending hashtag search, or nil.")
@@ -219,7 +235,54 @@ title, and the expansion turns the latter into a mention entity."
   (when (acm-backend-telega-enabled-p)
     (setq acm-backend-telega-items
           (mapcar #'acm-backend-telega--mention-candidate members))
-    (message "Fetch telega userlist... done.")))
+    (message "Fetch telega userlist... done.")
+    ;; The first answer is one page of the members.  The rest are paged in while
+    ;; Emacs is idle, so that typing a mention does not wait for a chat of a few
+    ;; hundred members to be fetched whole.
+    (let ((chat telega-chatbuf--chat))
+      (when (timerp acm-backend-telega--fetch-all-timer)
+        (cancel-timer acm-backend-telega--fetch-all-timer))
+      (setq acm-backend-telega--fetch-all-timer
+            (run-with-idle-timer acm-backend-telega-member-fetch-idle-delay nil
+                                 (lambda ()
+                                   (setq acm-backend-telega--fetch-all-timer nil)
+                                   (acm-backend-telega--fetch-all-members chat 0)))))))
+
+(defun acm-backend-telega-items-add (members)
+  "Add MEMBERS to `acm-backend-telega-items', keeping the ones already there.
+
+The first answer of a chat is a page of its members and the rest arrive later,
+so the list grows instead of being replaced: a member whose label is already in
+it is not added twice."
+  (when (and members (listp acm-backend-telega-items))
+    (let ((known (mapcar (lambda (item) (plist-get item :label))
+                         acm-backend-telega-items)))
+      (setq acm-backend-telega-items
+            (append acm-backend-telega-items
+                    (seq-remove (lambda (item) (member (plist-get item :label) known))
+                                (mapcar #'acm-backend-telega--mention-candidate members)))))))
+
+(defun acm-backend-telega--fetch-all-members (chat offset)
+  "Page in the members of CHAT from OFFSET, a page at a time.
+
+The members of a chat are asked for two hundred at a time, and the idle fetch
+walks the pages so that the whole chat is in hand; it stops when a page comes
+back short, when the chat's member count is reached, or at
+`acm-backend-telega-member-fetch-all-limit'.  Chats that are not supergroups have
+no pages to walk: their members come with the first answer."
+  (when-let* ((_ (telega-chat-match-p chat '(type supergroup)))
+              (_ (< offset acm-backend-telega-member-fetch-all-limit)))
+    (telega--getSupergroupMembers
+        chat nil offset acm-backend-telega-member-fetch-limit
+      (lambda (members)
+        (with-telega-chatbuf chat
+          (acm-backend-telega-items-add members)
+          (when (and members
+                     (= (length members) acm-backend-telega-member-fetch-limit)
+                     (< (+ offset acm-backend-telega-member-fetch-limit)
+                        acm-backend-telega-member-fetch-all-limit))
+            (acm-backend-telega--fetch-all-members
+             chat (+ offset acm-backend-telega-member-fetch-limit))))))))
 
 (defun acm-backend-telega-update-items (&rest _args)
   "Update the optional items."
