@@ -339,21 +339,33 @@ because the mention candidates are asked for first."
 (defun acm-backend-telega--member-list-complete-p ()
   "Return non-nil when the fetched member list holds every member of the chat.
 
-The list is asked for with a limit, so a chat larger than that limit answers with
-a part of its members and nothing in the reply says so.  The chat itself knows how
-many members it has, and a list at least that long is the whole chat; when the
-count is missing - telega has not been told it yet - the answer is nil, and the
-buffer is read.
+Two things make a list a part of the chat.  Telegram lets a group hide its members,
+and TDLib says which groups do in `has_hidden_members'; the list of such a chat is
+its administrators and nothing else, which is the chat the read exists for.  And
+the list is asked for with a limit, so a chat larger than that limit answers with a
+part of its members without saying so - while the chat knows how many it has.  When
+neither is known, the answer is nil and the buffer is read, which is what finds the
+people a partial list cannot show.
 
 Reading the buffer is what finds the people the list cannot show, so skipping it
 is only safe when the list is known to be complete."
-  (let ((items acm-backend-telega-items)
-        (chat (and (boundp 'telega-chatbuf--chat) telega-chatbuf--chat)))
+  (let* ((items acm-backend-telega-items)
+         (chat (and (boundp 'telega-chatbuf--chat) telega-chatbuf--chat))
+         (full-info (and chat (ignore-errors (telega-chat-full-info chat))))
+         ;; Telegram lets a group hide its member list, and TDLib says so here:
+         ;; the list then holds the administrators and nothing else.
+         (hidden (and full-info
+                      (ignore-errors
+                        (telega-tl-get0 full-info :has_hidden_members))))
+         (info (and chat (ignore-errors (telega-chat--info chat))))
+         (total (and info (ignore-errors (telega-tl-get0 info :member_count)))))
     (and (listp items)
          items
          chat
-         (let ((total (ignore-errors
-                        (telega-tl-get0 (telega-chat--info chat) :member_count))))
+         (not (eq hidden t))
+         (let ((total (if (integerp total)
+                          total
+                        (ignore-errors (telega-tl-get0 full-info :member_count)))))
            (and (integerp total)
                 (> total 0)
                 (>= (length items) total))))))

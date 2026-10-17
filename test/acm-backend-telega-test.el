@@ -342,5 +342,39 @@ long is the whole of it."
                   ((symbol-function 'telega-msg-sender-title) (lambda (&rest _) "Speaker")))
           (ignore-errors (should (member "Speaker" (funcall labels)))))))))
 
+(ert-deftest acm-backend-telega-test-when-the-member-list-is-the-whole-chat ()
+  "The list counts as whole only when the chat does not hide it and it is long enough.
+Telegram lets a group hide its members; TDLib says which do, and such a list holds
+the administrators and nothing else.  Otherwise the list is asked for with a limit,
+and a list at least as long as the chat's member count is the whole of it."
+  (with-temp-buffer
+    (setq-local acm-backend-telega-items (list (list :label "@admin")))
+    ;; The chat is a variable in telega, not a function.
+    (setq-local telega-chatbuf--chat 'a-chat)
+    (cl-letf (((symbol-function 'telega-chat--info) (lambda (&rest _) 'info))
+              ((symbol-function 'telega-chat-full-info) (lambda (&rest _) 'full)))
+      (let ((complete (lambda () (acm-backend-telega--member-list-complete-p))))
+        ;; The chat hides its members: the count says nothing, the list is a part.
+        (cl-letf (((symbol-function 'telega-tl-get0)
+                   (lambda (object key)
+                     (cond ((eq key :has_hidden_members) t)
+                           ((eq key :member_count) 1)
+                           (t nil)))))
+          (should-not (funcall complete)))
+        ;; Nothing hidden and the list is as long as the chat: the whole chat.
+        (cl-letf (((symbol-function 'telega-tl-get0)
+                   (lambda (object key)
+                     (cond ((eq key :has_hidden_members) nil)
+                           ((eq key :member_count) 1)
+                           (t nil)))))
+          (should (funcall complete)))
+        ;; Nothing hidden, but the chat has more members than were fetched.
+        (cl-letf (((symbol-function 'telega-tl-get0)
+                   (lambda (object key)
+                     (cond ((eq key :has_hidden_members) nil)
+                           ((eq key :member_count) 1286)
+                           (t nil)))))
+          (should-not (funcall complete)))))))
+
 (provide 'acm-backend-telega-test)
 ;;; acm-backend-telega-test.el ends here
