@@ -279,5 +279,35 @@ asked for as well; this is the case of someone whose name is not their @name."
         (should (equal (plist-get (car (acm-backend-telega-mention-candidates "DT")) :search)
                        "DT DT @thewawar"))))))
 
+(ert-deftest acm-backend-telega-test-finds-the-sender-of-a-message ()
+  "The sender of a message the buffer rendered is a candidate.
+Telega puts the message object in the `:value' property of the text it wrote for
+it, and the sender is one lookup away: this is how the people who have spoken in
+the chat are found, which is everyone the buffer shows."
+  (with-temp-buffer
+    (insert "hello ")
+    (let ((start (point)))
+      (insert "DT • @thewawar")
+      (add-text-properties start (point)
+                           (list :value (list :sender_id
+                                              (list :@type "messageSenderUser" :user_id 515878906)))))
+    (insert "\n")
+    (setq-local acm-backend-telega-items nil)
+    (goto-char (point-max))
+    (insert "@")
+    (cl-letf (((symbol-function 'acm-backend-telega-enabled-p) (lambda () t))
+              ((symbol-function 'acm-backend-telega--typed-prefix-p) (lambda (&rest _) t))
+              ((symbol-function 'telega-msg-sender) (lambda (id) (list :id (plist-get id :user_id))))
+              ((symbol-function 'telega-user-p) (lambda (object) (integerp (plist-get object :id))))
+              ((symbol-function 'telega-msg-sender-username) (lambda (&rest _) "@thewawar"))
+              ((symbol-function 'telega-msg-sender-title) (lambda (&rest _) "DT")))
+      ;; Both what the chat shows and the username find them.
+      (should (equal (mapcar (lambda (c) (plist-get c :label))
+                             (acm-backend-telega-mention-candidates "DT"))
+                     '("@thewawar")))
+      (should (equal (mapcar (lambda (c) (plist-get c :label))
+                             (acm-backend-telega-mention-candidates "thewawar"))
+                     '("@thewawar"))))))
+
 (provide 'acm-backend-telega-test)
 ;;; acm-backend-telega-test.el ends here

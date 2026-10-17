@@ -54,14 +54,19 @@ on to ORIG with FORMAT and ARGS."
 (advice-add 'message
             :around #'acm-backend-telega--keep-quiet-about-inaccessible-members)
 
-(defcustom acm-backend-telega-buffer-scan-limit 50000
+(defcustom acm-backend-telega-buffer-scan-limit 200000
   "How many characters of the chat buffer the mention scan reads backwards.
 
 The names are read out of the buffer the chat has already rendered, and a chat
 of any length would otherwise be read whole on every keystroke.  Only this much
 of the end of the buffer is read, which is where the messages last rendered
 are; a name whose last message is older than that is still completed once the
-member list has answered, and the member list is asked either way."
+member list has answered, and the member list is asked either way.
+
+Two hundred thousand characters is about two milliseconds of reading, measured,
+and covers the messages of a chat that has been left open for a long while; a
+value small enough to miss the message someone is looking for is the one thing
+to watch for here."
   :type 'integer
   :group 'lsp-bridge)
 
@@ -282,6 +287,27 @@ is only mentioned in a message is not rendered as a button of its own."
                       ((not (member label seen))))
             (push label seen)
             (push candidate candidates))))
+      ;; And the sender of every message the buffer has rendered.  Telega puts the
+      ;; message object itself in the `:value' property of the text it wrote for it,
+      ;; and the sender is one lookup away from it: this is what finds the people who
+      ;; have spoken in the chat, which is everyone the buffer shows, whether or not
+      ;; the member list can be read and whether or not they have a username.
+      (goto-char from)
+      (let ((at from))
+        (while (and (< at (point-max))
+                    (setq at (next-single-property-change at :value)))
+          (let* ((message (get-text-property at :value))
+                 (sender (and (listp message)
+                              (plist-get message :sender_id)
+                              (ignore-errors
+                                (telega-msg-sender (plist-get message :sender_id))))))
+            (when (and sender (ignore-errors (telega-user-p sender)))
+              (when-let* ((candidate (ignore-errors
+                                       (acm-backend-telega--mention-candidate sender)))
+                          (label (plist-get candidate :label))
+                          ((not (member label seen))))
+                (push label seen)
+                (push candidate candidates))))))
       ;; And the usernames written in the text, which carry no sender object.
       (goto-char from)
       (while (re-search-forward "@\\([[:alnum:]_]+\\)" nil t)
