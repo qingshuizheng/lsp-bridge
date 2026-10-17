@@ -28,6 +28,18 @@
   :type 'boolean
   :group 'acm-backend-telega)
 
+(defcustom acm-backend-telega-member-fetch-limit 500
+  "How many members the chat's member list is asked for at once.
+
+Telega asks for two hundred of them by default, so a chat of a few hundred
+members answered with a part of itself and the mention completion fell back to
+reading the buffer for the members it was missing.  A limit at least as large as
+the chat makes that answer the whole chat, which is also what tells the mention
+completion that it need not read the buffer at all; chats larger than this still
+fall back to reading it."
+  :type 'integer
+  :group 'lsp-bridge)
+
 (defcustom acm-backend-telega-quiet-member-list-error t
   "Do not show telega's message about members that cannot be listed.
 
@@ -229,6 +241,7 @@ title, and the expansion turns the latter into a mention entity."
                      ;; messages by topic, see
                      ;; `telega-company-username' for details
                      (telega--searchChatMembers chat "" nil
+                       :limit acm-backend-telega-member-fetch-limit
                        :callback
                        (lambda (members)
                          (with-telega-chatbuf chat
