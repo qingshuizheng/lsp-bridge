@@ -462,6 +462,13 @@ or annotation matches KEYWORD, sorted by prefix."
     ;; a chat starts the fetch instead of relying on that one hook.
     (when (eq acm-backend-telega-items 'fetch)
       (acm-backend-telega-update-items))
+    ;; With `acm-input-bound-style' set to the string style the trigger is part
+    ;; of the prefix, so the prefix arrives as "@DT" while the names it is
+    ;; matched against hold their `@' at the front - "@thewawar", "DT
+    ;; @thewawar".  A username cannot hold an `@', so dropping the one at the
+    ;; front loses nothing and is what makes the prefix a name again.
+    (when (string-prefix-p "@" keyword)
+      (setq keyword (substring keyword 1)))
         ;; What the buffer has rendered is offered beside what the member list
         ;; answered, so a chat whose members cannot be fetched still completes.  A name
         ;; that comes from both is kept once, the member list's copy first.
