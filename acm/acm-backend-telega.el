@@ -48,6 +48,17 @@ fetched whole."
   :type 'integer
   :group 'lsp-bridge)
 
+(defcustom acm-backend-telega-fetch-all-members nil
+  "Whether to page in the rest of a chat's members while Emacs is idle.
+
+Off by default, and not because it would be slow: the call it makes -
+`telega--getSupergroupMembers' - answers \"Supergroup not found\" for the object
+this code has to hand it, and the answer comes back from the server rather than
+as a Lisp error, so it cannot be caught and silenced here.  The rest of the
+machinery is in place for when that argument is got right."
+  :type 'boolean
+  :group 'lsp-bridge)
+
 (defcustom acm-backend-telega-member-fetch-idle-delay 2
   "Seconds of idleness before the rest of the members are fetched."
   :type 'number
@@ -240,13 +251,15 @@ title, and the expansion turns the latter into a mention entity."
     ;; Emacs is idle, so that typing a mention does not wait for a chat of a few
     ;; hundred members to be fetched whole.
     (let ((chat telega-chatbuf--chat))
-      (when (timerp acm-backend-telega--fetch-all-timer)
+      (when (and acm-backend-telega-fetch-all-members
+                 (timerp acm-backend-telega--fetch-all-timer))
         (cancel-timer acm-backend-telega--fetch-all-timer))
-      (setq acm-backend-telega--fetch-all-timer
-            (run-with-idle-timer acm-backend-telega-member-fetch-idle-delay nil
+      (when acm-backend-telega-fetch-all-members
+        (setq acm-backend-telega--fetch-all-timer
+              (run-with-idle-timer acm-backend-telega-member-fetch-idle-delay nil
                                  (lambda ()
                                    (setq acm-backend-telega--fetch-all-timer nil)
-                                   (acm-backend-telega--fetch-all-members chat 0)))))))
+                                     (acm-backend-telega--fetch-all-members chat 0))))))))
 
 (defun acm-backend-telega-items-add (members)
   "Add MEMBERS to `acm-backend-telega-items', keeping the ones already there.
@@ -270,10 +283,17 @@ walks the pages so that the whole chat is in hand; it stops when a page comes
 back short, when the chat's member count is reached, or at
 `acm-backend-telega-member-fetch-all-limit'.  Chats that are not supergroups have
 no pages to walk: their members come with the first answer."
-  (when-let* ((_ (telega-chat-match-p chat '(type supergroup)))
+  ;; `:can_get_members' is not asked: it is nil in chats whose first page came
+  ;; back anyway, so it says less about whether the call will answer than the
+  ;; call itself does.
+  (when-let* ((info (ignore-errors (telega-chat--info chat)))
+              (_ (telega-chat-match-p chat '(type supergroup)))
               (_ (< offset acm-backend-telega-member-fetch-all-limit)))
+    ;; The call wants the supergroup itself - an object carrying its `:id' - and the
+    ;; chat is not that: handing it the chat answers "Supergroup not found".
+    ;; `telega-chat--info' is the object telega passes for the same call.
     (telega--getSupergroupMembers
-        chat nil offset acm-backend-telega-member-fetch-limit
+        info nil offset acm-backend-telega-member-fetch-limit
       (lambda (members)
         (with-telega-chatbuf chat
           (acm-backend-telega-items-add members)
