@@ -126,5 +126,25 @@ The advisor is kept: it is one of the two advices on commands of Emacs itself."
       (should during)
       (should-not (bound-and-true-p lsp-bridge-revert-buffer-flag)))))
 
+(ert-deftest lsp-bridge-core-test-deleting-a-character-asks-for-completion ()
+  "The menu follows a deletion as it follows typing.
+Only the insert commands used to ask for completion again, so backspacing through
+a word left the menu showing candidates for a prefix that was no longer there."
+  (with-temp-buffer
+    (setq-local lsp-bridge-mode t)
+    (let ((asked 0))
+      (cl-letf (((symbol-function 'lsp-bridge-try-completion) (lambda () (cl-incf asked)))
+                ((symbol-function 'lsp-bridge-has-lsp-server-p) (lambda () nil)))
+        (dolist (command '(delete-backward-char delete-char backward-delete-char
+                                               backward-delete-char-untabify delete-forward-char
+                                               self-insert-command))
+          (setq this-command command)
+          (lsp-bridge-monitor-post-command))
+        (should (= asked 6))
+        ;; A command that changes nothing in the buffer leaves the menu alone.
+        (setq this-command 'forward-char)
+        (lsp-bridge-monitor-post-command)
+        (should (= asked 6))))))
+
 (provide 'lsp-bridge-core-test)
 ;;; lsp-bridge-core-test.el ends here

@@ -185,14 +185,25 @@ overlay accepts the typed characters."
 (defun lsp-bridge-monitor-post-command ()
   "React to the command that just ran.
 Runs in `post-command-hook': it records the cursor position, tries
-completion after insert commands, sends `change_cursor' and
+completion after insert and delete commands, sends `change_cursor' and
 `document_symbol' requests when the cursor moved, and hides the
 documentation, diagnostic, signature and code action popups."
   (setq-local lsp-bridge-cursor-after-command (point))
 
   (let ((this-command-string (lsp-bridge-command-name)))
     (when (and lsp-bridge-mode
-               (member this-command-string '("self-insert-command" "org-self-insert-command" "lsp-bridge-popup-complete-menu")))
+               (member this-command-string
+                       ;; Deleting a character changes the prefix as much as typing one
+                       ;; does, and the menu has to follow it: with only the insert
+                       ;; commands here, backspacing through a word left the menu
+                       ;; showing candidates for a prefix that was no longer there.
+                       ;; A prefix that matches nothing hides the menu, as does a
+                       ;; blank position, which `acm-hide-on-blank' sees to.
+                       '("self-insert-command" "org-self-insert-command"
+                         "lsp-bridge-popup-complete-menu"
+                         "delete-backward-char" "delete-char"
+                         "backward-delete-char" "backward-delete-char-untabify"
+                         "delete-forward-char")))
       (lsp-bridge-try-completion))
 
     (when (lsp-bridge-has-lsp-server-p)
