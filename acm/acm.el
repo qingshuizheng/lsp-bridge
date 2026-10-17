@@ -1294,28 +1294,29 @@ BODY is expected to change `acm-menu-index' or `acm-menu-offset';
 both are clamped to valid values afterwards, the menu is re-rendered
 only when one of them changed, and `acm-preview-current' is called
 when `acm-enable-preview' is non-nil."
-  `(let* ((menu-old-index acm-menu-index)
+  `(let ((inhibit-read-only t))
+     (let* ((menu-old-index acm-menu-index)
           (menu-old-offset acm-menu-offset)
-          (menu-old-cache (cons (acm-popup menu-max-length-cache) (acm-popup menu-number-cache))))
-     ,@body
+            (menu-old-cache (cons (acm-popup menu-max-length-cache) (acm-popup menu-number-cache))))
+       ,@body
 
-     (cond ((< acm-menu-index 0)
-            (setq-local acm-menu-index 0))
-           ((>= acm-menu-index (length acm-menu-candidates))
-            (setq-local acm-menu-index (1- (length acm-menu-candidates)))))
+       (cond ((< acm-menu-index 0)
+              (setq-local acm-menu-index 0))
+             ((>= acm-menu-index (length acm-menu-candidates))
+              (setq-local acm-menu-index (1- (length acm-menu-candidates)))))
 
-     (cond ((< acm-menu-offset 0)
-            (setq-local acm-menu-offset 0))
-           ((>= acm-menu-offset (- (length acm-candidates) (length acm-menu-candidates)))
-            (setq-local acm-menu-offset (- (length acm-candidates) (length acm-menu-candidates)))))
+       (cond ((< acm-menu-offset 0)
+              (setq-local acm-menu-offset 0))
+             ((>= acm-menu-offset (- (length acm-candidates) (length acm-menu-candidates)))
+              (setq-local acm-menu-offset (- (length acm-candidates) (length acm-menu-candidates)))))
 
-     ;; Only update menu candidates when menu index or offset changed.
-     (when (or (not (equal menu-old-index acm-menu-index))
-               (not (equal menu-old-offset acm-menu-offset)))
-       (acm-menu-update-candidates)
-       (acm-menu-render menu-old-cache))
-     (when acm-enable-preview
-       (acm-preview-current))))
+       ;; Only update menu candidates when menu index or offset changed.
+       (when (or (not (equal menu-old-index acm-menu-index))
+                 (not (equal menu-old-offset acm-menu-offset)))
+         (acm-menu-update-candidates)
+         (acm-menu-render menu-old-cache))
+       (when acm-enable-preview
+         (acm-preview-current)))))
 
 (defun acm-char-before ()
   "Return the character before point as a string.
