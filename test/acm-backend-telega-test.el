@@ -147,8 +147,10 @@ offered as the text it is."
         ;; The rendered name keeps its sender object, which is what makes the
         ;; mention entity possible for a member without a username.
         (should (eq (plist-get (car candidates) :member) 'alice-user))
-        ;; The one read out of the text does not have one.
-        (should-not (plist-get (cadr candidates) :member))))))
+        ;; The one read out of the text does not have one, and its searchable name
+        ;; is the text it was read from.
+        (should-not (plist-get (cadr candidates) :member))
+        (should (equal (plist-get (cadr candidates) :search) "@bob"))))))
 
 (ert-deftest acm-backend-telega-test-a-name-read-from-the-text-is-inserted ()
   "A candidate with no sender object is inserted as the text its label holds."

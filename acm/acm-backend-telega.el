@@ -293,8 +293,10 @@ is only mentioned in a message is not rendered as a button of its own."
                         :icon "at"
                         :label label
                         :displayLabel label
-                          :annotation "mentioned in this chat"
-                          :backend "telega")
+                        :annotation "mentioned in this chat"
+                        ;; What can be typed to find them: the name in the text.
+                        :search label
+                        :backend "telega")
                     candidates)))))
     (nreverse candidates)))
 
