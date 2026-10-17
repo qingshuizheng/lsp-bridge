@@ -336,6 +336,28 @@ raised would take the emoji, the hashtags and the slash commands down with it,
 because the mention candidates are asked for first."
   (ignore-errors (acm-backend-telega--buffer-mention-candidates)))
 
+(defun acm-backend-telega--member-list-complete-p ()
+  "Return non-nil when the fetched member list holds every member of the chat.
+
+The list is asked for with a limit, so a chat larger than that limit answers with
+a part of its members and nothing in the reply says so.  The chat itself knows how
+many members it has, and a list at least that long is the whole chat; when the
+count is missing - telega has not been told it yet - the answer is nil, and the
+buffer is read.
+
+Reading the buffer is what finds the people the list cannot show, so skipping it
+is only safe when the list is known to be complete."
+  (let ((items acm-backend-telega-items)
+        (chat (and (boundp 'telega-chatbuf--chat) telega-chatbuf--chat)))
+    (and (listp items)
+         items
+         chat
+         (let ((total (ignore-errors
+                        (telega-tl-get0 (telega-chat--info chat) :member_count))))
+           (and (integerp total)
+                (> total 0)
+                (>= (length items) total))))))
+
 (defun acm-backend-telega-mention-candidates (keyword)
   "Return the chat member candidates matching KEYWORD.
 Return nil unless lsp-bridge is enabled in the current telega chat buffer
@@ -355,7 +377,8 @@ or annotation matches KEYWORD, sorted by prefix."
         ;; What the buffer has rendered is offered beside what the member list
         ;; answered, so a chat whose members cannot be fetched still completes.  A name
         ;; that comes from both is kept once, the member list's copy first.
-        (let* ((from-buffer (acm-backend-telega--buffer-mention-candidates-safely))
+        (let* ((from-buffer (unless (acm-backend-telega--member-list-complete-p)
+                              (acm-backend-telega--buffer-mention-candidates-safely)))
                (fetched (and (listp acm-backend-telega-items) acm-backend-telega-items))
                (labels (mapcar (lambda (item) (plist-get item :label)) fetched))
                (extra (seq-remove (lambda (item)

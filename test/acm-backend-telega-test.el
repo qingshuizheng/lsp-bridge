@@ -309,5 +309,38 @@ the chat are found, which is everyone the buffer shows."
                              (acm-backend-telega-mention-candidates "thewawar"))
                      '("@thewawar"))))))
 
+(ert-deftest acm-backend-telega-test-a-complete-member-list-needs-no-buffer-read ()
+  "The names are read out of the buffer only when the member list is not whole.
+The list is asked for with a limit, so a chat larger than that answers with a
+part of its members; the chat knows how many it has, and a list at least that
+long is the whole of it."
+  (with-temp-buffer
+    (insert "somebody who only wrote here\n")
+    (setq-local acm-backend-telega-items nil)
+    (goto-char (point-max))
+    (insert "@")
+    (cl-letf (((symbol-function 'acm-backend-telega-enabled-p) (lambda () t))
+              ((symbol-function 'acm-backend-telega--typed-prefix-p) (lambda (&rest _) t))
+              ((symbol-function 'telega-chatbuf--chat) (lambda () 'a-chat))
+              ((symbol-function 'telega-chat--info) (lambda (&rest _) 'info))
+              ((symbol-function 'telega-msg-sender-username) (lambda (&rest _) "@member"))
+              ((symbol-function 'telega-msg-sender-title) (lambda (&rest _) "Member")))
+      (let ((labels (lambda ()
+                      (mapcar (lambda (c) (plist-get c :label))
+                              (acm-backend-telega-mention-candidates "")))))
+        ;; Two members fetched out of a chat of two: the list is the whole chat.
+        (setq-local acm-backend-telega-items (list (list :key "@member" :label "@member"
+                                                         :annotation "Member" :backend "telega")))
+        (cl-letf (((symbol-function 'telega-tl-get0)
+                   (lambda (&rest _) 1)))
+          (should (equal (funcall labels) '("@member"))))
+        ;; The same list, in a chat that says it has three: the buffer is read.
+        (cl-letf (((symbol-function 'telega-tl-get0)
+                   (lambda (&rest _) 3))
+                  ((symbol-function 'telega-msg-sender) (lambda (&rest _) 'a-user))
+                  ((symbol-function 'telega-user-p) (lambda (&rest _) t))
+                  ((symbol-function 'telega-msg-sender-title) (lambda (&rest _) "Speaker")))
+          (ignore-errors (should (member "Speaker" (funcall labels)))))))))
+
 (provide 'acm-backend-telega-test)
 ;;; acm-backend-telega-test.el ends here
