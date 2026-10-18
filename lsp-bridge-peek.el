@@ -189,7 +189,6 @@ uses for a key it names in help, which every theme colours."
   :type 'integer
   :group 'lsp-bridge-peek)
 
-
 (defcustom lsp-bridge-peek-file-content-scroll-margin 1
   "How far the content navigation commands scroll the peek window."
   :type 'integer
@@ -336,7 +335,6 @@ which take care of setting up other things."
   "Blend two colors C1 and C2 with ALPHA.
 C1 and C2 are hexadecimal strings.  ALPHA is a number between 0.0
 and 1.0 which is the influence of C1 on the result.
-
 The blending is done in the sRGB space, which should make ALPHA
 feels more linear to human eyes."
   (pcase-let ((`(,r1 ,g1 ,b1)
@@ -361,7 +359,6 @@ feels more linear to human eyes."
 This is mainly for displaying STR in an overlay.  For example, if
 FACE specifies background color, then STR will have that
 background color, with all other face attributes preserved.
-
 `default' face is appended to make sure the display in overlay is
 not affected by its surroundings."
   (let ((len (length str)))
@@ -814,7 +811,6 @@ This sets elements in SEQS which not begin with CHAR to nil, and
 pop the element which begin with CHAR.  When the only non-nil
 element in seqs is poped, this returns its index, as the element
 is hit by user input.
-
 The modified SEQS is returned.  When CHAR is not the car of any
 element in SEQS, this does nothing, and returns the original
 list."
@@ -981,7 +977,6 @@ error when not peeking or when the current symbol has no parent."
   "Select the next brach in the tree history."
   (interactive)
   (lsp-bridge-peek-tree-change-branch -1))
-
 
 (provide 'lsp-bridge-peek)
 ;;; lsp-bridge-peek.el ends here.

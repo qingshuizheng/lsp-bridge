@@ -167,5 +167,4 @@ link."
     (insert link)))
 
 (provide 'acm-backend-vulpea)
-
 ;;; acm-backend-vulpea.el ends here

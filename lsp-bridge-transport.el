@@ -126,7 +126,6 @@ Each element of VARS is a variable name string; see
 
 (defun lsp-bridge--get-project-path-func (filename)
   "Return the project root path of FILENAME, search order:
-
 1. Follow the rule of `lsp-bridge-get-project-path-by-filepath'
 2. Search up `.dir-locals.el'
 3. Search up `.git'"
@@ -445,7 +444,6 @@ The data is written to ~/lsp-bridge.prof when
                              (when lsp-bridge-enable-profile
                                (list "profile")))))
 
-      ;; Set process arguments.
       (if lsp-bridge-enable-debug
           (progn
             (setq lsp-bridge-internal-process-prog "gdb")
@@ -453,7 +451,6 @@ The data is written to ~/lsp-bridge.prof when
         (setq lsp-bridge-internal-process-prog lsp-bridge-python-command)
         (setq lsp-bridge-internal-process-args lsp-bridge-args))
 
-      ;; Start python process.
       (let ((process-connection-type (not (lsp-bridge--called-from-wsl-on-windows-p))))
         (setq lsp-bridge-internal-process
               (apply 'start-process
@@ -479,7 +476,6 @@ Each function is called with no argument from
   "Stop LSP-Bridge process and kill all LSP-Bridge buffers."
   (interactive)
 
-  ;; Clean up.
   (lsp-bridge--cleanup)
 
   ;; Run stop process hooks.
@@ -610,5 +606,4 @@ alone, so that a mismatched pair fails loudly instead of mysteriously."
              lsp-bridge--protocol-error)))
 
 (provide 'lsp-bridge-transport)
-
 ;;; lsp-bridge-transport.el ends here

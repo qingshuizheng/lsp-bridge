@@ -30,7 +30,6 @@ def create_decompile_external_file(uri_resolver, language_dir, decompile_dir, so
 
     Last, we can do `lsp-bridge-find-def` in *external* file.
     """
-    # Init.
     external_file_dir = ''
 
     # Build temp directory base on project hash.
@@ -40,7 +39,6 @@ def create_decompile_external_file(uri_resolver, language_dir, decompile_dir, so
     data_dir = pathlib.Path(os.path.join(tempfile.gettempdir(), language_dir, project_hash))
     external_file_dir = data_dir / decompile_dir
 
-    # Build temp file path.
     url = urlparse(uri_resolver.external_file_link)
     path = unquote(url.path)[1:] # remove first / from path to make `external_file_dir` can join `path` at below
     external_file = external_file_dir / path

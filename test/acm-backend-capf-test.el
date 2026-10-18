@@ -66,7 +66,6 @@
       (should (equal '("Foo" finished) got))
       (should (string-match-p "exit-function signalled" reported)))))
 
-
 (ert-deftest acm-backend-capf-test-a-signalling-capf-is-skipped ()
   "A CAPF that signals must not take the backend down with it."
   (with-temp-buffer
@@ -80,7 +79,6 @@
                  (lambda (format &rest args) (setq reported (apply #'format format args)))))
         (should-not (acm-backend-capf-candidates "Foo")))
       (should (string-match-p "CAPF signalled" reported)))))
-
 
 (provide 'acm-backend-capf-test)
 ;;; acm-backend-capf-test.el ends here

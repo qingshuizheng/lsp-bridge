@@ -175,7 +175,6 @@ backend that returns bare candidates still gets its expand function called."
 Return nil when the backend is disabled - `enabled' returns nil - or when it
 must not run inside a comment and point is in one.  The result goes through
 `acm-candidates-normalize'.
-
 A backend that signals returns nil, and the error is reported once.  One backend
 must not be able to abort the fetching of all the others: ekg's tag completion
 signals with stale match data when it is asked from a background refresh, and
@@ -388,5 +387,4 @@ name, so a user can re-register one of them with different fields."
 (acm-register-built-in-backends)
 
 (provide 'acm-backend)
-
 ;;; acm-backend.el ends here

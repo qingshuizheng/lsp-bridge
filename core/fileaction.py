@@ -124,7 +124,6 @@ class FileAction:
         call below are read into `self`, and `set_lsp_server` finishes the
         initialization.
         """
-        # Init.
         self.single_server_info = single_server_info
         self.single_server: LspServer = single_server
         self.multi_servers = multi_servers
@@ -164,7 +163,6 @@ class FileAction:
              self.org_lang_servers[self.single_server.server_name] = self.single_server
              self.org_server_infos[self.single_server.server_name] = self.single_server_info
 
-        # Initialize handlers.
         self.handlers: Dict[str, Handler] = dict()
         logger.debug("Handlers: " + pprint.pformat(Handler.__subclasses__()))
         for handler_cls in Handler.__subclasses__():
@@ -220,7 +218,6 @@ class FileAction:
         if self.single_server_info is not None:
             eval_in_emacs("lsp-bridge-set-prefix-style", self.single_server_info.get("prefixStyle", "ascii"))
 
-        # Init server names.
         eval_in_emacs("lsp-bridge-set-server-names", self.filepath, get_lsp_file_host(), self.get_lsp_server_names())
 
     @property
@@ -384,7 +381,6 @@ class FileAction:
         if self.try_completion_timer is not None and self.try_completion_timer.is_alive():
             self.try_completion_timer.cancel()
 
-        # Record last change information.
         self.last_change_file_time = time.time()
 
         # Send textDocument/completion 100ms later.
@@ -496,17 +492,13 @@ class FileAction:
         if self.multi_servers:
             for lsp_server in self.multi_servers.values():
                 if lsp_server.server_info["name"] in self.get_method_server_names("completion"):
-                    # Send code completion request.
                     self.send_server_request(lsp_server, "completion", lsp_server, position, before_char, prefix, version)
 
-                    # Send workspace symbol completion request.
                     if lsp_server.workspace_symbol_provider:
                         self.send_server_request(lsp_server, "completion_workspace_symbol", lsp_server, prefix)
         else:
-            # Send code completion request.
             self.send_server_request(self.single_server, "completion", self.single_server, position, before_char, prefix, version)
 
-            # Send workspace symbol completion request.
             if self.single_server.workspace_symbol_provider:
                 self.send_server_request(self.single_server, "completion_workspace_symbol", self.single_server, prefix)
 
@@ -564,7 +556,6 @@ class FileAction:
                 `last_change_cursor_time` is updated so handlers with
                 `cancel_on_change` can drop responses made stale by the move.
         """
-        # Record change cursor time.
         self.last_change_cursor_time = time.time()
 
     def get_diagnostics_count(self):
@@ -867,7 +858,6 @@ class FileAction:
                              "documentation": documentation
                          },
                          get_lsp_file_host())
-
 
     def rename_file(self, old_filepath, new_filepath):
         """Tell the first LSP server that a file was renamed.

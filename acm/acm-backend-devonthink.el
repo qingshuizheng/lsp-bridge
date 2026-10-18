@@ -375,5 +375,4 @@ before point: \"dt:\", \"dt:f\" and \"dt:foo\" all count."
           #'acm-backend-devonthink--trigger-visible-p)
 
 (provide 'acm-backend-devonthink)
-
 ;;; acm-backend-devonthink.el ends here

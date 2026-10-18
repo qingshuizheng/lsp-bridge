@@ -81,7 +81,6 @@
 
 ;;; Require
 
-
 ;;; Code:
 
 (defgroup acm-backend-elisp nil
@@ -252,5 +251,4 @@ most `acm-backend-elisp-parse-limit' bindings per binding form."
   (setq-local acm-backend-elisp-cache-candiates nil))
 
 (provide 'acm-backend-elisp)
-
 ;;; acm-backend-elisp.el ends here

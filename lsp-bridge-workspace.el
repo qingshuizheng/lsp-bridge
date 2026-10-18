@@ -50,7 +50,6 @@ cached in the buffer and the completion menu is tried immediately."
   ;; make sure Emacs not do GC
   (let ((gc-cons-threshold most-positive-fixnum))
     (lsp-bridge--with-file-buffer filename filehost
-                                  ;; Save completion items.
                                   (setq-local acm-backend-lsp-workspace-symbol-cache-candidates nil)
                                   (setq-local acm-backend-lsp-workspace-symbol-server-names server-names)
 
@@ -355,5 +354,4 @@ idle time and is stored in `lsp-bridge-document-highlight-timer'."
   (add-hook 'post-command-hook #'lsp-bridge-document-highlight-cleanup nil t))
 
 (provide 'lsp-bridge-workspace)
-
 ;;; lsp-bridge-workspace.el ends here

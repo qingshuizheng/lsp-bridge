@@ -54,7 +54,6 @@ It is used to restore `mode-line-format' when the popup is quit.")
   (lsp-bridge-call-file-api "prepare_call_hierarchy_outgoing"
                             (lsp-bridge--position)))
 
-
 (defun lsp-bridge-call-hierarchy-make-frame (buffer)
   "Create or reuse the call hierarchy frame showing BUFFER.
 The frame height is the preview height plus the number of calls

@@ -23,7 +23,6 @@
 
 (defcustom acm-quick-access-use-number-select nil
   "Use the number keys to select candidate words, disabled by default.
-
 Enable this option will cause interfering digital insertion sometimes."
   :type 'boolean
   :group 'acm-quick-access)
@@ -119,5 +118,4 @@ with `self-insert-command'."
     (self-insert-command 1)))
 
 (provide 'acm-quick-access)
-
 ;;; acm-quick-access.el ends here

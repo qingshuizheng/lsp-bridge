@@ -11,7 +11,6 @@
   (expand-file-name "~/.cache/lsp-bridge-jdtls")
   "LSP-Bridge jdtls workspace directory.")  :type 'directory
 
-
 (defvar lsp-bridge-jdtls-default-file
   (expand-file-name
    (if (memq system-type '(cygwin windows-nt ms-dos))
@@ -25,14 +24,12 @@ The Windows variant is used on Windows systems.")
   "Specifies additional VM parameters for starting the Java language server.
 E.g. Use `-javaagent:/home/user/.emacs.d/plugin/lombok.jar` to add lombok support")  :type '(repeat string)
 
-
 (defun lsp-bridge-get-jdtls-server-by-project (project-path filepath)
   "Return the JDTLS configuration for PROJECT-PATH and FILEPATH."
   (let ((config-file (lsp-bridge-jdtls-config-file project-path filepath)))
     (if (not (file-exists-p config-file))
         (lsp-bridge-jdtls-init-config project-path filepath))
     config-file))
-
 
 (defun lsp-bridge-jdtls-init-config (project-path filepath)
   "Initialize the JDTLS configuration for PROJECT-PATH and FILEPATH."
@@ -87,7 +84,6 @@ E.g. Use `-javaagent:/home/user/.emacs.d/plugin/lombok.jar` to add lombok suppor
   (expand-file-name "jdtls-data"
                     (lsp-bridge-jdtls-cache-dir project-path filepath)))
 
-
 (defun lsp-bridge-jdtls-single-file-mode? (project-path filepath)
   "Return non-nil when PROJECT-PATH and FILEPATH name the same file."
   (lsp-bridge-path-equal project-path filepath))
@@ -131,7 +127,6 @@ java/addOverridableMethods command, which is then sent back."
                                          (completing-read-multiple "overridable methods: " menu-items))))
               (params (list :overridableMethods selected-methods :context context)))
     (lsp-bridge-call-file-api "jdtls_add_overridable_methods" (json-serialize params))))
-
 
 (provide 'lsp-bridge-jdtls)
 ;;; lsp-bridge-jdtls.el ends here

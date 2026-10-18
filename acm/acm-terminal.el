@@ -140,12 +140,10 @@ See `acm-terminal-menu-popon' for why the documentation is an overlay here.")
 
 (defun acm-terminal-nsplit-string (string width &optional cont)
   "Split STRING into substrings of length WIDTH, padded with spaces.
-
 Every substring is WIDTH characters wide, the last one included; it is padded
 with spaces when the text does not fill it.  If CONT is non-nil it is appended
 to every substring except the last, and the text of each is then WIDTH minus
 the width of CONT, e.g.:
-
   (fn \"foobarbazq\" 3 \"↩\") => (\"fo↩\" \"ob↩\" \"ar↩\" \"ba↩\" \"zq \")
   (fn \"foobarbazq\" 3)     => (\"foo\" \"bar\" \"baz\" \"q  \") "
   (let* ((cont (or cont ""))
@@ -268,11 +266,9 @@ window; `acm-menu-max-length' calls this with the width it computed."
              (quick-access-key (nth item-index acm-quick-access-keys))
              candidate-line)
 
-        ;; Render deprecated candidate.
         (when (plist-get v :deprecated)
           (add-face-text-property 0 (length candidate) 'acm-deprecated-face 'append candidate))
 
-        ;; Build candidate line.
         (setq candidate-line
               (concat
                ;; icon-text
@@ -289,7 +285,6 @@ window; `acm-menu-max-length' calls this with the width it computed."
                            'face
                            (if (equal item-index menu-index) 'acm-terminal-select-face 'font-lock-doc-face))))
 
-        ;; Render current candidate.
         (if (equal item-index menu-index)
             (progn
               (add-face-text-property 0 (length candidate-line) 'acm-terminal-select-face 'append candidate-line)
@@ -308,7 +303,6 @@ window; `acm-menu-max-length' calls this with the width it computed."
         (when (equal item-index (1- (length items)))
           (delete-char -1))
 
-        ;; Update item index.
         (setq item-index (1+ item-index))))))
 
 (defun acm-terminal-doc-render (doc &optional width)
@@ -328,7 +322,6 @@ window; `acm-menu-max-length' calls this with the width it computed."
          (menu-new-max-length (acm-menu-max-length))
          (menu-new-number (length items))
          (menu-index acm-menu-index))
-    ;; Record newest cache.
     (acm-popup-set 'menu-max-length-cache menu-new-max-length)
     (acm-popup-set 'menu-number-cache menu-new-number)
 
@@ -388,7 +381,6 @@ window; `acm-menu-max-length' calls this with the width it computed."
 
 (defun acm-terminal-doc-get-page (lines start height)
   "Get doc page.
-
 LINES   Doc lines
 HEIGHT  Doc frame height
 START   Start line"
@@ -404,7 +396,6 @@ START   Start line"
 
 (defun acm-terminal-doc-top-edge-y (cursor-y menu-h doc-h &optional doc-lines)
   "Return the y-coordinate of doc at left/right top edge, set :lines if possible.
-
 CURSOR-Y        y-coordinate of cursor
 MENU-H          height of menu frame
 DOC-H           height of doc frame
@@ -648,11 +639,9 @@ same way acm clears them for its doc frame."
     ;; Turn off `acm-mode'.
     (acm-mode -1)
 
-    ;; Hide menu frame.
     (when acm-terminal-menu-popon
       (setq acm-terminal-menu-popon (popon-kill acm-terminal-menu-popon)))
 
-    ;; Hide doc frame.
     (acm-doc-hide)
 
     ;; Clean `(acm-popup menu-max-length-cache)'.
@@ -661,7 +650,6 @@ same way acm clears them for its doc frame."
     ;; Remove hook of `acm--pre-command'.
     (remove-hook 'pre-command-hook #'acm--pre-command 'local)
 
-    ;; Clean backend cache.
     (when-let* ((backend-clean (intern-soft (format "acm-backend-%s-clean" backend)))
                 (fp (fboundp backend-clean)))
       (funcall backend-clean))))
@@ -721,11 +709,9 @@ same way acm clears them for its doc frame."
              ((and (= previous-select-candidate-index 1) (= current-select-candidate-index 1))
               (setq-local acm-menu-index 1)))))
 
-        ;; Set candidates and menu candidates.
         (setq-local acm-candidates candidates)
         (setq-local acm-menu-candidates menu-candidates)
 
-        ;; Init colors.
         (acm-frame-init-colors)
 
         ;; Record menu popup position and buffer.
@@ -740,7 +726,6 @@ same way acm clears them for its doc frame."
           (acm-terminal-create-frame-if-not-exist acm-terminal-menu-popon acm-buffer "acm frame")
           (plist-put (cdr acm-terminal-menu-popon) :direction direction)
 
-          ;; Render menu.
           (acm-menu-render menu-old-cache))
         ))
      (t
@@ -792,5 +777,4 @@ where it is done for you already."
     (warn "The terminal acm menu is not active: popon is missing")))
 
 (provide 'acm-terminal)
-
 ;;; acm-terminal.el ends here

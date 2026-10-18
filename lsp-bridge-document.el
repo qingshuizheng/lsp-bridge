@@ -150,7 +150,6 @@ signature in a popup frame instead of the echo area."
 
 (defcustom lsp-bridge-signature-show-with-frame-position "bottom-right"
   "Popup position of the signature frame.
-
 Accepted values are `bottom-right' (the default), `top-left',
 `top-right', `bottom-left' and `point'."
   :type 'string
@@ -204,5 +203,4 @@ active one, which is highlighted; the result is shown through
   "Idle timer that triggers `lsp-bridge-signature-help-fetch'.")
 
 (provide 'lsp-bridge-document)
-
 ;;; lsp-bridge-document.el ends here

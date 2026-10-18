@@ -129,5 +129,4 @@ langserver/omnisharp-*.json configurations look for the server."
   (lsp-bridge-call-async "copilot_status"))
 
 (provide 'lsp-bridge-lsp-installer)
-
 ;;; lsp-bridge-lsp-installer.el ends here

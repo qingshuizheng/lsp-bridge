@@ -39,13 +39,11 @@ class SearchBridgeMixin:
         # Init copilot
         self.copilot = Copilot()
 
-        # Init search backends.
         self.search_file_words = SearchFileWords()
         self.search_list = SearchList()
         self.search_paths = SearchPaths()
         self.ctags = Ctags()
 
-        # Build EPC interfaces.
         handler_subclasses = list(map(lambda cls: cls.name, Handler.__subclasses__()))
         for name in ["change_file", "update_file",  "save_file",
                      "try_completion", "try_formatting",

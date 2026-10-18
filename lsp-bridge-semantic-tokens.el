@@ -287,7 +287,6 @@ OLD-TOKENS is replaced by NEW-TOKENS in that buffer."
                (puthash (list current-line colum (nth 2 token) (nth 3 token) (nth 4 token))
                         ov lsp-bridge-semantic-tokens--overlays)))))))))
 
-
 (defun lsp-bridge-semantic-tokens--request-1 (from to use-cache)
   "Request semantic tokens between FROM and TO.
 USE-CACHE non-nil lets the Python side answer from its cache."
@@ -384,7 +383,6 @@ semantic token overlays."
   (lsp-bridge-semantic-tokens--delete-overlays (hash-table-keys lsp-bridge-semantic-tokens--overlays))
   (setq-local lsp-bridge-semantic-tokens--overlays nil))
 
-
 (defvar lsp-bridge-semantic-tokens--timer-update-buffers 0 "The count of enable lsp-bridge-semantic-tokens-mode.")
 
 (defun lsp-bridge-semantic-tokens--close-file ()
@@ -411,7 +409,6 @@ requests tokens once after `lsp-bridge-semantic-tokens-delay'."
 
     (add-hook 'kill-buffer-hook #'lsp-bridge-semantic-tokens--close-file nil t)
     (run-at-time lsp-bridge-semantic-tokens-delay nil #'lsp-bridge-semantic-tokens-request)))
-
 
 (defun lsp-bridge-semantic-tokens--timer-disable ()
   "Disable timer based semantic tokens auto update for this buffer.
@@ -461,5 +458,4 @@ and deletes all semantic token overlays."
             (lsp-bridge-semantic-tokens--timer-disable))))))
 
 (provide 'lsp-bridge-semantic-tokens)
-
 ;;; lsp-bridge-semantic-tokens.el ends here

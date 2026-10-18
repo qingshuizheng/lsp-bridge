@@ -81,7 +81,6 @@
 
 ;;; Require
 
-
 ;;; Code:
 
 (defgroup acm-backend-lsp-workspace-symbol nil
@@ -105,9 +104,7 @@
 
 (defcustom acm-backend-lsp-workspace-symbol-frontend-filter-p nil
   "Because LSP workspace symbols has filtered at Python backend.
-
 So don't need filter candidates again when show candidates in acm menu.
-
 Anyway, if want use `acm-candidate-fuzzy-search' filter again in acm menu, turn on this option."
   :type 'string
   :group 'acm-backend-lsp-workspace-symbol)
@@ -171,5 +168,4 @@ because Python has already filtered and sorted the candidates."
   (setq-local acm-backend-lsp-workspace-symbol-cache-candidates nil))
 
 (provide 'acm-backend-lsp-workspace-symbol)
-
 ;;; acm-backend-lsp-workspace-symbol.el ends here

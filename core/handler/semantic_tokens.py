@@ -34,7 +34,6 @@ class SemanticTokens(Handler):
         self.type_modifier_face_names = None
         self.ignore_modifier_limit_types = None
 
-
     def process_request(self, buffer_name, range_begin, range_end, use_cache):
         """Return empty params for the view of BUFFER_NAME to be painted.
 
@@ -47,7 +46,6 @@ class SemanticTokens(Handler):
         if not use_cache:
             self.render_tokens = set()
         return dict()
-
 
     def process_response(self, response):
         """Decode the token `data` in RESPONSE and render the new runs."""

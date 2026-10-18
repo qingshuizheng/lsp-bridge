@@ -37,7 +37,6 @@ follows the theme; the callers that set it from the text colour still do.")
   '()
   "Face used to highlight the currently selected candidate.")
 
-
 (defvar acm-frame--mouse-ignore-map
   (let ((map (make-sparse-keymap)))
     (dotimes (i 7)
@@ -66,13 +65,11 @@ Emacs 28 and later use `child-frame-border', older versions use
 The border colour comes from `acm-frame-border-face' and the background
 from `acm-frame-default-face', both taken from the `default' face of the
 selected frame, so the popup follows the current theme."
-  ;; Set frame border color.
   (let* ((face (acm-frame-border-face))
          (new (face-attribute 'acm-frame-border-face :background nil 'default)))
     (unless (equal (face-attribute face :background frame 'default) new)
       (set-face-background face new frame)))
 
-  ;; Set frame background color.
   (let ((new (face-attribute 'acm-frame-default-face :background nil 'default)))
     (unless (equal (frame-parameter frame 'background-color) new)
       (set-frame-parameter frame 'background-color new))))
@@ -144,10 +141,8 @@ created invisible; callers show it with `acm-frame-set-frame-position'."
       (unless acm-frame-font
         (setq acm-frame-font parent-font)))
 
-    ;; Set popup frame colors.
     (acm-frame-set-frame-colors frame)
 
-    ;; Record parent frame.
     (setq acm-frame--emacs-frame parent)
 
     ;; Reset to the input focus to the parent frame.
@@ -192,7 +187,6 @@ to `acm-frame-make-frame'."
        ;; Install mouse ignore map
        (use-local-map acm-frame--mouse-ignore-map)
 
-       ;; Set buffer arguments.
        (dolist (var '((mode-line-format . nil)
                       (header-line-format . nil)
                       (tab-line-format . nil)
@@ -210,7 +204,6 @@ to `acm-frame-make-frame'."
                       (fringes-outside-margins . 0)))
          (set (make-local-variable (car var)) (cdr var))))
 
-     ;; Set frame window and buffer.
      (let ((win (frame-root-window (acm-popup ,frame-slot))))
        (set-window-buffer win ,frame-buffer)
        ;; Mark window as dedicated to prevent frame reuse.

@@ -30,7 +30,6 @@
 
 (defcustom acm-backend-telega-member-fetch-limit 200
   "How many members are asked for when a chat is entered.
-
 Two hundred is what the request answers with anyway, and it is enough to type a
 mention at once.  The members beyond it are paged in while Emacs is idle, by
 `acm-backend-telega--fetch-all-members', so that the whole chat is in hand
@@ -40,7 +39,6 @@ without the first answer being waited on."
 
 (defcustom acm-backend-telega-member-fetch-all-limit 2000
   "How many members the idle fetch will page in at most.
-
 The pages are two hundred members each, so this is ten of them for the default.
 A chat larger than this keeps the first page and the ones up to it, and the
 mention completion reads the buffer for the rest; a chat of a few hundred is
@@ -50,7 +48,6 @@ fetched whole."
 
 (defcustom acm-backend-telega-fetch-all-members nil
   "Whether to page in the rest of a chat's members while Emacs is idle.
-
 Off by default, and not because it would be slow: the call it makes -
 `telega--getSupergroupMembers' - answers \"Supergroup not found\" for the object
 this code has to hand it, and the answer comes back from the server rather than
@@ -66,7 +63,6 @@ machinery is in place for when that argument is got right."
 
 (defcustom acm-backend-telega-quiet-member-list-error t
   "Do not show telega's message about members that cannot be listed.
-
 A chat whose members are hidden answers the search for them with
 \"Member list is inaccessible\", and the request is made for the mention
 candidates whether or not it can be answered; the mention completion reads the
@@ -92,13 +88,11 @@ on to ORIG with FORMAT and ARGS."
 
 (defcustom acm-backend-telega-buffer-scan-limit 200000
   "How many characters of the chat buffer the mention scan reads backwards.
-
 The names are read out of the buffer the chat has already rendered, and a chat
 of any length would otherwise be read whole on every keystroke.  Only this much
 of the end of the buffer is read, which is where the messages last rendered
 are; a name whose last message is older than that is still completed once the
 member list has answered, and the member list is asked either way.
-
 Two hundred thousand characters is about two milliseconds of reading, measured,
 and covers the messages of a chat that has been left open for a long while; a
 value small enough to miss the message someone is looking for is the one thing
@@ -263,7 +257,6 @@ title, and the expansion turns the latter into a mention entity."
 
 (defun acm-backend-telega-items-add (members)
   "Add MEMBERS to `acm-backend-telega-items', keeping the ones already there.
-
 The first answer of a chat is a page of its members and the rest arrive later,
 so the list grows instead of being replaced: a member whose label is already in
 it is not added twice."
@@ -277,7 +270,6 @@ it is not added twice."
 
 (defun acm-backend-telega--fetch-all-members (chat offset)
   "Page in the members of CHAT from OFFSET, a page at a time.
-
 The members of a chat are asked for two hundred at a time, and the idle fetch
 walks the pages so that the whole chat is in hand; it stops when a page comes
 back short, when the chat's member count is reached, or at
@@ -343,10 +335,8 @@ what made only the slash command source complete."
         (backward-char (length keyword))
         (= (char-before) char))))
 
-
 (defun acm-backend-telega--buffer-mention-candidates ()
   "Return mention candidates for the people already rendered in this buffer.
-
 Telega wraps every name it renders - a message sender, a voter, an
 administrator - in a button whose `:telega-link' property holds the sender
 object itself, and that object is there whether or not the member has a
@@ -354,7 +344,6 @@ username.  Reading those buttons back gives the people this buffer has shown,
 which is what completes while the member list cannot be fetched at all: a chat
 whose members are hidden answers `searchChatMembers' with nothing, and these
 names are the ones left.
-
 A bare `@username' written in the text is offered as well, because a name that
 is only mentioned in a message is not rendered as a button of its own."
   (let ((candidates nil) (seen nil)
@@ -424,7 +413,6 @@ is only mentioned in a message is not rendered as a button of its own."
 
 (defun acm-backend-telega--buffer-mention-candidates-safely ()
   "Return `acm-backend-telega--buffer-mention-candidates', or nil on any error.
-
 The names are read out of a buffer that telega owns and that this function only
 knows the shape of; when it is not that shape, or when reading it fails for any
 other reason, the answer is nothing rather than an error - a mention scan that
@@ -434,7 +422,6 @@ because the mention candidates are asked for first."
 
 (defun acm-backend-telega--member-list-complete-p ()
   "Return non-nil when the fetched member list holds every member of the chat.
-
 Two things make a list a part of the chat.  Telegram lets a group hide its members,
 and TDLib says which groups do in `has_hidden_members'; the list of such a chat is
 its administrators and nothing else, which is the chat the read exists for.  And
@@ -442,7 +429,6 @@ the list is asked for with a limit, so a chat larger than that limit answers wit
 part of its members without saying so - while the chat knows how many it has.  When
 neither is known, the answer is nil and the buffer is read, which is what finds the
 people a partial list cannot show.
-
 Reading the buffer is what finds the people the list cannot show, so skipping it
 is only safe when the list is known to be complete."
   (let* ((items acm-backend-telega-items)

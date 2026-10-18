@@ -81,7 +81,6 @@
 
 ;;; Require
 
-
 ;;; Code:
 
 (defun lsp-bridge-rust-expand-macro--update (name expansion)
@@ -112,5 +111,4 @@ another window."
   (lsp-bridge-call-file-api "rust_reload_workspace"))
 
 (provide 'lsp-bridge-rust)
-
 ;;; lsp-bridge-rust.el ends here

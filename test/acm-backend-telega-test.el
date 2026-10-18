@@ -87,7 +87,6 @@
           (should (equal '("@alice") (ask "al")))
           (should-not (ask "zz")))))))
 
-
 (ert-deftest acm-backend-telega-test-precode-accepts-the-fence-in-the-keyword ()
   "The fence may be part of the keyword, as the string style gives it."
   (acm-backend-telega-test--with-telega
@@ -116,7 +115,6 @@
       (should (equal "```python\n\n```" (complete (point-min))))
       ;; the symbol styles: the fence is already before the prefix
       (should (equal (complete (point-min)) (complete 4))))))
-
 
 (ert-deftest acm-backend-telega-test-the-people-the-buffer-has-rendered ()
   "Names telega rendered in the buffer are candidates, member list or not.

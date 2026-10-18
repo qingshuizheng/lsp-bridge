@@ -125,4 +125,3 @@ class SearchList:
             return 1
         else:
             return len(symbol_a) < len(symbol_b)
-

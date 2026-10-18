@@ -81,7 +81,6 @@
 
 ;;; Require
 
-
 ;;; Code:
 
 ;; The macro `lsp-bridge--with-file-buffer' lives in lsp-bridge-core.el,
@@ -205,7 +204,6 @@ after-string for parameter hints.  Rendering is serialized with
           (setq-local lsp-bridge-inlay-hint-cache inlay-hints)
           (setq-local lsp-bridge-inlay-hint-cache-time (current-time))
 
-          ;; Render new overlays.
           (save-excursion
             (save-restriction
               (let ((hint-index 0))
@@ -240,7 +238,6 @@ after-string for parameter hints.  Rendering is serialized with
 
 (defun lsp-bridge-inlay-hint-retry (filepath)
   "Retry the InlayHint request for FILEPATH.
-
 The server answers with a content-modified error when an inlayHint request
 follows a didChange immediately; lsp-bridge calls this again so that the
 request does not go unanswered."
@@ -250,5 +247,4 @@ request does not go unanswered."
     (lsp-bridge-inlay-hint-try-send-request)))
 
 (provide 'lsp-bridge-inlay-hint)
-
 ;;; lsp-bridge-inlay-hint.el ends here

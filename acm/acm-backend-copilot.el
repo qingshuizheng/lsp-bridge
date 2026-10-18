@@ -64,16 +64,13 @@
 Taken from `copilot.el'.
 Format: '(:host \"127.0.0.1\" :port 80 :username \"username\" :password \"password\")
 Username and password are optional.
-
 If you are using a MITM proxy which intercepts TLS connections, you may need to disable
 TLS verification.  This can be done by setting a pair ':rejectUnauthorized :json-false'
 in the proxy plist.  For example:
-
   (:host \"127.0.0.1\" :port 80 :rejectUnauthorized :json-false)"
   :type '(plist :tag "Uncheck all to disable proxy" :key-type symbol)
   :options '((:host string) (:port integer) (:username string) (:password string))
   :group 'acm-backend-copilot)
-
 
 (defvar-local acm-backend-copilot-items nil
   "List of Copilot completion candidates recorded for this buffer.")

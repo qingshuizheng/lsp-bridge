@@ -22,7 +22,6 @@
 (defcustom lsp-bridge-enable-org-babel nil
   "Use `lsp-bridge' in org-babel, default is disable.")  :type 'boolean
 
-
 (defcustom lsp-bridge-org-babel-lang-list nil
   "A list of org babel languages like (\"python\" \"bash\"), which enable lsp-bridge. if nil means enable all languages."
   :type '(repeat string))

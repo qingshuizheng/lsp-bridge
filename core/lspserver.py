@@ -148,11 +148,9 @@ class LspServerSender(MessageSender):
         message_type = message.get("message_type")
         message.pop("message_type")
 
-        # Parse json content.
         json_content = json.dumps(message)
         message_str = "Content-Length: {}\r\n\r\n{}".format(len(json_content), json_content)
 
-        # Send to LSP server.
         self.process.stdin.write(message_str.encode("utf-8"))    # type: ignore
         self.process.stdin.flush()    # type: ignore
 
@@ -192,12 +190,10 @@ class LspServerSender(MessageSender):
             # Wait until initialized.
             self.initialized.wait()
 
-            # Send other initialization-related messages.
             while not self.init_queue.empty():
                 message = self.init_queue.get()
                 self.send_message(message)
 
-            # Send all others.
             while self.process.poll() is None:
                 message = self.queue.get()
                 self.send_message(message)
@@ -218,7 +214,6 @@ def record_inlay_hint_request(message):
 
 def resend_inlay_hint_request_after_content_modified_error(message):
     """Ask Emacs to retry the inlayHint request described by MESSAGE."""
-    # Get message file path.
     message_id = message.get("id")
     message_documentation = INLAY_HINT_REQUEST_ID_DICT[message_id]
 
@@ -246,7 +241,6 @@ class LspServerReceiver(MessageReceiver):
         if not line:
             return
         try:
-            # Send message.
             self.queue.put({
                 "name": "lsp_recv_message",
                 "content": parse_json_content(line)
@@ -371,7 +365,6 @@ class LspServer:
         self.text_document_sync = 2 # refer TextDocumentSyncKind. Can be None = 0, Full = 1 or Incremental = 2
         self.save_include_text = False
 
-        # Start LSP server.
         cwd = self.project_path
         if os.path.isfile(self.project_path): # single file
             cwd = os.path.dirname(self.project_path)
@@ -593,7 +586,6 @@ class LspServer:
         When the FileAction carries an external_file_link returned by the LSP
         server (a jdt:// URI for Java, for instance), that link is used instead.
         """
-        # Init with filepath.
         uri = self.get_document_uri(filepath)
 
         if external_file_link is not None:
@@ -612,7 +604,6 @@ class LspServer:
 
     def get_language_id(self, fa):
         """Return the LSP language id to use for the file of FA."""
-        # Get extension name.
         _, extension = os.path.splitext(fa.filepath)
         extension_name = extension.split(os.path.extsep)[-1].lower()
 
@@ -1111,7 +1102,6 @@ class LspServer:
     def monitor_workspace_files(self, file_paths):
         """Watch FILE_PATHS and their parent directories for changes."""
         if len(file_paths) > 0:
-            # Init workspace watch files vars.
             self.start_workspace_watch_files()
 
             # Add workspace file in monitor list.
@@ -1163,7 +1153,6 @@ class LspServer:
                         else:
                             patterns.append(full_pattern)
 
-        # Remove duplicate file.
         paths = list(set(patterns))
 
         # Filter path that it's parent directory is not exist.
@@ -1180,7 +1169,6 @@ class LspServer:
 
         # We need shutdown LSP server when last file closed, to save system memory.
         if len(self.files) == 0:
-            # Stop workspace file watcher.
             self.stop_workspace_watch_files()
 
             self.message_queue.put({

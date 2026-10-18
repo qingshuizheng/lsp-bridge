@@ -26,7 +26,6 @@ for KEYWORD and memoized in `acm-backend-tabby-cache-candiates'."
     keyword
     acm-backend-tabby-items)))
 
-
 (defun acm-backend-tabby-find-max-common (str1 str2)
   "Return STR1 and STR2 joined on their longest overlap, or nil.
 The overlap is the longest suffix of STR1 that is also a prefix of
@@ -46,7 +45,6 @@ nil when they do not overlap."
                       (substring str2 0 overlap-size)))
         (concat str1 (substring str2 overlap-size))
       nil)))
-
 
 (defun acm-backend-tabby--get-candidates (&optional current-symbol is-manual)
   "Ask tabby for completion candidates in the current buffer.

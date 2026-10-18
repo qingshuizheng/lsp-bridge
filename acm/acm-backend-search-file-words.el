@@ -81,7 +81,6 @@
 
 ;;; Require
 
-
 ;;; Code:
 
 (defgroup acm-backend-search-file-words nil
@@ -167,5 +166,4 @@ the buffer unchanged."
   (setq-local acm-backend-search-file-words-cache-candiates nil))
 
 (provide 'acm-backend-search-file-words)
-
 ;;; acm-backend-search-file-words.el ends here

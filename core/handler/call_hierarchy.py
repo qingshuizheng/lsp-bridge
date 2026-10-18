@@ -109,4 +109,3 @@ class CallHierarchyOutgoingCalls(CallHierarchy, Handler):
 
     name = "call_hierarchy_outgoing"
     method = "callHierarchy/outgoingCalls"
-

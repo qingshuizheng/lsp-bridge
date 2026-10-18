@@ -81,7 +81,6 @@
 
 ;;; Require
 
-
 ;;; Code:
 
 ;; The macro `lsp-bridge--with-file-buffer' lives in lsp-bridge-core.el,
@@ -127,7 +126,6 @@ under `lsp-bridge-dart-closing-labels-lock'."
         ;; Hide previous overlays first.
         (lsp-bridge-dart-hide-closing-label-overlays)
 
-        ;; Render new overlays.
         (save-excursion
           (save-restriction
             (dolist (closing-label closing-labels)
@@ -145,5 +143,4 @@ under `lsp-bridge-dart-closing-labels-lock'."
                   (push overlay lsp-bridge-dart-closing-label-overlays)))))))))
 
 (provide 'lsp-bridge-dart)
-
 ;;; lsp-bridge-dart.el ends here

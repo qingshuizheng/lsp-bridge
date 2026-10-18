@@ -370,10 +370,8 @@ A front end that draws the menu itself takes it over through `acm-ui-overrides'.
     ;; Turn off `acm-mode'.
     (acm-mode -1)
 
-    ;; Hide menu frame.
     (acm-frame-hide-frame (acm-popup menu-frame))
 
-    ;; Hide doc frame.
     (acm-doc-hide)
 
     ;; Turn off acm filter.
@@ -661,7 +659,6 @@ takes it over through `acm-ui-overrides'."
     (let ((override (acm-ui-override 'acm-update)))
       (when override
         (throw 'acm-ui-override (funcall override candidate)))))
-  ;; Init quick mode map.
   (acm-quick-access-init)
 
   ;; Adjust `gc-cons-threshold' to maximize temporary,
@@ -721,11 +718,9 @@ takes it over through `acm-ui-overrides'."
              ((and (= previous-select-candidate-index 1) (= current-select-candidate-index 1))
               (setq-local acm-menu-index 1)))))
 
-        ;; Set candidates and menu candidates.
         (setq-local acm-candidates candidates)
         (setq-local acm-menu-candidates menu-candidates)
 
-        ;; Init colors.
         (acm-frame-init-colors)
 
         ;; Record menu popup position and buffer.
@@ -749,7 +744,6 @@ takes it over through `acm-ui-overrides'."
           (let ((inhibit-read-only t))
             (acm-frame-create-frame-if-not-exist menu-frame (acm-popup menu-buffer) "acm frame" 0 t)
 
-            ;; Render menu.
             (acm-menu-render menu-old-cache)))))
      (t
       (acm-hide)))))
@@ -758,7 +752,6 @@ takes it over through `acm-ui-overrides'."
   "Recompute the acm frame colors and redraw the frames in use.
 ARGS are ignored; the function is added as `:after' advice to
 `load-theme'."
-  ;; Reset colors.
   (acm-frame-init-colors t)
 
   ;; Reset the colors of every frame's popup, not only of this one's.
@@ -994,11 +987,9 @@ over through `acm-ui-overrides'."
              (quick-access-key (nth item-index acm-quick-access-keys))
              candidate-line)
 
-        ;; Render deprecated candidate.
         (when (plist-get v :deprecated)
           (add-face-text-property 0 (length candidate) 'acm-deprecated-face 'append candidate))
 
-        ;; Build candidate line.
         (setq candidate-line
               (concat
                ;; Icon.
@@ -1018,12 +1009,9 @@ over through `acm-ui-overrides'."
                               (if (equal acm-string-width-function 'string-pixel-width)
                                   (- (+ (acm-popup menu-max-length-cache) (* 20 (string-pixel-width " "))) item-length)
                                 (ceiling (* (frame-char-width) (- (+ (acm-popup menu-max-length-cache) 20) item-length)))))))
-               ;; Render annotation color.
                (propertize annotation-text 'face annotation-face)
-               ;; Return char.
                "\n"))
 
-        ;; Render current candidate.
         (when (equal item-index menu-index)
           (add-face-text-property 0 (length candidate-line) 'acm-frame-select-face 'append candidate-line)
 
@@ -1040,7 +1028,6 @@ over through `acm-ui-overrides'."
         (when (equal item-index (1- (length items)))
           (delete-backward-char 1))
 
-        ;; Update item index.
         (setq item-index (1+ item-index))))))
 
 (defun acm-menu-adjust-pos ()
@@ -1243,7 +1230,6 @@ end.  A front end that draws the menu itself takes it over through
          (menu-new-max-length (acm-menu-max-length))
          (menu-new-number (length items))
          (menu-index acm-menu-index))
-    ;; Record newest cache.
     (acm-popup-set 'menu-max-length-cache menu-new-max-length)
     (acm-popup-set 'menu-number-cache menu-new-number)
 
@@ -1498,7 +1484,6 @@ off line numbers and the mode line.  Return nil."
 
   (read-only-mode 0)
 
-  ;; Enable prettify-symbols.
   (setq prettify-symbols-alist acm-markdown-render-prettify-symbols-alist)
   (setq prettify-symbols-compose-predicate (lambda (_start _end _match) t))
   (prettify-symbols-mode 1)
@@ -1507,9 +1492,7 @@ off line numbers and the mode line.  Return nil."
   (font-lock-ensure)
 
   (unless enable-decorations
-    ;; Disable line number.
     (display-line-numbers-mode -1)
-    ;; Disable mode line.
     (setq-local mode-line-format nil)))
 
 (defun acm-doc-markdown-render-content (doc)
@@ -1631,7 +1614,6 @@ QUIET is non-nil, also echo a message."
 Recolor `acm-filter-face', put `acm-filter-string' after
 `acm-filter-overlay' and call `acm-update' so that the candidates are
 filtered again."
-  ;; Update filter face.
   (when (facep 'hl-line)
     (set-face-background 'acm-filter-face (face-attribute 'hl-line :background)))
   (set-face-foreground 'acm-filter-face (face-attribute 'font-lock-function-name-face :foreground))

@@ -20,7 +20,6 @@
 ;; Floor, Boston, MA 02110-1301, USA.
 ;;
 ;;; Commentary:
-;; Show symbol breadcrumb on headerline.
 ;;
 ;;; Code:
 

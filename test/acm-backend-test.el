@@ -332,6 +332,5 @@ reached the menu."
         (should-not (assoc "broken-candidates" queries))))
     (should (string-match-p "broken" reported))))
 
-
 (provide 'acm-backend-test)
 ;;; acm-backend-test.el ends here

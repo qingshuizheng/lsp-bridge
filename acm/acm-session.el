@@ -160,5 +160,4 @@ macro: the slot it reads is a literal, which a `setf' expander cannot keep."
 (add-hook 'delete-frame-functions #'acm-session-delete-frame-hook)
 
 (provide 'acm-session)
-
 ;;; acm-session.el ends here

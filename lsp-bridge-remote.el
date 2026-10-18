@@ -102,10 +102,8 @@ directory, which is created when missing."
 
 (cl-defmacro lsp-bridge--conditional-update-tramp-file-info (tramp-file-name path host &rest body)
   "Conditionally execute BODY with the buffer associated with TRAMP-FILE-NAME.
-
 If the buffer is created by TRAMP with TRAMP-FILE-NAME, BODY is executed within
 the context of that buffer.
-
 If the buffer is created by `lsp-bridge-open-remote-file--response',
 `lsp-bridge--with-file-buffer' is used with PATH and HOST to find the buffer,
 then BODY is executed within that buffer."
@@ -146,7 +144,6 @@ of the file is marked as a remote file."
   "Ask the server to message the host names it knows about."
   (interactive)
   (lsp-bridge-call-async "message_hostnames"))
-
 
 ;;;###autoload
 (defun lsp-bridge-sync-tramp-remote (force)
@@ -189,7 +186,6 @@ is reused when one exists; sudo and blacklisted hosts are skipped."
 
 (defun lsp-bridge-construct-tramp-file-name (method user host port path)
   "Construct a TRAMP file name from components: METHOD USER HOST PORT PATH.
-
 SSH tramp file name is like /ssh:user@host#port:path"
   (concat "/"
           method ":"
@@ -313,5 +309,4 @@ A message is shown when the current buffer is not a remote file."
     (message "lsp-bridge-remote-save-buffer only for lsp-bridge-remote file.")))
 
 (provide 'lsp-bridge-remote)
-
 ;;; lsp-bridge-remote.el ends here

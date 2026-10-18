@@ -47,7 +47,6 @@ class _StarDictIfo(object):
     """
 
     def __init__(self, dict_prefix, container):
-
         ifo_filename = '%s.ifo' % dict_prefix
 
         try:
@@ -238,7 +237,6 @@ class _StarDictDict(object):
     word is also not fixed, and is determined by simply reading data until
     you've read word_data_size bytes for that word.
 
-
     Suppose the "sametypesequence" option is used in the .idx file, and
     the option is set like this:
     sametypesequence=tm
@@ -394,9 +392,7 @@ class _StarDictDict(object):
 
 
 class _StarDictSyn(object):
-
     def __init__(self, dict_prefix, container):
-
         syn_filename = '%s.syn' % dict_prefix
 
         try:
@@ -417,7 +413,6 @@ class Dictionary(dict):
     StarDictDict class and "x.{ifo,idx{,.gz},dict{,.dz},syn}" or
     "y.{ifo,idx{,.gz},dict{,.dz},syn}" is files of the corresponding stardict
     dictionaries.
-
 
     Following documentation is from the "dict" class an is subkect to rewrite
     in further impleneted methods:

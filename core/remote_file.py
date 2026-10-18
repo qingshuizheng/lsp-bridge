@@ -74,7 +74,6 @@ class RemoteFileClient(threading.Thread):
         """
         threading.Thread.__init__(self)
 
-        # Init.
         self.ssh_conf = ssh_conf
         self.ssh_host = ssh_conf['hostname']
         self.ssh_user = ssh_conf.get('user', "root")
@@ -426,7 +425,6 @@ class RemoteFileServer:
         """
         import socket
 
-        # Init.
         self.host = host
         self.port = port
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -434,7 +432,6 @@ class RemoteFileServer:
         self.server.bind((self.host, self.port))
         self.server.listen(5)
 
-        # Build event loop.
         self.event_loop = threading.Thread(target=self.event_dispatcher)
         self.event_loop.start()
 
@@ -861,13 +858,11 @@ class FileCommandServer(RemoteFileServer):
                 calls `method` on the LspBridge with `args`.
         """
         if message["command"] == "lsp_request":
-            # Call LSP request.
             self.lsp_bridge.event_queue.put({
                 "name": "action_func",
                 "content": ("_{}".format(message["method"]), [message["path"]] + message["args"])
             })
         elif message["command"] == "func_request":
-            # Call lsp-bridge normal function.
             getattr(self.lsp_bridge, message["method"])(*message["args"])
 
 

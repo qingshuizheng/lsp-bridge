@@ -92,44 +92,36 @@
 
 (defcustom lsp-bridge-ref-kill-temp-buffer-p t
   "Default this option is true, it will kill temp buffer when quit lsp-bridge-ref buffer.
-
 A buffer will killed if it is open by lsp-bridge-ref and not edit by lsp-bridge-ref.
-
 A buffer won't kill is it open before lsp-bridge-ref command start.
 A buffer won't kill if buffer content is change by lsp-bridge-ref.
-
 Anyway, you can set this option with nil if you don't like lsp-bridge-ref kill any buffer."
   :type 'boolean
   :group 'lsp-bridge-ref)
 
 (defcustom lsp-bridge-ref-show-function-name-p t
   "View the function name when navigate in match line.
-
 Default is enable, set this variable to nil if you don't like this feature."
   :type 'boolean
   :group 'lsp-bridge-ref)
 
 (defcustom lsp-bridge-ref-delete-other-windows t
   "Delete other windows while finding references.
-
 Default is enable, set this variable to nil if you don't like this feature."
   :type 'boolean
   :group 'lsp-bridge-ref)
 
 (defcustom lsp-bridge-ref-open-file-in-request-window nil
   "Open file in the window which requested to find references.
-
 Default is nil, set this variable to t if you like this feature."
   :type 'boolean
   :group 'lsp-bridge-ref)
 
 (defcustom lsp-bridge-ref-popup-window-handler #'lsp-bridge-ref-popup-window-default-handler
   "The handler for creating and opening a new lsp-bridge-ref window.
-
 Default is `lsp-bridge-ref-popup-window-default-handler'."
   :type 'function
   :group 'lsp-bridge-ref)
-
 
 (defface lsp-bridge-ref-font-lock-header-line-text
   '((t :inherit font-lock-keyword-face :bold t))
@@ -311,7 +303,6 @@ and open the listed matches."
 
 (defun lsp-bridge-ref-highlight-keywords ()
   "Highlight keywords."
-  ;; Add keywords for highlight.
   (font-lock-add-keywords
    nil
    '(
@@ -326,12 +317,10 @@ and open the listed matches."
   ;; Because search line maybe just contains *half* of string/comment that make rest content of buffer mark as string.
   ;; So we need turn off comment/string font-lock through set `font-lock-keywords-only'.
   (set (make-local-variable 'font-lock-keywords-only) t)
-  ;; Enable font lock.
   (font-lock-mode 1))
 
 (defun lsp-bridge-ref-update-header-line ()
   "Update `header-line-format' from the current search state.
-
 Show the search mode, `lsp-bridge-ref-hit-count' and the key
 bindings of `lsp-bridge-ref-mode-map' in the header line."
   (setq header-line-format (concat
@@ -385,7 +374,6 @@ bindings of `lsp-bridge-ref-mode-map' in the header line."
   "Stores parameters of last search.
 Becomes buffer local in `lsp-bridge-ref-mode' buffers.")
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Utils functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun lsp-bridge-ref-popup (references-content references-counter)
   "Show REFERENCES-CONTENT (REFERENCES-COUNTER matches) in the ref buffer.
@@ -398,15 +386,11 @@ to run rg with special arguments."
             (not (string-equal (buffer-name) lsp-bridge-ref-buffer)))
     (setq lsp-bridge-ref-window-configuration-before-search (current-window-configuration))
     (setq lsp-bridge-ref-buffer-point-before-search (point)))
-  ;; Save the request window.
   (setq lsp-bridge-ref-request-search-window (selected-window))
 
-  ;; Init edit mode.
   (setf (lsp-bridge-ref-search-mode lsp-bridge-ref-cur-search) "View")
 
-  ;; Reset visit temp buffers.
   (setq lsp-bridge-ref-temp-visit-buffers nil)
-  ;; Reset hit count.
   (setq lsp-bridge-ref-hit-count references-counter)
   ;; Erase or create search result.
   (get-buffer-create lsp-bridge-ref-buffer)
@@ -980,7 +964,6 @@ non-nil, select the reference window again afterwards."
         (setq in-org-link-content-p
               (and (lsp-bridge-ref-is-org-file match-file)
                    (lsp-bridge-ref-in-org-link-content-p)))
-        ;; Open file in other window.
         ;; Note, don't use `find-file-other-window', it will failed if path is tramp path that start with /sudo:root
         (if (and lsp-bridge-ref-open-file-in-request-window
                  ;; check if the window which requested search has beed deleted.
@@ -1093,7 +1076,6 @@ install `lsp-bridge-ref-after-change-function' to track changes."
   (interactive)
   ;; Clone content to temp buffer.
   (lsp-bridge-ref-clone-to-temp-buffer)
-  ;; Update header-line.
   (setf (lsp-bridge-ref-search-mode lsp-bridge-ref-cur-search) "Edit")
 
   ;; Set `query-replace-skip-read-only' to avoid read-only error when do `query-replace'.
@@ -1101,9 +1083,7 @@ install `lsp-bridge-ref-after-change-function' to track changes."
   (lsp-bridge-ref-update-header-line)
   ;; Turn off readonly mode.
   (read-only-mode -1)
-  ;; Load edit keymap.
   (use-local-map lsp-bridge-ref-mode-edit-map)
-  ;; Set edit area.
   (let (start end)
     ;; Make all buffer with readonly text property.
     (let ((inhibit-read-only t))
@@ -1121,7 +1101,6 @@ install `lsp-bridge-ref-after-change-function' to track changes."
           (setq end (point))
           (put-text-property (1- start) end 'read-only nil)))
       ))
-  ;; Add change monitor.
   (add-hook 'after-change-functions 'lsp-bridge-ref-after-change-function nil t)
   ;; Message to user.
   (message "[LSP-Bridge] Switch to edit mode: press C-c C-c to apply change, press C-c C-q cancel edit"))
@@ -1240,11 +1219,9 @@ switch the reference buffer back to view mode."
           (let (match-file match-line changed-line-content)
             (setq changed-line-content (lsp-bridge-ref-get-line-content lsp-bridge-ref-buffer line))
             (with-current-buffer lsp-bridge-ref-buffer
-              ;; Get match file and line.
               (goto-line line)
               (setq match-file (lsp-bridge-ref-get-match-file))
               (setq match-line (lsp-bridge-ref-get-match-line)))
-            ;; Open file in other window.
             (find-file match-file)
             ;; Remove from temp list if file's buffer is exist.
             (setq lsp-bridge-ref-temp-visit-buffers (remove (current-buffer) lsp-bridge-ref-temp-visit-buffers))
@@ -1267,5 +1244,4 @@ switch the reference buffer back to view mode."
   (lsp-bridge-ref-switch-to-view-mode))
 
 (provide 'lsp-bridge-ref)
-
 ;;; lsp-bridge-ref.el ends here

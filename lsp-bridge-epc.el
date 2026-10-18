@@ -128,7 +128,6 @@ Mainly this function is called by timer asynchronously."
 
 (defun lsp-bridge-deferred-resignal (err)
   "[internal] Safely resignal ERR as an Emacs condition.
-
 If ERR is a cons (ERROR-SYMBOL . DATA) where ERROR-SYMBOL has an
 `error-conditions' property, it is re-signaled unchanged. If ERR
 is a string, it is signaled as a generic error using `error'.
@@ -369,7 +368,6 @@ tasks to the returned deferred object."
 (defun lsp-bridge-epc-signal-send (channel event-sym &rest args)
   "Send a signal to CHANNEL. If ARGS values are given,
 observers can get the values by following code:
-
   (lambda (event)
     (destructuring-bind
      (event-sym (args))

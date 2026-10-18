@@ -109,7 +109,6 @@ buffer and the completion menu is tried immediately."
   ;; make sure Emacs not do GC
   (let ((gc-cons-threshold most-positive-fixnum))
     (lsp-bridge--with-file-buffer filename filehost
-                                  ;; Save completion items.
                                   (setq-local acm-backend-lsp-cache-candidates nil)
                                   (setq-local acm-backend-lsp-completion-position position)
                                   (setq-local acm-backend-lsp-completion-trigger-characters completion-trigger-characters)
@@ -556,5 +555,4 @@ variables named after BACKEND-NAME and the completion menu is tried."
     (lsp-bridge-try-completion)))
 
 (provide 'lsp-bridge-completion)
-
 ;;; lsp-bridge-completion.el ends here

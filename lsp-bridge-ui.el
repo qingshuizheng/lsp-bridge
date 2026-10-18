@@ -48,7 +48,6 @@
   "Add `lsp-bridge-symbols-current-defun' to `which-func-functions'."
   lsp-bridge-symbols-current-defun)
 
-
 (defun lsp-bridge--record-work-done-progress (progress file-paths)
   "Show PROGRESS for the buffers visiting FILE-PATHS.
 PROGRESS is echoed when `acm-backend-lsp-show-progress' is non-nil and
@@ -58,7 +57,6 @@ the mode line, with a timer that clears it after a while."
   (when acm-backend-lsp-show-progress
     (unless (active-minibuffer-window)
       (message progress)))
-  ;; Update mode-line progress indicator.
   (dolist (filepath file-paths)
     (when-let* ((buf (lsp-bridge-get-match-buffer-by-filepath filepath)))
       (with-current-buffer buf
@@ -138,5 +136,4 @@ while a long running request reports one."
                `(lsp-bridge-mode ("" lsp-bridge--mode-line-format " "))))
 
 (provide 'lsp-bridge-ui)
-
 ;;; lsp-bridge-ui.el ends here

@@ -255,5 +255,4 @@ text is inserted; otherwise ARGS are passed through unchanged."
 	        #'yas-expand-snippet-acm-advice)
 
 (provide 'acm-backend-yas)
-
 ;;; acm-backend-yas.el ends here

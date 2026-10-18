@@ -81,7 +81,6 @@
 
 ;;; Require
 
-
 ;;; Code:
 
 (defvar acm-icon-collections
@@ -272,5 +271,4 @@ nil or SVG images are unavailable."
     ""))
 
 (provide 'acm-icon)
-
 ;;; acm-icon.el ends here

@@ -88,5 +88,4 @@ the buffer unchanged."
     (insert (plist-get candidate-info :label))))
 
 (provide 'acm-backend-ctags)
-
 ;;; acm-backend-ctags.el ends here

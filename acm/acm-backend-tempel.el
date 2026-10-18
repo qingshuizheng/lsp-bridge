@@ -69,5 +69,4 @@ template named by the candidate label."
     (mapconcat #'tempel--print-template snippet " ")))
 
 (provide 'acm-backend-tempel)
-
 ;;; acm-backend-tempel.el ends here

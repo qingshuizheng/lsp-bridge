@@ -81,7 +81,6 @@
 
 ;;; Require
 
-
 ;;; Code:
 
 (defgroup acm-backend-lsp nil
@@ -110,14 +109,11 @@
 
 (defcustom acm-backend-lsp-match-mode "fuzzy"
   "The match mode to filter completion candidates.
-
 `prefix': filter candidates with input prefix, note such as C++, after `std::', candidate's prefix is not `::'.  For input \"abc\", it will match \"^abc.*\"
 `prefixCaseSensitive': filter candidates with input prefix, and case sensitive
 `fuzzy': fitler candidates with fuzzy algorithm.  For input \"abc\", it will match \".*a.*b.*c.*\".
 `substring': filter candidates which treated the input as a literal string that must occur in the candidate.  For input \"abc\", it will match \".*abc.*\"
-
 lsp-bridge still will use `fuzzy' algorithm filter candidates if value is not `prefix' `prefixCaseSensitive' `substring' or `fuzzy'.
-
 The lsp-bridge will continuously filter candidates on the Python side.
 If not filter and the value of `acm-backend-lsp-candidates-max-number' is far smaller than the number of candidates returned by the LSP server,
 it will cause the lsp-bridge to always send the previous batch of candidates which do not match the users input."
@@ -130,11 +126,9 @@ it will cause the lsp-bridge to always send the previous batch of candidates whi
 
 (defcustom acm-backend-lsp-case-mode "ignore"
   "The case sensitive mode to filter completion candidates.
-
 `ignore': filter case insensitively
 `sensitive': filter case sensitively
 `smart': filter case sensitively if any cased characters in the input is uppercase.  Otherwise, filter case sensitively
-
 Cased characters are those with general category property being one of “Lu” (Letter, uppercase), “Ll” (Letter, lowercase), or “Lt” (Letter, titlecase)."
   :type '(choice (const :tag "Ignore Case" "ignore")
                  (const :tag "Smart Case" "smart")
@@ -143,20 +137,16 @@ Cased characters are those with general category property being one of “Lu” 
 
 (defcustom acm-backend-lsp-frontend-filter-p nil
   "Because LSP candidates has filtered at Python backend.
-
 So don't need filter candidates again when show candidates in acm menu.
-
 Anyway, if want use `acm-candidate-fuzzy-search' filter again in acm menu, turn on this option."
   :type 'string
   :group 'acm-backend-lsp)
 
 (defcustom acm-backend-lsp-show-progress nil
   "Show message from 'Work Done Progress' message.
-
 Default is nil."
   :type 'boolean
   :group 'acm-backend-lsp)
-
 
 (defvar acm-backend-lsp-fetch-completion-item-func nil
   "Function used to fetch extra information for a completion candidate.
@@ -183,11 +173,8 @@ Set when a completion starts and read when a candidate is expanded.")
 
 (defvar-local acm-backend-lsp-block-kind-list nil
   "You can customize this option to filter certain types of completion candidates.
-
 This variable is a list type.
-
 Below is available types:
-
 `Text' `Method' `Function' `Constructor' `Field'
 `Variable' `Class' `Interface' `Module' `Property'
 `Unit' `Value' `Enum' `Keyword' `Snippet' `Color'
@@ -331,7 +318,6 @@ it from the server, then return what is currently known."
   (let* ((key (plist-get candidate :key))
          (server-name (plist-get candidate :server))
          (documentation (plist-get (gethash key (gethash server-name acm-backend-lsp-items)) :documentation)))
-    ;; Call fetch documentation function.
     (when (and acm-backend-lsp-fetch-completion-item-func
                (not (and documentation
                          (not (string-empty-p documentation)))))
@@ -431,5 +417,4 @@ START-POS and END-POS are LSP positions, converted with
   (setq-local acm-backend-lsp-cache-candidates nil))
 
 (provide 'acm-backend-lsp)
-
 ;;; acm-backend-lsp.el ends here

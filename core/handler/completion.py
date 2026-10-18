@@ -73,7 +73,6 @@ class Completion(Handler):
         x_include_prefix, y_include_prefix = x_label.startswith(prefix), y_label.startswith(prefix)
         x_method_name, y_method_name = x_label.split('(')[0], y_label.split('(')[0]
 
-        # Sort by prefix.
         # If the number of LSP server return candidates is much bigger than acm-backend-lsp-candidates-max-number limit.
         # We need sort prefix first even acm-backend-lsp-match-mode is fuzzy.
         # Otherwise, the front part of the candidates cannot be matched user input prefix.
@@ -92,7 +91,6 @@ class Completion(Handler):
         if x_icon == y_icon == "method" and x_method_name != y_method_name:
             return -1 if x_method_name < y_method_name else 1
 
-        # Sort by length.
         return -1 if len(x_label) < len(y_label) else (1 if len(x_label) > len(y_label) else 0)
 
     def get_display_new_text(self):
@@ -119,7 +117,6 @@ class Completion(Handler):
         label = item["label"]
         detail = item.get("detail", "")
 
-        # Get display label.
         if isinstance(detail, str) and detail.strip() != "":
             detail_label = f"{label} => {detail}"
         else:
@@ -203,7 +200,6 @@ class Completion(Handler):
         `lsp-bridge-completion--record-items` when `self.version` is still the
         current buffer version.
         """
-        # Get completion items.
         completion_candidates = []
         items = {}
 
@@ -260,7 +256,6 @@ class Completion(Handler):
                     else:
                         label = self.convert_snippet(label)
 
-                # Build candidate.
                 candidate = {
                     "key": key,
                     "icon": annotation,

@@ -222,7 +222,6 @@ when there is at least one reference, otherwise
   "Rename the symbol at point.
 Sends a `prepare_rename' request, asks for the new name with
 `read-string' and sends a `rename' request for the current position.
-
 With no language server to ask there is nothing to send, and the request would
 fail silently - which is what a buffer like an Emacs Lisp one looks like.  The
 occurrences the buffer itself holds are renamed through
@@ -275,7 +274,6 @@ buffer positions before `lsp-bridge-flash-region' is called."
 Call it in the old buffer before jumping and
 `lsp-bridge--set-mark-ring-in-new-buffer' in the new buffer
 afterwards; the two functions must be used in pairs."
-  ;; Record postion.
   (let ((marker (set-marker (mark-marker) (point) (current-buffer))))
     (setq lsp-bridge-position-before-jump (copy-marker marker)))
   (setq mark-ring lsp-bridge-mark-ring))
@@ -615,7 +613,5 @@ gives up and puts the buffer back as it was."
 ;; The count is said out loud for the occurrences that were written here, since no
 ;; server edit comes back to report them.
 
-
 (provide 'lsp-bridge-jump)
-
 ;;; lsp-bridge-jump.el ends here

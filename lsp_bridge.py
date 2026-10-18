@@ -76,8 +76,6 @@ from core.bridge_server import (ServerBridgeMixin, read_lang_server_info,
                                 load_single_server_info, get_lang_server_path)
 
 
-
-
 PROTOCOL_VERSION = 2
 """Version of the Emacs <-> Python protocol.
 
@@ -176,28 +174,23 @@ class LspBridge(RemoteBridgeMixin, ServerBridgeMixin, SearchBridgeMixin):
                 otherwise ``args[0]`` is the port of the Emacs EPC server to
                 connect back to.
         """
-        # Check running environment.
         self.running_in_server = len(args) == 0
         if self.running_in_server:
             set_running_in_server()
 
-        # Build EPC server.
         self.server = ThreadingEPCServer(('127.0.0.1', 0), log_traceback=True)
         self.server.allow_reuse_address = True
         self.server.register_instance(self)  # register instance functions let elisp side call
 
-        # Start EPC server.
         self.server_thread = threading.Thread(target=self.server.serve_forever)
         self.server_thread.start()
 
-        # Init variables.
         self.thread_queue = []
         self.client_dict = {}
         self.lsp_client_dict = {}
         self.host_names = {}
         self.host_ip_dict = {}
 
-        # Init event loop.
         self.event_queue = queue.Queue()
         self.event_loop = threading.Thread(target=self.event_dispatcher)
         self.event_loop.start()
@@ -235,11 +228,6 @@ class LspBridge(RemoteBridgeMixin, ServerBridgeMixin, SearchBridgeMixin):
         `build_diagnose` for the reply.
         """
         return json.dumps(build_diagnose(len(LSP_SERVER_DICT), len(FILE_ACTION_DICT)))
-
-
-
-
-
 
     def send_message_dispatcher(self, queue, port):
         """Send the messages queued on QUEUE to the remote hosts.
@@ -286,12 +274,6 @@ class LspBridge(RemoteBridgeMixin, ServerBridgeMixin, SearchBridgeMixin):
                     queue.task_done()
         except Exception:
             logger.error(traceback.format_exc())
-
-
-
-
-
-
 
     # Functions for local to send request to remote server
     @threaded
@@ -352,7 +334,6 @@ class LspBridge(RemoteBridgeMixin, ServerBridgeMixin, SearchBridgeMixin):
             "method": method,
             "args": list(map(epc_arg_transformer, args))
         })
-
 
     @threaded
     def handle_lsp_message(self, message):
@@ -615,13 +596,6 @@ class LspBridge(RemoteBridgeMixin, ServerBridgeMixin, SearchBridgeMixin):
             "project" if os.path.isdir(project_path) else "file",
             os.path.basename(project_path.rstrip(os.path.sep))))
 
-
-
-
-
-
-
-
     def build_file_action_function(self, name):
         """Install both EPC wrappers of the file action NAME.
 
@@ -664,13 +638,6 @@ class LspBridge(RemoteBridgeMixin, ServerBridgeMixin, SearchBridgeMixin):
 
         setattr(self, name, _do_wrap)
 
-
-
-
-
-
-
-
     def cleanup(self):
         """Close every remote client and the EPC client before exit.
 
@@ -705,7 +672,6 @@ class LspBridge(RemoteBridgeMixin, ServerBridgeMixin, SearchBridgeMixin):
             message_emacs("Output profile data to ~/lsp-bridge.prof, please use snakeviz open it.")
         except Exception:
             message_emacs("Set option 'lsp-bridge-enable-profile' to 't' and call lsp-bridge-restart-process, then call lsp-bridge-profile-dump again.")
-
 
 
 if __name__ == "__main__":

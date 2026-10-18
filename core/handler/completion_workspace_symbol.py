@@ -36,11 +36,9 @@ class CompletionWorkspaceSymbol(Handler):
         x_label, y_label = x["label"].lower(), y["label"].lower()
         x_include_prefix, y_include_prefix = x_label.startswith(prefix), y_label.startswith(prefix)
 
-        # Sort by prefix.
         if x_include_prefix != y_include_prefix:
             return -1 if x_include_prefix else 1
 
-        # Sort by length.
         return -1 if len(x_label) < len(y_label) else (1 if len(x_label) > len(y_label) else 0)
 
     def process_response(self, response: dict) -> None:

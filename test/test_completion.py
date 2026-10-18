@@ -119,7 +119,6 @@ class AcceptCompletion(unittest.TestCase):
 
             @interceptor(has_completion)
             def mock_input():
-
                 eval_sexp(file_buffer(filename, f"""
                     (setq-local major-mode '{files[0].mode})
                     (lsp-bridge-mode 1)

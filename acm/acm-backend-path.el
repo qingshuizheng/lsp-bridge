@@ -81,7 +81,6 @@
 
 ;;; Require
 
-
 ;;; Code:
 
 (defgroup acm-backend-path nil
@@ -132,5 +131,4 @@ leaves the buffer unchanged."
   (setq-local acm-backend-path-cache-candiates nil))
 
 (provide 'acm-backend-path)
-
 ;;; acm-backend-path.el ends here

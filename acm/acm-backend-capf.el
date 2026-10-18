@@ -81,7 +81,6 @@
 
 ;;; Require
 
-
 ;;; Code:
 
 (defcustom acm-enable-capf nil
@@ -219,5 +218,4 @@ returned."
                    candidates)))))))
 
 (provide 'acm-backend-capf)
-
 ;;; acm-backend-capf.el ends here

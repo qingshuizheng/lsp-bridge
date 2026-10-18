@@ -149,19 +149,16 @@ Set to nil if flymake/flycheck frontend is used instead."
 
 (defcustom lsp-bridge-diagnostic-max-number 50
   "The maximum number of diagnostic will be render.
-
 Too many diagnostic render will cause do long time Emacs GC."
   :type 'integer
   :group 'lsp-bridge)
 
 (defcustom lsp-bridge-diagnostic-hide-severities nil
   "The rule to hide diagnostic that return from LSP server.
-
 1 mean error
 2 mean warning
 3 mean info
 4 mean hint
-
 You can set this value with `(2 3 4) if you just need render error diagnostic."
   :type 'list
   :group 'lsp-bridge)
@@ -299,7 +296,6 @@ message is shown in `lsp-bridge-diagnostic-buffer', either in the
                 ((< (abs (- (current-line) window-end-line)) adjust-line-number)
                  (scroll-up-line adjust-line-number))))))
 
-    ;; Show diagnostic tooltip.
     (with-current-buffer (get-buffer-create lsp-bridge-diagnostic-buffer)
       (erase-buffer)
       (lsp-bridge-diagnostic-insert-colored-string (overlay-get diagnostic-overlay 'color) diagnostic-wrapped-message)
@@ -454,5 +450,4 @@ the number of rendered diagnostics."
       (lsp-bridge-ref-popup (buffer-string) diagnostic-counter))))
 
 (provide 'lsp-bridge-diagnostic)
-
 ;;; lsp-bridge-diagnostic.el ends here

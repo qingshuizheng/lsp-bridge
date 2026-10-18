@@ -145,7 +145,6 @@
                              '("prepare_rename" (:line 0 :character 0)))
                        calls))))))
 
-
 (ert-deftest lsp-bridge-live-rename-test-fallback-can-be-turned-off ()
   "With the fallback off both commands say there is no server."
   (with-temp-buffer
@@ -160,7 +159,6 @@
         (should-error (call-interactively #'lsp-bridge-rename) :type 'user-error)
         (should-error (call-interactively #'lsp-bridge-live-rename) :type 'user-error)
         (should-not called)))))
-
 
 (ert-deftest lsp-bridge-live-rename-test-textual-ranges-are-whole-symbols ()
   "The scan takes whole symbols: a name that merely starts the same is left out."
@@ -196,7 +194,6 @@
         (should (equal "(defun renamed () (renamed) (foobar))" (buffer-string)))
         (should-not called)
         (should-not lsp-bridge-live-rename--overlays)))))
-
 
 (provide 'lsp-bridge-live-rename-test)
 ;;; lsp-bridge-live-rename-test.el ends here

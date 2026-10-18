@@ -220,7 +220,6 @@ sit inside the string for this test."
       (should (= acm-menu-index 1))
       (should (equal (plist-get (acm-menu-current-candidate) :label) "abcde")))))
 
-
 ;;; The two behaviour options
 
 (ert-deftest acm-test-cycle-next-p ()

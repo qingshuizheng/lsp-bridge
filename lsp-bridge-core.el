@@ -223,16 +223,13 @@ documentation, diagnostic, signature and code action popups."
                    (featurep 'which-func) which-function-mode)
               (lsp-bridge-call-file-api "document_symbol" (lsp-bridge--position)))))
 
-      ;; Hide hover tooltip.
       (unless (string-prefix-p "lsp-bridge-popup-documentation-scroll" this-command-string)
         (lsp-bridge-hide-doc-tooltip))
 
-      ;; Hide diagnostic tooltip.
       (unless (member this-command-string '("lsp-bridge-diagnostic-jump-next"
                                             "lsp-bridge-diagnostic-jump-prev"))
         (lsp-bridge-diagnostic-hide-tooltip))
 
-      ;; Hide signature tooltip.
       (lsp-bridge-hide-signature-tooltip)
 
       ;; Hide code action frame when Emacs got focus.
@@ -387,7 +384,6 @@ backends and search words requests are triggered."
               ;; Sync change for org babel if we enable it
               (lsp-bridge-org-babel-monitor-after-change begin end length)
 
-              ;; Send LSP requests.
               (when (or (lsp-bridge-call-file-api-p)
                         (lsp-bridge-is-remote-file))
 
@@ -412,13 +408,11 @@ backends and search words requests are triggered."
                                           (buffer-name)
                                           (acm-get-input-prefix))
 
-                ;; Send inlay hint request.
                 (lsp-bridge-inlay-hint-try-send-request))
 
               ;; Complete other non-LSP backends.
               (lsp-bridge-complete-other-backends)
 
-              ;; Update search words backend.
               ;;
               ;; disable it for org-mode when we enable `lsp-bridge-enable-org-babel'
               ;; it will trigger with wrong pos due to we only update `pos' on src block
@@ -579,7 +573,6 @@ Each element is a hook list in the form accepted by `add-hook'.")
   :type 'string
   :group 'lsp-bridge)
 
-
 ;; Declared without a value: the variable belongs to `which-func', and this file adds
 ;; a function to it rather than defining it.
 (defvar which-func-functions)
@@ -597,7 +590,6 @@ Each element is a hook list in the form accepted by `add-hook'.")
   ;; enabling the mode depend on something this file does not control.
   (unless (and (fboundp 'acm-session-popup-buffer-p)
                (acm-session-popup-buffer-p))
-    ;; Disable backup file.
     ;; Please use my another plugin `https://github.com/manateelazycat/auto-save' and use git for file version management.
     (when lsp-bridge-disable-backup
       (setq make-backup-files nil)
@@ -626,7 +618,6 @@ Each element is a hook list in the form accepted by `add-hook'.")
                    (not (file-exists-p (buffer-file-name))))
           (save-buffer)))
 
-      ;; Init backends.
       (acm-backend-lsp-init)
       (acm-backend-lsp-workspace-symbol-init)
 
@@ -655,7 +646,6 @@ capture and must not start lsp-bridge."
 
 (defun lsp-bridge--disable ()
   "Disable LSP Bridge mode."
-  ;; Remove hooks.
   (dolist (hook lsp-bridge--internal-hooks)
     (remove-hook (nth 0 hook) (nth 1 hook) (nth 3 hook)))
 
@@ -677,7 +667,6 @@ Sets its buffer-local `acm-backend-lsp-server-command-exist' to nil
 so that no further file request is sent."
   (lsp-bridge--with-file-buffer filename filehost
                                 (setq-local acm-backend-lsp-server-command-exist nil)))
-
 
 (defvar-local lsp-bridge-revert-buffer-flag nil
   "Non-nil while `revert-buffer' runs in this buffer.
@@ -725,7 +714,6 @@ Hides the diagnostic and inlay hint overlays."
 ORIG-FUN, ARG and ARGS describe the advised call; the
 `lsp-bridge-revert-buffer-flag' buffer-local variable is set while
 the revert runs so that no `change_file' request is sent for it."
-  ;; Clean up.
   (lsp-bridge--cleanup)
 
   (setq-local lsp-bridge-revert-buffer-flag t)
@@ -737,9 +725,7 @@ the revert runs so that no `change_file' request is sent for it."
 Runs in `acm-hide-hook', so the next menu resolves its items again instead of
 reusing what was resolved for the one that just went away."
   (when lsp-bridge-mode
-    ;; Clean LSP backend completion tick.
     (setq-local acm-backend-lsp-fetch-completion-item-ticker nil)))
 
 (provide 'lsp-bridge-core)
-
 ;;; lsp-bridge-core.el ends here

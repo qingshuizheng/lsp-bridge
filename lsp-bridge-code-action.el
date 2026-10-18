@@ -88,7 +88,6 @@
 
 (defcustom lsp-bridge-code-action-preview-delay 0.5
   "The delay to show code action diff preview.
-
 Default is 0.5 second, preview window will stick if this value too small."
   :type 'float
   :group 'lsp-bridge)
@@ -133,11 +132,8 @@ cons of point and point."
 ;;;###autoload
 (defun lsp-bridge-code-action (&optional action-kind)
   "Send code action to LSP server to fixes code or problems.
-
 Default request all kind code-action.
-
 You can send special kind of code-action, ACTION-KIND can be one of the kinds below:
-
 'quickfix'
 'refactor'
 'refactor.extract'
@@ -146,7 +142,6 @@ You can send special kind of code-action, ACTION-KIND can be one of the kinds be
 'source'
 'source.organizeImports'
 'source.fixAll'
-
 Please read https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#codeActionKind for detail explain."
   (interactive)
   (when (lsp-bridge-has-lsp-server-p)
@@ -219,7 +214,6 @@ the buffer content is empty, only the menu window is kept."
         (push (cons lsp-bridge-code-action--preview-index (buffer-string))
               lsp-bridge-code-action--preview-alist)))
 
-      ;; Get width and height.
       (goto-char (point-min))
       (while (not (eobp))
         (cl-incf height)
@@ -229,7 +223,6 @@ the buffer content is empty, only the menu window is kept."
         (forward-line))
       (setq width (min width 80))
 
-      ;; Show top.
       (goto-char (point-min))
 
       ;; Truncate lines.
@@ -237,7 +230,6 @@ the buffer content is empty, only the menu window is kept."
       (setq-local mode-line-format nil)
       (setq-local truncate-lines t)
 
-      ;; Render ANSI string.
       (ansi-color-apply-on-region (point-min) (point-max)))
 
     (acm-frame-set-frame-size lsp-bridge-call-hierarchy--frame
@@ -471,5 +463,4 @@ one from `lsp-bridge-code-action-popup-menu' or the minibuffer."
         (lsp-bridge-code-action--fix-do (cdr (assoc select-name menu-items))))))))
 
 (provide 'lsp-bridge-code-action)
-
 ;;; lsp-bridge-code-action.el ends here
