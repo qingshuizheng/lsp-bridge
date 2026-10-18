@@ -726,8 +726,7 @@ same way acm clears them for its doc frame."
           (acm-terminal-create-frame-if-not-exist acm-terminal-menu-popon acm-buffer "acm frame")
           (plist-put (cdr acm-terminal-menu-popon) :direction direction)
 
-          (acm-menu-render menu-old-cache))
-        ))
+          (acm-menu-render menu-old-cache))))
      (t
       (acm-hide)))))
 

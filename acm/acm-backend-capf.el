@@ -203,8 +203,7 @@ returned."
                            (let ((newstart (car-safe (funcall hookfun))))
                              (and newstart (= newstart start)))))
                         (initial (buffer-substring-no-properties start end))
-                        (candidates (completion-all-completions initial collection nil (length initial)))
-                        )
+                        (candidates (completion-all-completions initial collection nil (length initial))))
                    (when-let* ((z (last candidates)))
                      (setcdr z nil))
                    ;; The CAPF contract is that every candidate is the complete

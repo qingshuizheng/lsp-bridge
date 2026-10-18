@@ -298,8 +298,7 @@ and open the listed matches."
   (read-only-mode 1)
   (lsp-bridge-ref-highlight-keywords)
   (use-local-map lsp-bridge-ref-mode-map)
-  (run-hooks 'lsp-bridge-ref-mode-hook)
-  )
+  (run-hooks 'lsp-bridge-ref-mode-hook))
 
 (defun lsp-bridge-ref-highlight-keywords ()
   "Highlight keywords."
@@ -311,8 +310,7 @@ and open the listed matches."
      ("^\\([1-9][0-9]*\\)\\(:\\)\\([0-9][0-9]*\\)\\(:\\)" 1 'lsp-bridge-ref-font-lock-line-number)
      ("^\\([1-9][0-9]*\\)\\(:\\)\\([0-9][0-9]*\\)\\(:\\)" 3 'lsp-bridge-ref-font-lock-column-number)
      ("^\\([1-9][0-9]*\\)\\(:\\)\\([0-9][0-9]*\\)\\(:\\)" 4 'lsp-bridge-ref-font-lock-position-splitter)
-     ("^[/\\~].*\\|^[a-z]:.*" . 'lsp-bridge-ref-font-lock-file)
-     ))
+     ("^[/\\~].*\\|^[a-z]:.*" . 'lsp-bridge-ref-font-lock-file)))
   ;; NOTE:
   ;; Because search line maybe just contains *half* of string/comment that make rest content of buffer mark as string.
   ;; So we need turn off comment/string font-lock through set `font-lock-keywords-only'.
@@ -353,8 +351,7 @@ bindings of `lsp-bridge-ref-mode-map' in the header line."
                             (propertize
                              (substitute-command-keys "\\<lsp-bridge-ref-mode-map> \\[lsp-bridge-ref-remove-line-from-results]" t)
                              'font-lock-face 'lsp-bridge-ref-font-lock-header-line-edit-mode)
-                            (propertize " ]" 'font-lock-face 'lsp-bridge-ref-font-lock-line-number)
-                            )))
+                            (propertize " ]" 'font-lock-face 'lsp-bridge-ref-font-lock-line-number))))
 
 (cl-defstruct (lsp-bridge-ref-search (:constructor lsp-bridge-ref-search-create)
                                      (:constructor lsp-bridge-ref-search-new (pattern dir))
@@ -473,8 +470,7 @@ FILEPATH is compared with the buffer's file name."
     (let* ((buf-file-name (buffer-file-name buffer))
            (file-name (if (stringp buf-file-name) (substring-no-properties buf-file-name) buf-file-name)))
       (when (string-equal file-name filepath)
-        (cl-return buffer)
-        ))))
+        (cl-return buffer)))))
 
 (defun lsp-bridge-ref-current-line-empty-p ()
   "Return non-nil if the current line contains only whitespace."
@@ -494,8 +490,7 @@ The result starts after the line:column prefix matched by
       (let ((start (point)) end)
         (end-of-line)
         (setq end (point))
-        (buffer-substring start end)))
-    ))
+        (buffer-substring start end)))))
 
 (defun lsp-bridge-ref-get-row-column-position ()
   "Return the position where the line:column prefix of the current line starts.
@@ -534,8 +529,7 @@ overlay as changed or, when the line is now empty, as deleted."
         (add-to-list 'lsp-bridge-ref-changed-lines change-line)
         (if (string-equal changed-line-content "")
             (lsp-bridge-ref-mark-position-deleted change-line)
-          (lsp-bridge-ref-mark-position-changed change-line)))
-      )))
+          (lsp-bridge-ref-mark-position-changed change-line))))))
 
 (defun lsp-bridge-ref-mark-position-clear (line)
   "Delete the change overlays on LINE.
@@ -547,8 +541,7 @@ Only overlays of type \"changed\" or \"deleted\" are removed."
     (dolist (overlay (overlays-at (point)))
       (when (or (string-equal (overlay-get overlay 'overlay-type) "changed")
                 (string-equal (overlay-get overlay 'overlay-type) "deleted"))
-        (delete-overlay overlay)
-        ))))
+        (delete-overlay overlay)))))
 
 (defun lsp-bridge-ref-mark-position (line type face)
   "Mark LINE with an overlay of TYPE and FACE.
@@ -564,8 +557,7 @@ Any previous change overlay on LINE is removed first."
         (setq end (point))
         (setq changed-overlay (make-overlay start end))
         (overlay-put changed-overlay 'overlay-type type)
-        (overlay-put changed-overlay 'face face)
-        ))))
+        (overlay-put changed-overlay 'face face)))))
 
 (defun lsp-bridge-ref-mark-position-changed (line)
   "Mark LINE as changed by the user, using the changed face."
@@ -590,8 +582,7 @@ is killed."
   (with-current-buffer lsp-bridge-ref-buffer
     (add-hook 'kill-buffer-hook 'lsp-bridge-ref-kill-temp-buffer nil t)
     (generate-new-buffer lsp-bridge-ref-temp-buffer)
-    (append-to-buffer lsp-bridge-ref-temp-buffer (point-min) (point-max))
-    ))
+    (append-to-buffer lsp-bridge-ref-temp-buffer (point-min) (point-max))))
 
 ;;;###autoload
 (defun lsp-bridge-ref-switch-to-view-mode ()
@@ -611,8 +602,7 @@ change hook and make the buffer read-only again."
     (use-local-map lsp-bridge-ref-mode-map)
     (kill-local-variable 'query-replace-skip-read-only)
     (setf (lsp-bridge-ref-search-mode lsp-bridge-ref-cur-search) "View")
-    (lsp-bridge-ref-update-header-line)
-    ))
+    (lsp-bridge-ref-update-header-line)))
 
 (defun lsp-bridge-ref-filter-results (match-regexp)
   "Remove result lines selected by a regexp read from the minibuffer.
@@ -633,16 +623,13 @@ how many lines were removed and refresh the header line."
           (if match-regexp
               (unless (string-match filter-regexp line-content)
                 (lsp-bridge-ref-remove-line-from-results)
-                (setq remove-counter (+ 1 remove-counter))
-                )
+                (setq remove-counter (+ 1 remove-counter)))
             (when (string-match filter-regexp line-content)
               (lsp-bridge-ref-remove-line-from-results)
-              (setq remove-counter (+ 1 remove-counter))
-              )))
+              (setq remove-counter (+ 1 remove-counter)))))
         (if match-regexp
             (message (format "[LSP-Bridge] Remove %s lines not match regexp '%s'." remove-counter filter-regexp))
-          (message (format "[LSP-Bridge] Remove %s lines match regexp '%s'." remove-counter filter-regexp)))
-        )))
+          (message (format "[LSP-Bridge] Remove %s lines match regexp '%s'." remove-counter filter-regexp))))))
   ;; Update hit number in header line.
   (lsp-bridge-ref-update-header-line-hits))
 
@@ -686,8 +673,7 @@ extension, then refresh the header line."
                   (lsp-bridge-ref-remove-lines-under-file))
               (if (string-equal file-extension filter-extension)
                   (lsp-bridge-ref-remove-lines-under-file)
-                (end-of-line))))
-          ))))
+                (end-of-line))))))))
   ;; Update hit number in header line.
   (lsp-bridge-ref-update-header-line-hits))
 
@@ -766,8 +752,7 @@ the replacement text, and the number of edited lines is reported."
             (setq changed-line-number (length lsp-bridge-ref-changed-lines))
             (lsp-bridge-ref-apply-changed)
             (lsp-bridge-ref-switch-to-view-mode)
-            (setf (lsp-bridge-ref-search-keyword lsp-bridge-ref-cur-search) replace-text)
-            )))
+            (setf (lsp-bridge-ref-search-keyword lsp-bridge-ref-cur-search) replace-text))))
       (message "[LSP-Bridge] Replace %s lines" changed-line-number))))
 
 ;;;###autoload
@@ -808,8 +793,7 @@ temp buffer and refresh the header line."
         (erase-buffer)
         (insert (with-current-buffer lsp-bridge-ref-temp-buffer
                   (buffer-substring (point-min) (point-max))))
-        (read-only-mode 1)
-        )
+        (read-only-mode 1))
       ;; Update hit number in header line.
       (lsp-bridge-ref-update-header-line-hits))))
 
@@ -825,8 +809,7 @@ Do nothing when the current line has no line:column prefix."
         (beginning-of-line)
         (kill-line)
         (kill-line)
-        (read-only-mode 1)
-        ))))
+        (read-only-mode 1)))))
 
 ;;;###autoload
 (defun lsp-bridge-ref-jump-next-keyword ()
@@ -854,8 +837,7 @@ Do nothing when the current line has no line:column prefix."
                    (save-excursion
                      (beginning-of-line)
                      (search-backward-regexp lsp-bridge-ref-regexp-position nil t))
-                 (save-excursion (search-backward-regexp lsp-bridge-ref-regexp-position nil t)))
-               )
+                 (save-excursion (search-backward-regexp lsp-bridge-ref-regexp-position nil t))))
            nil)))
     (if prev-match-pos
         (progn
@@ -897,8 +879,7 @@ Do nothing when the current line has no line:column prefix."
                    (save-excursion
                      (search-backward-regexp lsp-bridge-ref-regexp-split-line)
                      (search-backward-regexp lsp-bridge-ref-regexp-file nil t))
-                 (save-excursion (search-backward-regexp lsp-bridge-ref-regexp-file nil t)))
-               )
+                 (save-excursion (search-backward-regexp lsp-bridge-ref-regexp-file nil t))))
            nil)))
     (if prev-match-pos
         (progn
@@ -992,15 +973,13 @@ non-nil, select the reference window again afterwards."
               (org-reveal)
               ;; Jump to link beginning if keyword in content area.
               (when in-org-link-content-p
-                (search-backward-regexp "\\[\\[" (line-beginning-position) t))
-              ))))
+                (search-backward-regexp "\\[\\[" (line-beginning-position) t))))))
       ;; Flash match line.
       (lsp-bridge-ref-flash-line))
     (unless stay
       (lsp-bridge-switch-to-ref-window))
     ;; Ajust column position.
-    (lsp-bridge-ref-move-to-column match-column)
-    ))
+    (lsp-bridge-ref-move-to-column match-column)))
 
 ;;;###autoload
 (defun lsp-bridge-ref-open-file-and-stay ()
@@ -1022,8 +1001,7 @@ Also show the name of the enclosing function in the echo area when
       (message "[LSP-Bridge] Located in function: %s"
                (propertize
                 function-name
-                'face 'lsp-bridge-ref-font-lock-function-location
-                )))))
+                'face 'lsp-bridge-ref-font-lock-function-location)))))
 
 (defun lsp-bridge-ref-in-org-link-content-p ()
   "Return non-nil if point is inside the content of an org link.
@@ -1089,8 +1067,7 @@ install `lsp-bridge-ref-after-change-function' to track changes."
     (let ((inhibit-read-only t))
       (save-excursion
         (put-text-property 1 2 'front-sticky '(read-only))
-        (put-text-property (point-min) (point-max) 'read-only t)
-        ))
+        (put-text-property (point-min) (point-max) 'read-only t)))
     ;; Make all code with edit property.
     (let ((inhibit-read-only t))
       (save-excursion
@@ -1099,8 +1076,7 @@ install `lsp-bridge-ref-after-change-function' to track changes."
           (setq start (point))
           (end-of-line)
           (setq end (point))
-          (put-text-property (1- start) end 'read-only nil)))
-      ))
+          (put-text-property (1- start) end 'read-only nil)))))
   (add-hook 'after-change-functions 'lsp-bridge-ref-after-change-function nil t)
   ;; Message to user.
   (message "[LSP-Bridge] Switch to edit mode: press C-c C-c to apply change, press C-c C-q cancel edit"))
@@ -1198,8 +1174,7 @@ Discard every pending change and switch back to edit mode."
         (insert (with-current-buffer lsp-bridge-ref-temp-buffer
                   (buffer-substring (point-min) (point-max))))
         ;; Switch to edit mode.
-        (lsp-bridge-ref-switch-to-edit-mode)
-        ))))
+        (lsp-bridge-ref-switch-to-edit-mode)))))
 
 ;;;###autoload
 (defun lsp-bridge-ref-apply-changed ()
@@ -1233,8 +1208,7 @@ switch the reference buffer back to view mode."
                 ;; Kill empty line if line mark as deleted.
                 (kill-line)
               ;; Otherwise insert new line into file.
-              (insert changed-line-content))
-            ))))
+              (insert changed-line-content))))))
     ;; Restore window configuration before apply changed.
     (when lsp-bridge-ref-window-configuration-before-apply
       (set-window-configuration lsp-bridge-ref-window-configuration-before-apply)
